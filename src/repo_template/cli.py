@@ -43,6 +43,7 @@ def _parser() -> argparse.ArgumentParser:
     update.add_argument(
         "--no-hooks", action="store_true", help="do not configure the repository hook path"
     )
+    update.add_argument("--no-lock", action="store_true", help="do not create or refresh uv.lock")
 
     check = subparsers.add_parser("check", help="report missing or conflicting standards")
     check.add_argument("path", type=Path, nargs="?", default=Path.cwd())
@@ -152,6 +153,11 @@ def _update(args: argparse.Namespace) -> int:
     result = update_project(args.path)
     if not args.no_hooks:
         error = _configure_hooks(result.root)
+        if error:
+            result.errors.append(error)
+    pyproject_changed = "pyproject.toml" in result.created or "pyproject.toml" in result.updated
+    if not args.no_lock and (pyproject_changed or not (result.root / "uv.lock").exists()):
+        error = _create_lock(result.root)
         if error:
             result.errors.append(error)
     _print_result(result)

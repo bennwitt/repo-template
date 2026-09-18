@@ -53,6 +53,8 @@ Update behavior is intentionally conservative:
 - Existing project documentation and source files are treated as seeds and preserved.
 - Conflicts are listed for manual review, never silently overwritten.
 - `.repo-template.json` records template ownership and project variables.
+- `uv.lock` is created or refreshed when project dependencies change; use `--no-lock` when
+  another system owns the lockfile.
 
 Exit code `2` from `update` means files were preserved for manual review. Exit code `1` from
 `check` means the repository is not current.
@@ -96,4 +98,3 @@ git push -u origin main
 Edit template content in `src/repo_template/templates.py`. Increase the package version in
 `pyproject.toml` and `src/repo_template/__init__.py` when changing generated standards, then
 run the test suite before publishing.
-
