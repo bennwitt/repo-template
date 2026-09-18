@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "openai.chatgpt",
+    "anthropic.claude-code"
+  ]
+}

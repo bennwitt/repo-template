@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+secret_pattern='BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}'
+secret_pattern="${secret_pattern}|sk-proj-[A-Za-z0-9_-]{40,}|sk-[A-Za-z0-9]{32,}"
+if git diff --cached --binary | grep -Eq "$secret_pattern"; then
+  echo "Possible secret in staged changes; commit stopped." >&2
+  exit 1
+fi
+
+uv lock --check
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest

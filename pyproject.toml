@@ -1,0 +1,39 @@
+[project]
+name = "repo-template"
+version = "0.1.0"
+description = "Create and safely update opinionated Python repositories and shared AI development standards."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+repo-template = "repo_template.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.15,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pytest>=8.4",
+    "ruff>=0.13",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+extend-exclude = [".agents", ".claude"]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+exclude = "(^|/)([.]agents|[.]claude)/"
+python_version = "3.11"
+strict = true
+packages = ["repo_template"]

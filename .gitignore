@@ -1,0 +1,34 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+.idea/
+.DS_Store
+
+# This repository intentionally versions its portable global standards even when
+# a user's global Git excludes .agents and .claude directories. Only the portable
+# subsets are re-included; machine-local Claude state remains ignored.
+!/.agents/
+/.agents/*
+!/.agents/skills/
+!/.agents/skills/**
+!/.claude/
+/.claude/*
+!/.claude/settings.json
+!/.claude/skills/
+!/.claude/skills/**

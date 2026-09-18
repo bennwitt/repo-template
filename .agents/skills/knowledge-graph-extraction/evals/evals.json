@@ -1,0 +1,58 @@
+{
+  "skill_name": "knowledge-graph-extraction",
+  "evals": [
+    {
+      "id": 0,
+      "name": "build-graph-from-corpus",
+      "prompt": "we've got a couple years of incident postmortems sitting in a folder and our RAG setup keeps whiffing on the questions we actually care about \u2014 stuff like 'which teams keep getting burned by the same dependency'. it retrieves the right-ish documents but never connects them. i put 5 sample postmortems in CORPUS_PATH. can you build me something that turns these into a graph i can actually traverse? the entity types that matter to us are services, incidents, teams and components, not the generic person/org/location stuff.",
+      "expected_output": "A working extraction pipeline using domain entity types (SERVICE/INCIDENT/TEAM/COMPONENT), producing a graph where surface-form variants are resolved to single nodes.",
+      "files": [
+        "corpus/"
+      ],
+      "assertions": [
+        "Uses the user's domain entity types (SERVICE/INCIDENT/TEAM/COMPONENT) rather than the generic PERSON/ORGANIZATION/LOCATION set",
+        "Includes an explicit entity-resolution stage that merges surface-form variants into canonical nodes",
+        "Constrains extraction with a schema (Pydantic model or JSON schema) instead of parsing free text or regex",
+        "Preserves edge direction and allows multiple distinct predicates between the same pair (MultiDiGraph or equivalent)",
+        "Tags entities and relations with their source document so facts are traceable",
+        "Instructs the extractor to emit a per-entity description usable for disambiguation",
+        "Delivered code is syntactically valid Python"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "diagnose-fragmented-graph",
+      "prompt": "i built a knowledge graph out of our postmortems and multi-hop queries keep coming back empty or useless. example: 'which teams are connected to incidents involving the redis cluster' returns basically nothing, even though i can eyeball the graph and see all the pieces are in there somewhere. the graph is at GRAPH_PATH. what's actually wrong with it and how do i fix it?",
+      "expected_output": "Identifies unresolved duplicate entities (J. Okonkwo/Jane Okonkwo, ledger-api/Ledger API, Meridian Payments/MP checkout, R./Rosa Vasquez) splitting the graph into 4 disconnected components, and prescribes entity resolution.",
+      "files": [
+        "broken_graph.json"
+      ],
+      "assertions": [
+        "Identifies unresolved duplicate entities as the root cause",
+        "Names at least 3 of the 4 duplicate pairs (J. Okonkwo/Jane Okonkwo, ledger-api/Ledger API, Meridian Payments/MP checkout, R. Vasquez/Rosa Vasquez)",
+        "Reports that the graph splits into multiple disconnected components and states the count (4)",
+        "Prescribes an entity-resolution pass as the fix",
+        "Notes that pure string similarity is insufficient for at least one of these cases",
+        "Traces the specific failed query to the duplicates that break its path"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "extraction-eval-setup",
+      "prompt": "i keep tweaking the prompt i use to pull entities and relationships out of documents and honestly i can't tell if it's getting better or if i'm just fooling myself. every run looks fine when i squint at it. how do i set up a way to actually measure this? my corpus is at CORPUS_PATH.",
+      "expected_output": "A gold-set format, an alias map for surface variants, a runnable P/R/F1 scorer, and the caveat that predicate-insensitive relation scoring is an upper bound.",
+      "files": [
+        "corpus/"
+      ],
+      "assertions": [
+        "Specifies a concrete gold-set file format with a worked example",
+        "Uses precision, recall, and F1 as the metrics",
+        "Includes an alias/canonicalization map so surface variants are not scored as misses",
+        "Warns that relation scoring ignoring predicate wording is an upper bound on recall",
+        "Advises hand-labeling only a small number of representative documents rather than the whole corpus",
+        "Notes run-to-run non-determinism and advises repeat runs before believing a delta",
+        "Provides a runnable scorer script"
+      ]
+    }
+  ]
+}
