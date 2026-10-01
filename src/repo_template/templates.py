@@ -41,7 +41,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         dependencies = []
 
         [build-system]
-        requires = ["uv_build>=0.12.13,<0.13.0"]
+        requires = ["uv_build>=0.12.17,<0.13.0"]
         build-backend = "uv_build"
 
         [dependency-groups]
@@ -330,8 +330,10 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
           quality:
             runs-on: ubuntu-latest
             steps:
-              - uses: actions/checkout@v7
-              - uses: astral-sh/setup-uv@v10
+              - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                  persist-credentials: false
+              - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
                 with:
                   enable-cache: true
               - run: uv python install

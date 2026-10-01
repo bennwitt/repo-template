@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -41,3 +42,13 @@ def test_baseline_pins_match_this_repository() -> None:
 
     assert baseline["build-system"]["requires"] == ours["build-system"]["requires"]
     assert set(ours["dependency-groups"]["dev"]) <= set(baseline["dependency-groups"]["dev"])
+
+
+def test_workflow_actions_are_pinned_to_a_commit() -> None:
+    """Tags can move or disappear (setup-uv stopped publishing a floating v10); SHAs can't."""
+    uses = re.findall(r"uses:\s*(\S+)(.*)", _baseline()[".github/workflows/ci.yml"])
+
+    assert uses
+    for action, comment in uses:
+        assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", action), action
+        assert re.fullmatch(r"\s*# v\d+(\.\d+)*", comment), f"{action} needs a # vX.Y.Z comment"
