@@ -139,7 +139,8 @@ from `pyproject.toml`. Files that already exist and differ from the standard are
 **Preserved for manual review**. Compare them with a freshly generated repository, merge by
 hand, and run `update` again. `update` also configures the Git hook path (skip with
 `--no-hooks`) and creates `uv.lock` when it is missing or refreshes it when `pyproject.toml`
-changed (skip with `--no-lock`).
+changed (skip with `--no-lock`). `check` plans the same steps, including the hook path and the
+lockfile, so a clean `check` means `update` has nothing to do.
 
 ### Exit codes
 
@@ -255,8 +256,6 @@ plugin, and follow `writing-for-agents`.
 
 ## Current limitations
 
-- `check` compares files only. It doesn't report a missing `uv.lock` or an unset
-  `core.hooksPath`, both of which `update` fixes.
 - `globals` adds and replaces links but doesn't remove links to skills deleted from the catalog.
 - An invalid `--standards-root` silently falls back to `$AI_DEV_STANDARDS`, the current
   directory, or the install location.
@@ -279,7 +278,8 @@ uv run repo-template --help
 ```
 
 - Template content: `src/repo_template/templates.py`, one `add()` call per file with its policy.
-- Update and merge logic: `src/repo_template/scaffold.py`. Global linking:
+- File update and merge logic: `src/repo_template/scaffold.py`. Hook path and lockfile, shared
+  by `new`, `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`.
 - When you change generated content, bump the version in `pyproject.toml` and
   `src/repo_template/__init__.py`, add a `CHANGELOG.md` entry, and add tests for any change to
