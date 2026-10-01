@@ -145,3 +145,12 @@ def test_hook_exits_zero_on_bad_input() -> None:
 
     assert process.returncode == 0
     assert process.stdout == ""
+
+
+def test_older_log_path_spelling_is_honored(tmp_path: Path) -> None:
+    root = _repository(tmp_path / "repo", log_path=".ai/skill-usage.log")
+
+    skill_receipt.record(_model_event(root))
+
+    assert json.loads((root / ".ai/skill-usage.log").read_text())["skill"] == "tdd"
+    assert not (root / ".ai/skill-receipts.jsonl").exists()

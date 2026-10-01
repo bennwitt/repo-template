@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.1 - 2026-10-01
+
+Found by adopting the baseline in bidcore, which it didn't generate:
+
+- `update` added `[tool.ruff]` (line length 100) beside an existing `[tool.ruff.lint]`, which made
+  90 more files fail `ruff format --check`. Tool tables are now added only for tools the project
+  doesn't configure at all.
+- `update` created an empty `src/<package>/`, a smoke test for it and a strict `[tool.mypy]`
+  naming it, in a repository whose code sits directly in `src/`. A flat layout is now kept.
+- `update` created a generic `AGENTS.md` beside a `CLAUDE.md` holding the real guide, so Codex
+  read a placeholder. It now reports `CLAUDE.md` for a move into `AGENTS.md` instead.
+- With no description in `pyproject.toml`, the fallback used the checkout directory's name rather
+  than the project's.
+- The skill receipt hook reads the older `log_path` spelling, so a policy using it no longer
+  writes receipts to an unignored file.
+- The `repo-template` skill covers adopting a repository: deciding each preserved managed file,
+  moving `CLAUDE.md`, and repointing references after renaming `CONTEXT.md`.
+
 ## 0.3.0 - 2026-10-01
 
 - Fix CI: `astral-sh/setup-uv` stopped publishing a floating `v10` tag, so every run failed to

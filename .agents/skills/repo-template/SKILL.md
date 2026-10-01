@@ -22,18 +22,25 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
    - Exit 1: an error line names a missing tool (git, uv) or a failed `uv lock`. Fix it, rerun.
    - Exit 2: go to step 3.
 3. **Resolve every preserved file** (each `!` line), by case:
-   - **A managed file the project edited** (CI workflow, PR template, pre-commit hook,
-     `.editorconfig`, `CLAUDE.md`): render a pristine baseline with
+   - **A managed file that differs** (CI workflow, Dependabot config, PR template, pre-commit
+     hook): render a pristine baseline with
      `repo-template new <name> --parent "$(mktemp -d)" --no-git --no-lock` and diff the two.
-     Merge the baseline's improvements into the project's file, keeping the project's intent.
-     When the project deliberately keeps its own version, add the path to `project_owned` in
-     `.repo-template.json` instead. When the intent is unclear, ask the user which version wins.
+     In a repository the baseline didn't generate, every differing managed file lands here,
+     because no generation hash proves it unedited. Decide each file:
+     - the difference is cosmetic, or the baseline is stricter (SHA-pinned actions,
+       `permissions`, `--locked`): copy the baseline version over it;
+     - the project made a deliberate choice: merge the baseline's improvements into the project's
+       file, then add the path to `project_owned` in `.repo-template.json`;
+     - the intent is unclear: ask the user which version wins.
    - **`(invalid JSON)` or `(invalid TOML)`**: the file doesn't parse; VS Code files with comments
      or trailing commas are the usual cause. Rewrite it as strict JSON or TOML with every setting
      kept; Claude Code may ask the user to approve edits under `.vscode/`.
+   - **`CLAUDE.md (now AGENTS.md …)`**: the agent guide lives in `CLAUDE.md`, so Codex can't
+     read it. `git mv CLAUDE.md AGENTS.md`, then write a new `CLAUDE.md` containing only
+     `@AGENTS.md`.
    - **`CONTEXT.md (now GLOSSARY.md …)`**: `git mv CONTEXT.md GLOSSARY.md`, move the Purpose and
      Boundaries sections into `AGENTS.md`, and keep only terms in the glossary, in the format the
-     `domain-modeling` skill describes.
+     `domain-modeling` skill describes. Then repoint every reference: `git grep -n CONTEXT.md`.
    - **`(not a link …)`**: a real folder sits where a skill link belongs. Ask the user before
      moving it.
 

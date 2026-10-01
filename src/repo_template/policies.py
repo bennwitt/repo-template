@@ -157,8 +157,11 @@ def _merge_pyproject(existing: str, desired: str) -> str:
     groups = desired_data.get("dependency-groups", {})
     required = groups.get("dev", []) if isinstance(groups, dict) else []
     proposed = _append_dev_dependencies(existing, [str(item) for item in required])
+    configured = tomllib.loads(existing).get("tool", {})
     for table in ("tool.pytest.ini_options", "tool.ruff", "tool.ruff.lint", "tool.mypy"):
-        if _table_block(proposed, table) is not None:
+        # A tool the project already configures keeps its settings: adding even one table
+        # (say a line length beside an existing [tool.ruff.lint]) changes how the tool behaves.
+        if table.split(".")[1] in configured:
             continue
         block = _table_block(desired, table)
         if block:
@@ -230,7 +233,10 @@ class JsonMerge:
 
 
 class TomlMerge:
-    """Adds missing dev dependencies and tool tables; never touches project metadata."""
+    """Adds missing dev dependencies, and tool tables for tools the project doesn't configure.
+
+    Never touches project metadata or an existing tool's settings.
+    """
 
     def decide(self, existing: str | None, desired: str, recorded: str | None) -> Decision:
         if existing is None:

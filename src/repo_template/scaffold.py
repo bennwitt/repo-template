@@ -45,7 +45,7 @@ def _read_manifest(root: Path) -> dict[str, Any]:
 
 def _infer_context(root: Path) -> ProjectContext:
     project = normalize_project_name(root.name)
-    description = f"{project} project."
+    description = ""
     python_version = "3.12"
     pyproject = root / "pyproject.toml"
     if pyproject.exists():
@@ -66,6 +66,7 @@ def _infer_context(root: Path) -> ProjectContext:
                         python_version = match.group(1)
         except (OSError, tomllib.TOMLDecodeError):
             pass
+    description = description or f"{project} project."
     return ProjectContext(project, package_name(project), description, python_version)
 
 
@@ -102,6 +103,13 @@ def _recorded_hash(manifest: dict[str, Any], relative_path: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _reported(result: Result, relative_path: str) -> bool:
+    """Whether a file is already listed for review, so each file is reported once."""
+    return any(
+        item == relative_path or item.startswith(f"{relative_path} (") for item in result.preserved
+    )
+
+
 def _apply_file(
     root: Path,
     spec: TemplateFile,
@@ -109,12 +117,20 @@ def _apply_file(
     result: Result,
     *,
     check: bool,
+    baseline: dict[str, str],
 ) -> None:
     path = root / spec.relative_path
-    if spec.legacy_path and not path.exists() and (root / spec.legacy_path).exists():
+    if _reported(result, spec.relative_path):
+        return
+    legacy = root / spec.legacy_path if spec.legacy_path else None
+    if (
+        legacy is not None
+        and not path.exists()
+        and legacy.is_file()
+        and legacy.read_text() != baseline.get(str(spec.legacy_path))
+    ):
         result.preserved.append(
-            f"{spec.legacy_path} (now {spec.relative_path}: git mv {spec.legacy_path} "
-            f"{spec.relative_path}, then move sections that aren't terms into AGENTS.md)"
+            f"{spec.legacy_path} (now {spec.relative_path}: {spec.legacy_hint})"
         )
         return
     existing = path.read_text() if path.exists() else None
@@ -203,10 +219,16 @@ def new_project(
     specs = project_files(context)
     result = Result(target)
     for spec in specs:
-        _apply_file(target, spec, {}, result, check=False)
+        _apply_file(target, spec, {}, result, check=False, baseline={})
     _write_manifest(target, _build_manifest(target, context, specs, packs))
     result.created.append(MANIFEST_NAME)
     return result
+
+
+def _uses_package_layout(root: Path, context: ProjectContext) -> bool:
+    """False when the code already lives in src/ but not in src/<package>/: a flat layout."""
+    src = root / "src"
+    return not src.is_dir() or (src / context.package_name).is_dir()
 
 
 def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] = ()) -> Result:
@@ -215,10 +237,11 @@ def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] 
         raise ValueError(f"repository directory does not exist: {root}")
     manifest = _read_manifest(root)
     context = _context_from_manifest(root, manifest)
-    specs = project_files(context)
+    specs = project_files(context, package=_uses_package_layout(root, context))
+    baseline = {spec.relative_path: spec.content for spec in specs}
     result = Result(root)
     for spec in specs:
-        _apply_file(root, spec, manifest, result, check=check)
+        _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
     if not check:
         packs = [*skill_packs(root), *add_packs]
         owned = sorted(_project_owned(manifest))

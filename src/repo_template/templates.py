@@ -16,8 +16,20 @@ def _render(value: str, context: ProjectContext) -> str:
     return _clean(value)
 
 
-def project_files(context: ProjectContext) -> list[TemplateFile]:
-    """Return the complete, rendered Python/uv baseline."""
+MYPY_TABLE = """
+[tool.mypy]
+python_version = "__PYTHON_VERSION__"
+strict = true
+packages = ["__PACKAGE_NAME__"]
+"""
+
+
+def project_files(context: ProjectContext, *, package: bool = True) -> list[TemplateFile]:
+    """Return the complete, rendered Python/uv baseline.
+
+    `package` is False for an existing repository whose code isn't in `src/<package>/`: the
+    package scaffold, its smoke test and the mypy table that names the package are left out.
+    """
     files: list[TemplateFile] = []
 
     def add(
@@ -27,12 +39,15 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         policy: PolicyName = "managed",
         executable: bool = False,
         legacy_path: str | None = None,
+        legacy_hint: str = "",
     ) -> None:
-        files.append(TemplateFile(path, _render(content, context), policy, executable, legacy_path))
+        rendered = _render(content, context)
+        files.append(TemplateFile(path, rendered, policy, executable, legacy_path, legacy_hint))
 
     add(
         "pyproject.toml",
-        """
+        dedent(
+            """
         [project]
         name = "__PROJECT_NAME__"
         version = "0.1.0"
@@ -63,12 +78,9 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
 
         [tool.ruff.lint]
         select = ["E", "F", "I", "B", "UP", "SIM"]
-
-        [tool.mypy]
-        python_version = "__PYTHON_VERSION__"
-        strict = true
-        packages = ["__PACKAGE_NAME__"]
-        """,
+        """
+        )
+        + (MYPY_TABLE if package else ""),
         policy="toml_merge",
     )
     add(
@@ -122,6 +134,9 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         """,
         policy="seed",
         legacy_path="CONTEXT.md",
+        legacy_hint=(
+            "git mv CONTEXT.md GLOSSARY.md, then move sections that aren't terms into AGENTS.md"
+        ),
     )
     add(
         "AGENTS.md",
@@ -146,7 +161,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
 
         ## Layout
 
-        - Application code: `src/__PACKAGE_NAME__/`
+        - Application code: __CODE_PATH__
         - Tests: `tests/`
         - Domain terms: `GLOSSARY.md`
         - Architecture decisions: `docs/adr/`
@@ -159,8 +174,10 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         - Update the Purpose and Boundaries sections above when the system's scope changes.
         - Add an ADR when a durable architectural decision needs explanation.
         - Never commit secrets, `.env`, personal agent state, or credentials.
-        """,
+        """.replace("__CODE_PATH__", "`src/__PACKAGE_NAME__/`" if package else "`src/`"),
         policy="seed",
+        legacy_path="CLAUDE.md",
+        legacy_hint="move its guide into AGENTS.md, then make CLAUDE.md just @AGENTS.md",
     )
     add("CLAUDE.md", "@AGENTS.md")
     add(".python-version", "__PYTHON_VERSION__")
@@ -509,23 +526,24 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         """,
         policy="seed",
     )
-    add(
-        f"src/{context.package_name}/__init__.py",
-        '"""__PROJECT_NAME__ package."""\n\n__version__ = "0.1.0"',
-        policy="seed",
-    )
-    add(f"src/{context.package_name}/py.typed", "")
-    add(
-        "tests/test_smoke.py",
-        """
-        from importlib.metadata import version
+    if package:
+        add(
+            f"src/{context.package_name}/__init__.py",
+            '"""__PROJECT_NAME__ package."""\n\n__version__ = "0.1.0"',
+            policy="seed",
+        )
+        add(f"src/{context.package_name}/py.typed", "")
+        add(
+            "tests/test_smoke.py",
+            """
+            from importlib.metadata import version
 
-        import __PACKAGE_NAME__
+            import __PACKAGE_NAME__
 
 
-        def test_version_matches_package_metadata() -> None:
-            assert __PACKAGE_NAME__.__version__ == version("__PROJECT_NAME__")
-        """,
-        policy="seed",
-    )
+            def test_version_matches_package_metadata() -> None:
+                assert __PACKAGE_NAME__.__version__ == version("__PROJECT_NAME__")
+            """,
+            policy="seed",
+        )
     return files
