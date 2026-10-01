@@ -34,6 +34,11 @@ _Avoid_: patched file
 the hash of each file as generated.
 _Avoid_: lock, state file
 
+**Accepted difference**:
+A managed file the project keeps in its own form, recorded in the manifest with its hash and the
+baseline's hash, so `update` stays quiet until either one changes.
+_Avoid_: exception, waiver
+
 ### Machines and skills
 
 **Portable global**:

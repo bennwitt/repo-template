@@ -20,7 +20,9 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
 2. **Apply.** Run `repo-template update <repo>`.
    - Exit 0: go to step 4.
    - Exit 1: an error line names a missing tool (git, uv) or a failed `uv lock`. Fix it, rerun.
-   - Exit 2: go to step 3.
+   - Exit 2: go to step 3. (A person running `update` in a terminal is asked about each file
+     instead, with a diff and the choice to use the baseline, keep, merge or skip. When the user
+     is at a terminal, offering that is often faster than step 3.)
 3. **Resolve every preserved file** (each `!` line), by case:
    - **A managed file that differs** (CI workflow, Dependabot config, PR template, pre-commit
      hook): render a pristine baseline with

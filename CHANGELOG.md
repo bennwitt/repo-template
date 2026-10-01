@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 - 2026-10-01
+
+- `update` resolves discrepancies itself. In a terminal it shows a diff for each file that differs
+  from the baseline and asks: use the baseline, keep yours, merge change by change, always keep
+  yours, or skip. A file under an old name (`CONTEXT.md`, a `CLAUDE.md` holding the guide) can be
+  moved with `git mv`, followed by a list of lines still mentioning the old name. Decisions apply
+  as they are made. Without a terminal, or with `--no-input`, `update` lists the files as before.
+- "Keep yours" and merged results are recorded as accepted differences in `.repo-template.json`
+  (the file's hash and the baseline's), so `update` asks again only when the baseline's version
+  changes. "Always keep yours" adds the file to `project_owned`.
+
 ## 0.3.1 - 2026-10-01
 
 Found by adopting the baseline in bidcore, which it didn't generate:

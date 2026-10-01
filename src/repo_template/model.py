@@ -37,6 +37,23 @@ class TemplateFile:
     legacy_hint: str = ""
 
 
+@dataclass(frozen=True)
+class Conflict:
+    """A baseline file that update preserved instead of changing: the person decides.
+
+    `moves_to` is set when `path` is the old name of a baseline file (CONTEXT.md, CLAUDE.md);
+    `legacy_baseline` is then what the baseline wants at `path` after the move, if anything.
+    """
+
+    path: str
+    existing: str
+    desired: str
+    reason: str = ""
+    executable: bool = False
+    moves_to: str | None = None
+    legacy_baseline: str | None = None
+
+
 @dataclass
 class Result:
     root: Path
@@ -46,6 +63,7 @@ class Result:
     preserved: list[str] = field(default_factory=list)
     removed: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    conflicts: list[Conflict] = field(default_factory=list)
 
     @property
     def needs_attention(self) -> bool:
