@@ -19,9 +19,10 @@ agents (Claude Code, Codex) find what they need and do their best work.**
 AI agents are only as good as the repository they land in and the workflows they're given.
 
 - **Agents need context in predictable places.** An `AGENTS.md` with the real commands and the
-  system's purpose and boundaries, a `GLOSSARY.md` of domain terms, and ADRs that explain past decisions give an agent the context a new
-  teammate would ask for. Skills such as `domain-modeling`, `codebase-design`,
-  `improve-codebase-architecture` and `grill-with-docs` read and write exactly these files.
+  system's purpose and boundaries, a `GLOSSARY.md` of domain terms, and ADRs that explain past
+  decisions give an agent the context a new teammate would ask for. Skills such as
+  `domain-modeling`, `codebase-design`, `improve-codebase-architecture` and `grill-with-docs`
+  read and write exactly these files.
   Every generated repository has them.
 - **Agents need a fast, strict feedback loop.** `tdd` and `diagnosing-bugs` work only when tests,
   lint and type checks fail loudly. Every repository gets the same `pytest` / `ruff` /
@@ -61,8 +62,8 @@ Every file in the project baseline has a policy that decides what `update` may d
 | **Merged** | `pyproject.toml`, `.gitignore`, `.vscode/*.json` | Adds what is missing and never removes anything: dev dependencies and tool tables in `pyproject.toml`, a marked block in `.gitignore`, missing keys, extension recommendations and tasks in VS Code files. Project metadata and dependencies are not touched. |
 
 Each generated repository commits a `.repo-template.json` manifest that records the template
-version, the project variables, and a SHA-256 of every file as generated. That hash is how
-`update` tells "unchanged since generation, safe to upgrade" from "you edited this, leave it".
+version, the project variables, and a SHA-256 of every managed file as generated. That hash is
+how `update` tells "unchanged since generation, safe to upgrade" from "you edited this, leave it".
 
 ```mermaid
 flowchart TD
@@ -307,8 +308,10 @@ uv run repo-template --help
 ```
 
 - Template content: `src/repo_template/templates.py`, one `add()` call per file with its policy.
-- File update and merge logic: `src/repo_template/scaffold.py`. Hook path and lockfile, shared
-  by `new`, `update` and `check`: `src/repo_template/repository.py`. Global linking:
+- What each policy may do to a file (managed, seed, merged): `src/repo_template/policies.py`,
+  one class per policy behind a single `decide` interface. Applying them to a repository and
+  writing the manifest: `src/repo_template/scaffold.py`. Hook path and lockfile, shared by `new`,
+  `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`.
 - This repository's own CI, hooks, Dependabot config and build pins must match the baseline;
   `tests/test_baseline_sync.py` fails when a Dependabot update here hasn't reached

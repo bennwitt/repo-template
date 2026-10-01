@@ -3,6 +3,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from repo_template.model import ProjectContext, TemplateFile
+from repo_template.policies import PolicyName
 
 
 def _clean(value: str) -> str:
@@ -23,7 +24,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         path: str,
         content: str,
         *,
-        policy: str = "managed",
+        policy: PolicyName = "managed",
         executable: bool = False,
         legacy_path: str | None = None,
     ) -> None:

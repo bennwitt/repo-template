@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from repo_template.model import Result
+from repo_template.policies import merge_marked_block
 
 GITIGNORE_START = "# >>> repo-template personal AI directories"
 GITIGNORE_END = "# <<< repo-template personal AI directories"
@@ -136,16 +137,7 @@ def _link(
 
 
 def _merge_global_gitignore(existing: str) -> str:
-    block = f"{GITIGNORE_START}\n{GITIGNORE_CONTENT}\n{GITIGNORE_END}\n"
-    start = existing.find(GITIGNORE_START)
-    end = existing.find(GITIGNORE_END)
-    if start >= 0 and end >= start:
-        end += len(GITIGNORE_END)
-        if end < len(existing) and existing[end] == "\n":
-            end += 1
-        return existing[:start] + block + existing[end:]
-    prefix = existing.rstrip()
-    return f"{prefix}\n\n{block}" if prefix else block
+    return merge_marked_block(existing, GITIGNORE_CONTENT, GITIGNORE_START, GITIGNORE_END)
 
 
 def _sync_global_gitignore(home: Path, result: Result, *, check: bool) -> None:

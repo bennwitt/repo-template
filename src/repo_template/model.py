@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from repo_template.policies import PolicyName
 
 
 @dataclass(frozen=True)
@@ -27,7 +31,7 @@ class ProjectContext:
 class TemplateFile:
     relative_path: str
     content: str
-    policy: str = "managed"
+    policy: PolicyName = "managed"
     executable: bool = False
     legacy_path: str | None = None
 
