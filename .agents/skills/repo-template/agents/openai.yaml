@@ -1,0 +1,3 @@
+interface:
+  display_name: "Repo template"
+  short_description: "Bring a repository up to the baseline"

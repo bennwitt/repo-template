@@ -211,6 +211,7 @@ flowchart LR
 
 | When you want to… | Use |
 | --- | --- |
+| Bring a repository to this standard | `repo-template` (check, update, resolve preserved files, packs) |
 | Find the right skill or flow | `/ask-matt` |
 | Stress-test a plan | `grilling`, `/grill-me`, `/grill-with-docs` (also writes ADRs and glossary terms) |
 | Turn a discussion into work | `/to-spec`, `/to-tickets`, `/wayfinder` (work larger than one session) |
