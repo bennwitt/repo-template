@@ -78,13 +78,16 @@ run id or timestamp, so a rebuild produces the same keys.
 
 ## Reuse vocabularies before inventing them (2.1.3)
 
-Schema.org, SKOS, the Organization ontology exist. Inside bidcore the existing
-vocabularies are `models.taxonomy` and the relation set of
-`models.rfp_model.ContextRelation`; the `bidcore` domain ontology uses those
-names so edges from this package and from the ETL context builder traverse
-together. A new vocabulary should be documented, self-describing (every term
-has a label and definition — every type has a description), and
-versioned.
+Schema.org, SKOS and the Organization ontology exist; prefer their terms over
+new ones where they fit.
+
+Where the consuming application already has a vocabulary, match it, so that
+edges from this pipeline and edges the application writes itself traverse
+together. Keeping that alignment is the consuming repository's job: a copy of
+the other side's vocabulary kept here would drift silently.
+
+A new vocabulary should be documented, self-describing (every term has a label
+and a definition, and every type has a description), and versioned.
 
 ## Accuracy is a design input (1)
 

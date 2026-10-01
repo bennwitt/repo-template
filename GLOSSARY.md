@@ -53,6 +53,10 @@ A named group of catalog skills, defined in `.agents/skill-packs.json`, that are
 repositories whose manifest lists the pack, not into every machine.
 _Avoid_: skill bundle, plugin
 
+**Skill override**:
+A frontmatter edit to a vendored skill, kept in `.agents/skill-overrides.json` and re-applied by
+`globals` after `npx skills update` replaces the skill.
+
 **Skill mirror**:
 `.claude/skills/` in the standards repository: one relative link per catalog skill.
 

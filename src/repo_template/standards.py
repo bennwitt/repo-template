@@ -9,6 +9,7 @@ from pathlib import Path
 
 from repo_template.model import Result
 from repo_template.policies import merge_marked_block
+from repo_template.skillfile import set_field
 
 GITIGNORE_START = "# >>> repo-template personal AI directories"
 GITIGNORE_END = "# <<< repo-template personal AI directories"
@@ -17,6 +18,7 @@ GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/"
 
 SKILL_MIRROR_TARGET = Path("../../.agents/skills")
 SKILL_PACKS_NAME = "skill-packs.json"
+SKILL_OVERRIDES_NAME = "skill-overrides.json"
 
 
 def _is_standards_root(path: Path) -> bool:
@@ -73,6 +75,48 @@ def load_skill_packs(agents_dir: Path) -> dict[str, list[str]]:
             raise ValueError(f"{path}: pack {name!r} needs a list of skill names under 'skills'")
         packs[name] = skills
     return packs
+
+
+def load_skill_overrides(agents_dir: Path) -> dict[str, dict[str, str | bool]]:
+    """Read <agents_dir>/skill-overrides.json: {"skill": {"why": ..., "frontmatter": {...}}}."""
+    path = agents_dir / SKILL_OVERRIDES_NAME
+    if not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"cannot read {path}: {exc}") from exc
+    overrides: dict[str, dict[str, str | bool]] = {}
+    for name, entry in raw.items() if isinstance(raw, dict) else []:
+        fields = entry.get("frontmatter") if isinstance(entry, dict) else None
+        if not isinstance(fields, dict) or not all(
+            isinstance(value, str | bool) for value in fields.values()
+        ):
+            raise ValueError(
+                f"{path}: {name!r} needs a 'frontmatter' object of strings or booleans"
+            )
+        overrides[name] = fields
+    return overrides
+
+
+def apply_skill_overrides(standards_root: Path, result: Result, *, check: bool) -> None:
+    """Re-apply local frontmatter edits that `npx skills update` would otherwise overwrite."""
+    agents = standards_root / ".agents"
+    for name, fields in load_skill_overrides(agents).items():
+        path = agents / "skills" / name / "SKILL.md"
+        if not path.is_file():
+            result.errors.append(f"{SKILL_OVERRIDES_NAME} overrides {name!r}, not in the catalog")
+            continue
+        text = path.read_text()
+        updated = text
+        for key, value in fields.items():
+            updated = set_field(updated, key, value)
+        if updated == text:
+            result.unchanged.append(str(path))
+            continue
+        result.updated.append(f"{path} (override)")
+        if not check:
+            path.write_text(updated)
 
 
 def _prune_links(
@@ -252,6 +296,7 @@ def sync_globals(
         check=check,
     )
 
+    apply_skill_overrides(standards_root, result, check=check)
     skill_root = standards_root / ".agents/skills"
     names = skill_names(standards_root)
     packs = load_skill_packs(standards_root / ".agents")

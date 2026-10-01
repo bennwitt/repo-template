@@ -292,6 +292,14 @@ git add .agents/skills/some-skill .claude/skills/some-skill
 git commit -m "Add some-skill skill"
 ```
 
+To change a vendored skill's description or other frontmatter, don't edit its `SKILL.md`:
+`npx skills update` would overwrite the edit. Add it to `.agents/skill-overrides.json` with a
+`why`, and `repo-template globals` re-applies it after every update (a test fails until it does):
+
+```json
+{"langchain-rag": {"why": "Upstream triggers on any RAG work.", "frontmatter": {"description": "…"}}}
+```
+
 `npx skills` records each skill's source in `.agents/.skill-lock.json`, which is committed, so
 every machine can update from the same sources. On every other machine, run
 `git pull && repo-template globals`. To remove a skill, delete its

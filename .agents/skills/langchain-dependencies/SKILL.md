@@ -1,6 +1,6 @@
 ---
 name: langchain-dependencies
-description: "INVOKE THIS SKILL when setting up a new project or when asked about package versions, installation, or dependency management for LangChain, LangGraph, LangSmith, or Deep Agents. Covers required packages, minimum versions, environment requirements, versioning best practices, and common community tool packages for both Python and TypeScript."
+description: "INVOKE THIS SKILL when installing, upgrading, or choosing versions of LangChain, LangGraph, LangSmith, or Deep Agents packages, in Python or TypeScript. Covers required packages, minimum versions, environment requirements, versioning practices, and common community tool packages. Not for setting up projects that don't use LangChain."
 ---
 
 <overview>

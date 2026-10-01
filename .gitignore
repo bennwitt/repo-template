@@ -40,6 +40,7 @@ CLAUDE.local.md
 /.agents/*
 !/.agents/.skill-lock.json
 !/.agents/skill-packs.json
+!/.agents/skill-overrides.json
 !/.agents/skills/
 !/.agents/skills/**
 !/.agents/hooks/

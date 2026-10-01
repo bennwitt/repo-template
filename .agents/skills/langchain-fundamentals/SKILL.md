@@ -1,6 +1,6 @@
 ---
 name: langchain-fundamentals
-description: Create LangChain agents with create_agent, define tools, and use middleware for human-in-the-loop and error handling.
+description: "Create LangChain agents with create_agent, define tools, and use middleware for human-in-the-loop and error handling. Use when writing or debugging LangChain agent code in Python or TypeScript."
 ---
 
 <oneliner>
