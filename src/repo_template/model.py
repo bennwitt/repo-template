@@ -29,6 +29,7 @@ class TemplateFile:
     content: str
     policy: str = "managed"
     executable: bool = False
+    legacy_path: str | None = None
 
 
 @dataclass
@@ -38,8 +39,9 @@ class Result:
     updated: list[str] = field(default_factory=list)
     unchanged: list[str] = field(default_factory=list)
     preserved: list[str] = field(default_factory=list)
+    removed: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
     @property
     def needs_attention(self) -> bool:
-        return bool(self.created or self.updated or self.preserved or self.errors)
+        return bool(self.created or self.updated or self.removed or self.preserved or self.errors)

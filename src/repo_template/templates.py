@@ -25,8 +25,9 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         *,
         policy: str = "managed",
         executable: bool = False,
+        legacy_path: str | None = None,
     ) -> None:
-        files.append(TemplateFile(path, _render(content, context), policy, executable))
+        files.append(TemplateFile(path, _render(content, context), policy, executable, legacy_path))
 
     add(
         "pyproject.toml",
@@ -40,7 +41,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         dependencies = []
 
         [build-system]
-        requires = ["uv_build>=0.11.15,<0.13.0"]
+        requires = ["uv_build>=0.12.13,<0.13.0"]
         build-backend = "uv_build"
 
         [dependency-groups]
@@ -103,32 +104,36 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         policy="seed",
     )
     add(
-        "CONTEXT.md",
+        "GLOSSARY.md",
         """
-        # Project context
-
-        ## Purpose
+        # __PROJECT_NAME__
 
         __DESCRIPTION__
 
-        ## Domain language
+        ## Language
 
-        Record the important business terms and their precise meanings here.
+        <!-- Add a term once its meaning is settled. Terms only: no implementation details.
 
-        ## Boundaries
-
-        Record what this system owns, what it integrates with, and what is out of scope.
-
-        ## Decisions
-
-        Significant architectural decisions belong in `docs/adr/`.
+        **Term**:
+        One or two sentences on what it is.
+        _Avoid_: other words for the same thing
+        -->
         """,
         policy="seed",
+        legacy_path="CONTEXT.md",
     )
     add(
         "AGENTS.md",
         """
         # Repository guide
+
+        ## Purpose
+
+        __DESCRIPTION__
+
+        ## Boundaries
+
+        Record what this system owns, what it integrates with, and what is out of scope.
 
         ## Commands
 
@@ -142,13 +147,15 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
 
         - Application code: `src/__PACKAGE_NAME__/`
         - Tests: `tests/`
+        - Domain terms: `GLOSSARY.md`
         - Architecture decisions: `docs/adr/`
 
         ## Working agreements
 
         - Keep changes scoped and add tests for behavior changes.
         - Use `uv` for dependencies and commands; commit `uv.lock`.
-        - Update `CONTEXT.md` when domain language or boundaries change.
+        - Add a term to `GLOSSARY.md` once its meaning is settled; keep it to terms only.
+        - Update the Purpose and Boundaries sections above when the system's scope changes.
         - Add an ADR when a durable architectural decision needs explanation.
         - Never commit secrets, `.env`, personal agent state, or credentials.
         """,

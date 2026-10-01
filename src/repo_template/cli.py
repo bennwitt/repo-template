@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import argparse
 import re
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 from repo_template.model import Result
-from repo_template.scaffold import new_project, normalize_project_name, update_project
+from repo_template.repository import create_repository, update_repository
+from repo_template.scaffold import normalize_project_name
 from repo_template.standards import find_standards_root, sync_globals
 
 
@@ -45,8 +44,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     update.add_argument("--no-lock", action="store_true", help="do not create or refresh uv.lock")
 
-    check = subparsers.add_parser("check", help="report missing or conflicting standards")
+    check = subparsers.add_parser(
+        "check", help="report what update would change, without writing anything"
+    )
     check.add_argument("path", type=Path, nargs="?", default=Path.cwd())
+    check.add_argument("--no-hooks", action="store_true", help="ignore the Git hook path")
+    check.add_argument("--no-lock", action="store_true", help="ignore uv.lock")
 
     globals_parser = subparsers.add_parser(
         "globals", help="connect global Codex and Claude configuration to this standards repo"
@@ -56,51 +59,6 @@ def _parser() -> argparse.ArgumentParser:
         "--check", action="store_true", help="report changes without applying them"
     )
     return parser
-
-
-def _configure_hooks(root: Path) -> str | None:
-    if not (root / ".git").exists() or not shutil.which("git"):
-        return None
-    process = subprocess.run(
-        ["git", "config", "core.hooksPath", ".githooks"],
-        cwd=root,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    if process.returncode:
-        return process.stderr.strip() or "could not configure Git hooks"
-    return None
-
-
-def _initialize_git(root: Path) -> str | None:
-    if not shutil.which("git"):
-        return "git is not installed; repository files were still created"
-    process = subprocess.run(
-        ["git", "init", "-b", "main"],
-        cwd=root,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    if process.returncode:
-        return process.stderr.strip() or "git init failed"
-    return _configure_hooks(root)
-
-
-def _create_lock(root: Path) -> str | None:
-    if not shutil.which("uv"):
-        return "uv is not installed; run `uv lock` after installing it"
-    process = subprocess.run(
-        ["uv", "lock"],
-        cwd=root,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    if process.returncode:
-        return process.stderr.strip() or "uv lock failed"
-    return None
 
 
 def _print_result(result: Result, *, check: bool = False) -> None:
@@ -114,6 +72,11 @@ def _print_result(result: Result, *, check: bool = False) -> None:
         print(f"{verb} ({len(result.updated)}):")
         for path in result.updated:
             print(f"  ~ {path}")
+    verb = "Would remove" if check else "Removed"
+    if result.removed:
+        print(f"{verb} ({len(result.removed)}):")
+        for path in result.removed:
+            print(f"  - {path}")
     if result.preserved:
         print(f"Preserved for manual review ({len(result.preserved)}):")
         for path in result.preserved:
@@ -122,7 +85,7 @@ def _print_result(result: Result, *, check: bool = False) -> None:
         print(f"Errors ({len(result.errors)}):", file=sys.stderr)
         for error in result.errors:
             print(f"  x {error}", file=sys.stderr)
-    if not result.created and not result.updated and not result.preserved and not result.errors:
+    if not result.needs_attention:
         print("Standards are current.")
 
 
@@ -130,42 +93,29 @@ def _new(args: argparse.Namespace) -> int:
     project = normalize_project_name(args.name)
     target = args.parent.expanduser().resolve() / project
     description = args.description or f"{project} project."
-    result = new_project(
+    result = create_repository(
         target,
         name=project,
         description=description,
         python_version=args.python,
+        git=not args.no_git,
+        lock=not args.no_lock,
     )
-    if not args.no_git:
-        error = _initialize_git(target)
-        if error:
-            result.errors.append(error)
-    if not args.no_lock:
-        error = _create_lock(target)
-        if error:
-            result.errors.append(error)
     _print_result(result)
     print(f"\nRepository: {target}")
     return 1 if result.errors else 0
 
 
 def _update(args: argparse.Namespace) -> int:
-    result = update_project(args.path)
-    if not args.no_hooks:
-        error = _configure_hooks(result.root)
-        if error:
-            result.errors.append(error)
-    pyproject_changed = "pyproject.toml" in result.created or "pyproject.toml" in result.updated
-    if not args.no_lock and (pyproject_changed or not (result.root / "uv.lock").exists()):
-        error = _create_lock(result.root)
-        if error:
-            result.errors.append(error)
+    result = update_repository(args.path, hooks=not args.no_hooks, lock=not args.no_lock)
     _print_result(result)
     return 2 if result.preserved else (1 if result.errors else 0)
 
 
 def _check(args: argparse.Namespace) -> int:
-    result = update_project(args.path, check=True)
+    result = update_repository(
+        args.path, check=True, hooks=not args.no_hooks, lock=not args.no_lock
+    )
     _print_result(result, check=True)
     return 1 if result.needs_attention else 0
 
