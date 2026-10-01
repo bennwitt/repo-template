@@ -85,7 +85,7 @@ Running `update` a second time changes nothing.
 - links `~/.agents` → `<standards>/.agents` (Codex and the `npx skills` CLI read global skills
   from here);
 - links `~/.claude/settings.json` → `<standards>/.claude/settings.json` (model, effort level,
-  enabled plugins, and deny rules for reading `.env` and key files);
+  enabled plugins, deny rules for reading `.env` and key files, and the skill receipt hooks);
 - creates one link per skill, `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`,
   and removes links that point at a skill no longer in the catalog;
 - keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
@@ -173,7 +173,7 @@ my-service/
 ├── .github/               # CI, Dependabot (uv and Actions), PR and issue templates
 ├── .vscode/               # interpreter, pytest, Ruff on save, tasks
 ├── .env.example           # .env, *.pem and *.key are ignored
-├── .ai/receipt-policy.json
+├── .ai/receipt-policy.json # turns on skill receipts (see below)
 └── .repo-template.json    # ownership manifest: commit it
 ```
 
@@ -227,6 +227,28 @@ the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `
 
 Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
 `.claude/settings.json` rather than vendored here.
+
+### Skill receipts
+
+Every generated repository has `.ai/receipt-policy.json`. It turns on a record of which skills
+ran there:
+
+```json
+{"mode": "announce", "logPath": ".ai/skill-receipts.jsonl"}
+```
+
+The portable Claude settings register `.agents/hooks/skill_receipt.py` for two hook events:
+`PostToolUse` on the `Skill` tool (the model or a subagent used a skill) and `UserPromptExpansion`
+(you typed `/skill-name`). Each use appends one line to the log:
+
+```json
+{"time": "2026-10-01T20:26:36+00:00", "skill": "tdd", "trigger": "user", "source": "userSettings", "session": "…", "args": "add login"}
+```
+
+`mode` is `off`, `log` (append only) or `announce` (append and show a one-line notice in the
+session). Repositories without a policy file are ignored, the log is ignored by Git, and the hook
+always exits cleanly, so it can never block a session. Receipts cover Claude Code only; Codex has
+hooks, but no event that reliably identifies a skill.
 
 ### Add, update, or remove a skill
 

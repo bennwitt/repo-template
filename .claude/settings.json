@@ -29,5 +29,28 @@
       "Read(./**/*.pem)",
       "Read(./**/*.key)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.agents/hooks/skill_receipt.py\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptExpansion": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.agents/hooks/skill_receipt.py\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
   }
 }

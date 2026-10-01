@@ -27,6 +27,8 @@ htmlcov/
 /.agents/*
 !/.agents/skills/
 !/.agents/skills/**
+!/.agents/hooks/
+!/.agents/hooks/**
 !/.claude/
 /.claude/*
 !/.claude/settings.json
