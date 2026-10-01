@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0 - 2026-10-01
+
+- Fix CI: `astral-sh/setup-uv` stopped publishing a floating `v10` tag, so every run failed to
+  resolve it. Actions are now pinned to commit SHAs with version comments, and checkout no
+  longer persists credentials. A test keeps workflow actions SHA-pinned.
+- Replace the PR template with type-of-change and areas checklists, action-and-outcome
+  verification steps, the quality checks, and a risk and rollback section.
+- Skill packs: domain skills (`langchain`, `agent-evals`, `gradio`, `knowledge-graph`,
+  `typescript`) load only in repositories that opt in with `new`/`update --pack NAME`.
+- Skill overrides: `.agents/skill-overrides.json` keeps local frontmatter edits to vendored skills
+  across `npx skills update`; used to narrow seven over-broad or over-long descriptions.
+- `project_owned` in `.repo-template.json` lets a repository keep its own version of a managed
+  file without `update` exiting `2` forever.
+- Add a `repo-template` skill, and the `uv`, `ruff`, `supply-chain-risk-auditor`,
+  `property-based-testing`, `github-actions-hardening`, `skill-scanner` and `pr` skills. Every
+  vendored skill except the local `knowledge-graph-extraction` now has a recorded source.
+- File policies move into `policies.py` behind one `decide` interface; the manifest records
+  hashes only for managed files. The shared marker-block merge no longer expands backslash
+  sequences in ignore rules.
+- This repository passes its own `check`, enforced by a test. The baseline's smoke test now
+  compares `__version__` with package metadata instead of hard-coding `0.1.0`.
+
 ## 0.2.0 - 2026-10-01
 
 - Generate `GLOSSARY.md` (terms only) instead of `CONTEXT.md`, following the mattpocock skills'
