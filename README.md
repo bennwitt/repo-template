@@ -87,8 +87,9 @@ Running `update` a second time changes nothing.
   from here);
 - links `~/.claude/settings.json` → `<standards>/.claude/settings.json` (model, effort level,
   enabled plugins, deny rules for reading `.env` and key files, and the skill receipt hooks);
-- creates one link per skill, `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`,
-  and removes links that point at a skill no longer in the catalog;
+- creates one link per skill that isn't in a skill pack,
+  `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`, and removes links to skills
+  that were deleted or moved into a pack;
 - keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
   they work on every machine);
 - adds `.agents/`, `.claude/` and `.codex/` to your global Git ignore, so personal agent
@@ -221,15 +222,36 @@ Run `/setup-matt-pocock-skills` once in each repository. It records where issues
 the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `to-spec`,
 `to-tickets` and `triage` read.
 
-### Domain and tooling packs
+### Other global skills
+
+| Area | Skills | Source |
+| --- | --- | --- |
+| Agent and Git hygiene | `find-skills`, `git-guardrails-claude-code`, `resolving-merge-conflicts` | vercel-labs/skills, mattpocock/skills |
+
+### Skill packs: domain skills only where they apply
+
+A skill's description is listed in every session, so a LangChain skill costs context in a repository
+that has nothing to do with LangChain, and its broad triggers can fire there. Skills that only make
+sense in some repositories are grouped into packs in `.agents/skill-packs.json`. `globals` doesn't
+link pack skills into `~/.claude/skills`; a repository opts in instead:
+
+```bash
+repo-template new my-agent --pack langchain        # start with a pack
+repo-template update /path/to/repo --pack gradio   # add one later (also applies the baseline)
+```
+
+The pack is recorded under `skill_packs` in `.repo-template.json`, and `update` links each of its
+skills into the repository's `.claude/skills/` (ignored by Git) as links to `~/.agents/skills/`.
+To drop a pack, remove it from `skill_packs` and run `update`; its links are removed and nothing
+else in `.claude/skills/` is touched. On another machine, `update` recreates the links.
 
 | Pack | Skills | Source |
 | --- | --- | --- |
-| LangChain, LangGraph, Deep Agents, LangSmith | `ecosystem-primer` (start here), `langchain-*`, `langgraph-*`, `deep-agents-*`, `deepagents-*-quickstart`, `managed-deep-agents`, `langsmith-online-eval-engineering`, `eval-engineering` | langchain-ai/langchain-skills |
-| Knowledge graphs | `knowledge-graph-extraction` | local |
-| Gradio | `gradio`, `hf-gradio` | gradio-app |
-| Agent and Git hygiene | `find-skills`, `git-guardrails-claude-code`, `resolving-merge-conflicts` | vercel-labs/skills, mattpocock/skills |
-| TypeScript | `setup-ts-deep-modules`, `migrate-to-shoehorn` | mattpocock/skills |
+| `langchain` | `ecosystem-primer` (start here), `langchain-*`, `langgraph-*`, `deep-agents-*`, `deepagents-*-quickstart`, `managed-deep-agents`, `langsmith-online-eval-engineering` | langchain-ai/langchain-skills |
+| `agent-evals` | `eval-engineering` | langchain-ai/langchain-skills |
+| `gradio` | `gradio`, `hf-gradio` | gradio-app/gradio |
+| `knowledge-graph` | `knowledge-graph-extraction` | local |
+| `typescript` | `setup-ts-deep-modules`, `migrate-to-shoehorn` | mattpocock/skills |
 
 Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
 `.claude/settings.json` rather than vendored here.
@@ -295,6 +317,8 @@ plugin, and follow `writing-for-agents`.
   them; reinstall them with `npx skills add` to track them.
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
+- Skill packs scope skills for Claude Code only. Codex reads every skill in `~/.agents/skills`,
+  so it still sees pack skills everywhere.
 - Python/uv is the only project profile.
 
 ## Developing this repository

@@ -4,6 +4,7 @@ import json
 import os
 import re
 import tomllib
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -133,8 +134,17 @@ def _apply_file(
         _write(path, decision.content, spec.executable)
 
 
+def skill_packs(root: Path) -> list[str]:
+    """The skill packs a repository's manifest lists."""
+    packs = _read_manifest(root).get("skill_packs", [])
+    return [pack for pack in packs if isinstance(pack, str)] if isinstance(packs, list) else []
+
+
 def _build_manifest(
-    root: Path, context: ProjectContext, specs: list[TemplateFile]
+    root: Path,
+    context: ProjectContext,
+    specs: list[TemplateFile],
+    packs: Sequence[str] = (),
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
@@ -144,7 +154,7 @@ def _build_manifest(
         recorded = POLICIES[spec.policy].record(path.read_text(), spec.content)
         if recorded is not None:
             records[spec.relative_path] = {"policy": spec.policy, "sha256": recorded}
-    return {
+    manifest: dict[str, Any] = {
         "schema": 1,
         "template_version": __version__,
         "profile": "python-uv",
@@ -156,6 +166,9 @@ def _build_manifest(
         },
         "files": records,
     }
+    if packs:
+        manifest["skill_packs"] = sorted(set(packs))
+    return manifest
 
 
 def _write_manifest(root: Path, manifest: dict[str, Any]) -> None:
@@ -169,6 +182,7 @@ def new_project(
     name: str,
     description: str,
     python_version: str,
+    packs: Sequence[str] = (),
 ) -> Result:
     target = target.resolve()
     if target.exists() and any(target.iterdir()):
@@ -180,12 +194,12 @@ def new_project(
     result = Result(target)
     for spec in specs:
         _apply_file(target, spec, {}, result, check=False)
-    _write_manifest(target, _build_manifest(target, context, specs))
+    _write_manifest(target, _build_manifest(target, context, specs, packs))
     result.created.append(MANIFEST_NAME)
     return result
 
 
-def update_project(root: Path, *, check: bool = False) -> Result:
+def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] = ()) -> Result:
     root = root.resolve()
     if not root.is_dir():
         raise ValueError(f"repository directory does not exist: {root}")
@@ -196,5 +210,6 @@ def update_project(root: Path, *, check: bool = False) -> Result:
     for spec in specs:
         _apply_file(root, spec, manifest, result, check=check)
     if not check:
-        _write_manifest(root, _build_manifest(root, context, specs))
+        packs = [*skill_packs(root), *add_packs]
+        _write_manifest(root, _build_manifest(root, context, specs, packs))
     return result

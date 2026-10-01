@@ -1,0 +1,53 @@
+{
+  "langchain": {
+    "description": "LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills)",
+    "skills": [
+      "deep-agents-core",
+      "deep-agents-memory",
+      "deep-agents-orchestration",
+      "deepagents-python-quickstart",
+      "deepagents-typescript-quickstart",
+      "ecosystem-primer",
+      "langchain-dependencies",
+      "langchain-fundamentals",
+      "langchain-middleware",
+      "langchain-python-quickstart",
+      "langchain-rag",
+      "langchain-typescript-quickstart",
+      "langgraph-cli",
+      "langgraph-fundamentals",
+      "langgraph-human-in-the-loop",
+      "langgraph-persistence",
+      "langgraph-python-quickstart",
+      "langgraph-typescript-quickstart",
+      "langsmith-online-eval-engineering",
+      "managed-deep-agents"
+    ]
+  },
+  "agent-evals": {
+    "description": "Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration)",
+    "skills": [
+      "eval-engineering"
+    ]
+  },
+  "gradio": {
+    "description": "Building Gradio apps and calling Gradio apps through their API",
+    "skills": [
+      "gradio",
+      "hf-gradio"
+    ]
+  },
+  "knowledge-graph": {
+    "description": "Extracting knowledge graphs from text",
+    "skills": [
+      "knowledge-graph-extraction"
+    ]
+  },
+  "typescript": {
+    "description": "TypeScript repositories (deep-module boundaries, shoehorn test data)",
+    "skills": [
+      "migrate-to-shoehorn",
+      "setup-ts-deep-modules"
+    ]
+  }
+}

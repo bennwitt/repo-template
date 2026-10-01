@@ -36,6 +36,13 @@ def _parser() -> argparse.ArgumentParser:
     create.add_argument("--python", type=_python_version, default="3.12")
     create.add_argument("--no-git", action="store_true", help="do not initialize Git")
     create.add_argument("--no-lock", action="store_true", help="do not create uv.lock")
+    create.add_argument(
+        "--pack",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="link a skill pack from ~/.agents/skill-packs.json into the repository",
+    )
 
     update = subparsers.add_parser("update", help="add missing standards safely")
     update.add_argument("path", type=Path, nargs="?", default=Path.cwd())
@@ -43,6 +50,13 @@ def _parser() -> argparse.ArgumentParser:
         "--no-hooks", action="store_true", help="do not configure the repository hook path"
     )
     update.add_argument("--no-lock", action="store_true", help="do not create or refresh uv.lock")
+    update.add_argument(
+        "--pack",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="add a skill pack to the repository's manifest and link it",
+    )
 
     check = subparsers.add_parser(
         "check", help="report what update would change, without writing anything"
@@ -100,6 +114,7 @@ def _new(args: argparse.Namespace) -> int:
         python_version=args.python,
         git=not args.no_git,
         lock=not args.no_lock,
+        packs=args.pack,
     )
     _print_result(result)
     print(f"\nRepository: {target}")
@@ -107,7 +122,9 @@ def _new(args: argparse.Namespace) -> int:
 
 
 def _update(args: argparse.Namespace) -> int:
-    result = update_repository(args.path, hooks=not args.no_hooks, lock=not args.no_lock)
+    result = update_repository(
+        args.path, hooks=not args.no_hooks, lock=not args.no_lock, packs=args.pack
+    )
     _print_result(result)
     return 2 if result.preserved else (1 if result.errors else 0)
 

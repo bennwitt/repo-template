@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Protocol
 
 from repo_template.model import Result
-from repo_template.scaffold import new_project, update_project
+from repo_template.scaffold import new_project, skill_packs, update_project
+from repo_template.standards import sync_project_packs, unknown_packs
 
+AGENTS_DIR = Path.home() / ".agents"
 HOOKS_PATH = ".githooks"
 HOOKS_LABEL = f"git config core.hooksPath {HOOKS_PATH}"
 LOCK_NAME = "uv.lock"
@@ -89,6 +91,14 @@ def _reconcile_lock(root: Path, result: Result, runner: Runner, *, check: bool) 
         bucket.append(LOCK_NAME)
 
 
+def _require_known_packs(packs: Sequence[str], agents_dir: Path) -> None:
+    unknown = unknown_packs(packs, agents_dir)
+    if unknown:
+        raise ValueError(
+            f"unknown skill pack: {', '.join(unknown)} (see {agents_dir / 'skill-packs.json'})"
+        )
+
+
 def create_repository(
     target: Path,
     *,
@@ -97,10 +107,16 @@ def create_repository(
     python_version: str,
     git: bool = True,
     lock: bool = True,
+    packs: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
+    agents_dir: Path = AGENTS_DIR,
 ) -> Result:
     """Render the baseline into an empty directory, then initialize Git and the lockfile."""
-    result = new_project(target, name=name, description=description, python_version=python_version)
+    _require_known_packs(packs, agents_dir)
+    result = new_project(
+        target, name=name, description=description, python_version=python_version, packs=packs
+    )
+    sync_project_packs(result.root, packs, result, check=False, agents_dir=agents_dir)
     if git:
         if not runner.which("git"):
             result.errors.append("git is not installed; repository files were still created")
@@ -121,10 +137,18 @@ def update_repository(
     check: bool = False,
     hooks: bool = True,
     lock: bool = True,
+    packs: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
+    agents_dir: Path = AGENTS_DIR,
 ) -> Result:
-    """Plan (check=True) or apply every change that brings `root` to the baseline."""
-    result = update_project(root, check=check)
+    """Plan (check=True) or apply every change that brings `root` to the baseline.
+
+    `packs` adds skill packs to the repository's manifest; every listed pack is then linked.
+    """
+    _require_known_packs(packs, agents_dir)
+    result = update_project(root, check=check, add_packs=packs)
+    wanted = sorted({*skill_packs(result.root), *packs})
+    sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
     if hooks:
         _reconcile_hooks(result.root, result, runner, check=check)
     if lock:
