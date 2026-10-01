@@ -72,6 +72,11 @@ def _print_result(result: Result, *, check: bool = False) -> None:
         print(f"{verb} ({len(result.updated)}):")
         for path in result.updated:
             print(f"  ~ {path}")
+    verb = "Would remove" if check else "Removed"
+    if result.removed:
+        print(f"{verb} ({len(result.removed)}):")
+        for path in result.removed:
+            print(f"  - {path}")
     if result.preserved:
         print(f"Preserved for manual review ({len(result.preserved)}):")
         for path in result.preserved:
@@ -80,7 +85,7 @@ def _print_result(result: Result, *, check: bool = False) -> None:
         print(f"Errors ({len(result.errors)}):", file=sys.stderr)
         for error in result.errors:
             print(f"  x {error}", file=sys.stderr)
-    if not result.created and not result.updated and not result.preserved and not result.errors:
+    if not result.needs_attention:
         print("Standards are current.")
 
 

@@ -86,7 +86,10 @@ Running `update` a second time changes nothing.
   from here);
 - links `~/.claude/settings.json` → `<standards>/.claude/settings.json` (model, effort level,
   enabled plugins, and deny rules for reading `.env` and key files);
-- creates one link per skill, `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`;
+- creates one link per skill, `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`,
+  and removes links that point at a skill no longer in the catalog;
+- keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
+  they work on every machine);
 - adds `.agents/`, `.claude/` and `.codex/` to your global Git ignore, so personal agent
   configuration never leaks into project repositories.
 
@@ -111,7 +114,8 @@ repo-template globals --standards-root /aiDevStandards           # apply
 
 Because the install is editable, a `git pull` updates the CLI and its templates without a
 reinstall. Set `AI_DEV_STANDARDS=/aiDevStandards` in your shell profile to omit
-`--standards-root`.
+`--standards-root`. A root named either way must be a standards repository, or the command stops
+with an error.
 
 ### Create a repository
 
@@ -232,13 +236,14 @@ straight into the catalog:
 ```bash
 npx skills find changelog                                    # search https://skills.sh
 npx skills add owner/repo --skill some-skill -g -a claude-code codex
-ln -s ../../.agents/skills/some-skill .claude/skills/some-skill   # repository mirror
-repo-template globals                                        # link it for Claude on this machine
+repo-template globals            # links it for Claude and adds the repository mirror link
+uv run pytest                    # validates every SKILL.md and the mirror
 git add .agents/skills/some-skill .claude/skills/some-skill
 git commit -m "Add some-skill skill"
 ```
 
-On every other machine, run `git pull && repo-template globals`. `npx skills update -g`
+On every other machine, run `git pull && repo-template globals`. To remove a skill, delete its
+folder and run `repo-template globals`, which removes the stale links. `npx skills update -g`
 refreshes installed skills from their sources. To write a new skill, use the `skill-creator`
 plugin, and follow `writing-for-agents`.
 
@@ -256,9 +261,6 @@ plugin, and follow `writing-for-agents`.
 
 ## Current limitations
 
-- `globals` adds and replaces links but doesn't remove links to skills deleted from the catalog.
-- An invalid `--standards-root` silently falls back to `$AI_DEV_STANDARDS`, the current
-  directory, or the install location.
 - Dependabot doesn't see template content in `templates.py`, so version pins there (such as
   `uv_build`) can lag behind this repository's own `pyproject.toml`.
 - `.agents/.skill-lock.json`, where `npx skills` records each skill's source, is ignored by Git,
