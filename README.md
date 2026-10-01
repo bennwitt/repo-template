@@ -7,7 +7,7 @@ agents (Claude Code, Codex) find what they need and do their best work.**
 
 1. **A CLI that creates and safely updates Python/uv repositories.** A new repository comes out
    ready to work in: uv, pytest, Ruff, strict mypy, CI, Dependabot, a pre-commit secret scan,
-   and the context files agents read first (`AGENTS.md`, `CONTEXT.md`, `docs/adr/`). Existing
+   and the context files agents read first (`AGENTS.md`, `GLOSSARY.md`, `docs/adr/`). Existing
    repositories move toward the same standard without losing local changes.
 2. **A versioned catalog of agent skills and settings.** `.agents/skills/` holds the skills you
    rely on: test-driven development, bug diagnosis, architecture review, spec → tickets →
@@ -18,8 +18,8 @@ agents (Claude Code, Codex) find what they need and do their best work.**
 
 AI agents are only as good as the repository they land in and the workflows they're given.
 
-- **Agents need context in predictable places.** An `AGENTS.md` with the real commands, a
-  `CONTEXT.md` glossary, and ADRs that explain past decisions give an agent the context a new
+- **Agents need context in predictable places.** An `AGENTS.md` with the real commands and the
+  system's purpose and boundaries, a `GLOSSARY.md` of domain terms, and ADRs that explain past decisions give an agent the context a new
   teammate would ask for. Skills such as `domain-modeling`, `codebase-design`,
   `improve-codebase-architecture` and `grill-with-docs` read and write exactly these files.
   Every generated repository has them.
@@ -57,7 +57,7 @@ Every file in the project baseline has a policy that decides what `update` may d
 | Policy | Files | What `update` does |
 | --- | --- | --- |
 | **Managed** | CI workflow, Dependabot, PR template, pre-commit hook, `.editorconfig`, `.gitattributes`, `.python-version`, `CLAUDE.md` | Upgrades the file to the current standard **only if** it is unchanged since it was generated. Edited files are left alone and reported. |
-| **Seed** | `README.md`, `AGENTS.md`, `CONTEXT.md`, `CHANGELOG.md`, `.env.example`, issue templates, `docs/adr/README.md`, package `__init__.py`, smoke test | Written once if missing, then the file is yours. Never touched again. |
+| **Seed** | `README.md`, `AGENTS.md`, `GLOSSARY.md`, `CHANGELOG.md`, `.env.example`, issue templates, `docs/adr/README.md`, package `__init__.py`, smoke test | Written once if missing, then the file is yours. Never touched again. |
 | **Merged** | `pyproject.toml`, `.gitignore`, `.vscode/*.json` | Adds what is missing and never removes anything: dev dependencies and tool tables in `pyproject.toml`, a marked block in `.gitignore`, missing keys, extension recommendations and tasks in VS Code files. Project metadata and dependencies are not touched. |
 
 Each generated repository commits a `.repo-template.json` manifest that records the template
@@ -141,7 +141,12 @@ repo-template update /path/to/repo   # apply
 For a repository without a manifest, `update` infers the name, description and Python version
 from `pyproject.toml`. Files that already exist and differ from the standard are listed under
 **Preserved for manual review**. Compare them with a freshly generated repository, merge by
-hand, and run `update` again. `update` also configures the Git hook path (skip with
+hand, and run `update` again.
+
+Repositories created before 0.2.0 have a `CONTEXT.md`. The engineering skills now read
+`GLOSSARY.md`, so `update` lists `CONTEXT.md` for manual review rather than renaming a file you
+own: run `git mv CONTEXT.md GLOSSARY.md`, move any Purpose and Boundaries sections into
+`AGENTS.md`, and keep only terms in the glossary. `update` also configures the Git hook path (skip with
 `--no-hooks`) and creates `uv.lock` when it is missing or refreshes it when `pyproject.toml`
 changed (skip with `--no-lock`). `check` plans the same steps, including the hook path and the
 lockfile, so a clean `check` means `update` has nothing to do.
@@ -161,9 +166,9 @@ This makes the CLI easy to script, for example `repo-template check . || echo "s
 
 ```text
 my-service/
-├── AGENTS.md              # commands, layout and working agreements for any agent
+├── AGENTS.md              # purpose, boundaries, commands and working agreements for any agent
 ├── CLAUDE.md              # "@AGENTS.md": Claude reads the same guide as Codex
-├── CONTEXT.md             # domain glossary and system boundaries
+├── GLOSSARY.md            # domain terms only, kept by the domain-modeling skill
 ├── docs/adr/              # architecture decision records
 ├── README.md, CHANGELOG.md
 ├── pyproject.toml         # uv_build, pytest, Ruff, mypy --strict
@@ -311,5 +316,5 @@ uv run repo-template --help
 - When you change generated content, bump the version in `pyproject.toml` and
   `src/repo_template/__init__.py`, add a `CHANGELOG.md` entry, and add tests for any change to
   rendering, conflict handling or symlink behaviour.
-- `CONTEXT.md` defines the domain terms used here: standards repository, project baseline,
-  managed file, seed file, portable global and machine state.
+- `GLOSSARY.md` defines the domain terms used here, such as standards repository, project
+  baseline, managed file, seed file, portable global, machine state and skill receipt.

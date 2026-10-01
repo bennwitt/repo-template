@@ -29,6 +29,7 @@ class TemplateFile:
     content: str
     policy: str = "managed"
     executable: bool = False
+    legacy_path: str | None = None
 
 
 @dataclass

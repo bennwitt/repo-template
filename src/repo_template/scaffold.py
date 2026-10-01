@@ -234,6 +234,12 @@ def _apply_file(
     check: bool,
 ) -> None:
     path = root / spec.relative_path
+    if spec.legacy_path and not path.exists() and (root / spec.legacy_path).exists():
+        result.preserved.append(
+            f"{spec.legacy_path} (now {spec.relative_path}: git mv {spec.legacy_path} "
+            f"{spec.relative_path}, then move sections that aren't terms into AGENTS.md)"
+        )
+        return
     if not path.exists():
         result.created.append(spec.relative_path)
         if not check:

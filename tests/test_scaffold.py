@@ -116,3 +116,31 @@ def test_new_refuses_nonempty_target(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="not empty"):
         new_project(root, name="occupied", description="Occupied.", python_version="3.12")
+
+
+def test_new_project_uses_a_glossary_and_keeps_scope_in_agents_md(tmp_path: Path) -> None:
+    root = tmp_path / "sample"
+    new_project(root, name="sample", description="Handles samples.", python_version="3.12")
+
+    assert (root / "GLOSSARY.md").read_text().startswith("# sample\n\nHandles samples.\n")
+    assert not (root / "CONTEXT.md").exists()
+    agents = (root / "AGENTS.md").read_text()
+    assert "## Purpose\n\nHandles samples." in agents
+    assert "## Boundaries" in agents
+
+
+def test_update_asks_for_a_manual_rename_of_context_md(tmp_path: Path) -> None:
+    root = tmp_path / "older"
+    new_project(root, name="older", description="Older.", python_version="3.12")
+    (root / "GLOSSARY.md").rename(root / "CONTEXT.md")
+
+    result = update_project(root)
+
+    assert not (root / "GLOSSARY.md").exists()
+    assert [item for item in result.preserved if item.startswith("CONTEXT.md")] == [
+        "CONTEXT.md (now GLOSSARY.md: git mv CONTEXT.md GLOSSARY.md, then move sections "
+        "that aren't terms into AGENTS.md)"
+    ]
+
+    (root / "CONTEXT.md").rename(root / "GLOSSARY.md")
+    assert not update_project(root, check=True).needs_attention
