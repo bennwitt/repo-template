@@ -439,6 +439,180 @@
       "skillFolderHash": "a52aba9d263c5f0506c93c187f44e2117adcafa2",
       "installedAt": "2026-09-16T01:06:54.984Z",
       "updatedAt": "2026-09-16T01:21:17.962Z"
+    },
+    "ruff": {
+      "source": "astral-sh/claude-code-plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/astral-sh/claude-code-plugins.git",
+      "skillPath": "plugins/astral/skills/ruff/SKILL.md",
+      "skillFolderHash": "46e64350889df1af25113df450999101f48fd744",
+      "installedAt": "2026-10-01T20:49:55.877Z",
+      "updatedAt": "2026-10-01T20:49:55.877Z"
+    },
+    "uv": {
+      "source": "astral-sh/claude-code-plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/astral-sh/claude-code-plugins.git",
+      "skillPath": "plugins/astral/skills/uv/SKILL.md",
+      "skillFolderHash": "bca0368b210d4b3ce04b4895829afe0dbc6949a8",
+      "installedAt": "2026-10-01T20:49:55.881Z",
+      "updatedAt": "2026-10-01T20:49:55.881Z"
+    },
+    "property-based-testing": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/trailofbits/skills.git",
+      "skillPath": "plugins/property-based-testing/skills/property-based-testing/SKILL.md",
+      "skillFolderHash": "cf5e77d684180c80a2f3aa228c53d04b1fa1ba77",
+      "installedAt": "2026-10-01T20:50:09.777Z",
+      "updatedAt": "2026-10-01T20:50:09.777Z"
+    },
+    "supply-chain-risk-auditor": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/trailofbits/skills.git",
+      "skillPath": "plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor/SKILL.md",
+      "skillFolderHash": "954cc68e05e24a2a14447b60d1e8946b53323b1b",
+      "installedAt": "2026-10-01T20:50:09.782Z",
+      "updatedAt": "2026-10-01T20:50:09.782Z"
+    },
+    "github-actions-hardening": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/github/awesome-copilot.git",
+      "skillPath": "skills/github-actions-hardening/SKILL.md",
+      "skillFolderHash": "25d75a622f5f8c034be5b25bf6585850d6f7fcd7",
+      "installedAt": "2026-10-01T20:50:16.370Z",
+      "updatedAt": "2026-10-01T20:50:16.370Z"
+    },
+    "skill-scanner": {
+      "source": "getsentry/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/getsentry/skills.git",
+      "skillPath": "skills/skill-scanner/SKILL.md",
+      "skillFolderHash": "25e154ab28dda80215e7830778036a9b0933fd09",
+      "installedAt": "2026-10-01T20:50:20.088Z",
+      "updatedAt": "2026-10-01T20:50:20.088Z"
+    },
+    "pr": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/engineering/pr/SKILL.md",
+      "skillFolderHash": "00b896d811adffad747c7ca30078d909d60c7f93",
+      "pluginName": "mattpocock-skills",
+      "installedAt": "2026-10-01T20:50:22.682Z",
+      "updatedAt": "2026-10-01T20:50:22.682Z"
+    },
+    "implement-spec": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/engineering/implement-spec/SKILL.md",
+      "skillFolderHash": "0cfefc751d0cb64f0c948ffcb17e13b94e778f08",
+      "pluginName": "mattpocock-skills",
+      "installedAt": "2026-10-01T20:51:22.641Z",
+      "updatedAt": "2026-10-01T20:51:22.641Z"
+    },
+    "retro": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/engineering/retro/SKILL.md",
+      "skillFolderHash": "335c1862a43da9d629abafdb79ca0c0de118be08",
+      "pluginName": "mattpocock-skills",
+      "installedAt": "2026-10-01T20:51:22.645Z",
+      "updatedAt": "2026-10-01T20:51:22.645Z"
+    },
+    "claude-handoff": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/claude-handoff/SKILL.md",
+      "skillFolderHash": "6845c30e62e1c0c2c0fbdea8307379197f0b4dc4",
+      "installedAt": "2026-10-01T20:51:22.647Z",
+      "updatedAt": "2026-10-01T20:51:22.647Z"
+    },
+    "loop-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/loop-me/SKILL.md",
+      "skillFolderHash": "a0dfdc3562686d920900973b50289b36e2f7eafe",
+      "installedAt": "2026-10-01T20:51:22.649Z",
+      "updatedAt": "2026-10-01T20:51:22.649Z"
+    },
+    "setup-ts-deep-modules": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/setup-ts-deep-modules/SKILL.md",
+      "skillFolderHash": "b32508a8a7d62c07d32d7c5cff84d357719def7f",
+      "installedAt": "2026-10-01T20:51:22.651Z",
+      "updatedAt": "2026-10-01T20:51:22.651Z"
+    },
+    "writing-beats": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/writing-beats/SKILL.md",
+      "skillFolderHash": "3a28fb076fdaaec0927080718abb98fc0f340011",
+      "installedAt": "2026-10-01T20:51:22.653Z",
+      "updatedAt": "2026-10-01T20:51:22.653Z"
+    },
+    "writing-fragments": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/writing-fragments/SKILL.md",
+      "skillFolderHash": "98e500e0097ec80f52f6a024c5a2ff6d15235bdb",
+      "installedAt": "2026-10-01T20:51:22.657Z",
+      "updatedAt": "2026-10-01T20:51:22.657Z"
+    },
+    "writing-shape": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/writing-shape/SKILL.md",
+      "skillFolderHash": "ac92229646fccf7315ae139c37b479b3790617f2",
+      "installedAt": "2026-10-01T20:51:22.658Z",
+      "updatedAt": "2026-10-01T20:51:22.658Z"
+    },
+    "git-guardrails-claude-code": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/misc/git-guardrails-claude-code/SKILL.md",
+      "skillFolderHash": "ceed97af09633b300826d0ca0b1464c527ec9a35",
+      "installedAt": "2026-10-01T20:51:22.660Z",
+      "updatedAt": "2026-10-01T20:51:22.660Z"
+    },
+    "migrate-to-shoehorn": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/misc/migrate-to-shoehorn/SKILL.md",
+      "skillFolderHash": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23",
+      "installedAt": "2026-10-01T20:51:22.661Z",
+      "updatedAt": "2026-10-01T20:51:22.661Z"
+    },
+    "gradio": {
+      "source": "gradio-app/gradio",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/gradio-app/gradio.git",
+      "skillPath": ".agents/skills/gradio/SKILL.md",
+      "skillFolderHash": "ddda04ac8f9eab50d03cae92e9d5d83fd4a50b39",
+      "installedAt": "2026-10-01T20:51:28.308Z",
+      "updatedAt": "2026-10-01T20:51:28.308Z"
+    },
+    "hf-gradio": {
+      "source": "gradio-app/gradio",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/gradio-app/gradio.git",
+      "skillPath": ".agents/skills/hf-gradio/SKILL.md",
+      "skillFolderHash": "cf152b8708e94e97902eb340d24e17fc2a746694",
+      "installedAt": "2026-10-01T20:51:28.311Z",
+      "updatedAt": "2026-10-01T20:51:28.311Z"
     }
   },
   "dismissed": {

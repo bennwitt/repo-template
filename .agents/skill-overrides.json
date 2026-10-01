@@ -5,6 +5,12 @@
       "description": "Discover and install agent skills from the open skills ecosystem (npx skills, skills.sh). Use when the user explicitly asks to find, search for, compare, or install a skill, or asks whether a skill exists for a task. Not for answering ordinary how-to questions."
     }
   },
+  "github-actions-hardening": {
+    "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the catalog of topics.",
+    "frontmatter": {
+      "description": "Security review and hardening of GitHub Actions workflows (.github/workflows/*.yml): script injection through ${{ }} expressions, pull_request_target and workflow_run privilege escalation, SHA-pinning actions, least-privilege GITHUB_TOKEN permissions, and secret exposure. Use when writing a workflow, or when asked to review, audit, harden, or pin a workflow or its actions."
+    }
+  },
   "langchain-dependencies": {
     "why": "Upstream triggers on \"setting up a new project\" of any kind.",
     "frontmatter": {
@@ -27,6 +33,12 @@
     "why": "Upstream triggers on building ANY RAG system, whatever the framework.",
     "frontmatter": {
       "description": "INVOKE THIS SKILL when building a retrieval-augmented generation (RAG) system with LangChain. Covers LangChain document loaders, RecursiveCharacterTextSplitter, embeddings, and vector stores (Chroma, FAISS, Pinecone). Not for RAG built without LangChain."
+    }
+  },
+  "property-based-testing": {
+    "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the long list of cases.",
+    "frontmatter": {
+      "description": "Write, review, and debug property-based tests (Hypothesis, fast-check, proptest, jqwik, rapid). Use when tests should cover a whole input domain rather than hand-picked examples: round-trips such as encode/decode, parsers and normalizers, idempotent operations, invariants, and ordering, or when judging a shrunk counterexample. Not for coverage-guided fuzzing, mutation testing, or end-to-end tests."
     }
   }
 }

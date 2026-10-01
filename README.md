@@ -212,6 +212,7 @@ flowchart LR
 | Fix a hard bug or regression | `diagnosing-bugs` |
 | Improve structure | `/improve-codebase-architecture`, `codebase-design`, `domain-modeling` |
 | Review changes | `code-review` (against repository standards and against the spec) |
+| Describe a PR | `pr` |
 | Manage issues | `/triage`, `/to-questionnaire` |
 | Pause and resume | `/handoff`, `/claude-handoff` |
 | Write | `writing-for-agents`, `/writing-fragments`, `/writing-shape`, `/writing-beats` |
@@ -226,7 +227,12 @@ the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `
 
 | Area | Skills | Source |
 | --- | --- | --- |
-| Agent and Git hygiene | `find-skills`, `git-guardrails-claude-code`, `resolving-merge-conflicts` | vercel-labs/skills, mattpocock/skills |
+| Python tooling | `uv`, `ruff` | astral-sh/claude-code-plugins |
+| Testing | `property-based-testing` (Hypothesis and friends; `update` idempotence is a property) | trailofbits/skills |
+| Security | `supply-chain-risk-auditor` (dependency and lockfile risk), `github-actions-hardening` (workflow review, SHA pins) | trailofbits/skills, github/awesome-copilot |
+| Pull requests | `pr` (PR body with evidence, blast radius and rollback) | mattpocock/skills |
+| Skill hygiene | `skill-scanner` (vet a third-party skill before adding it), `find-skills` | getsentry/skills, vercel-labs/skills |
+| Agent and Git safety | `git-guardrails-claude-code`, `resolving-merge-conflicts` | mattpocock/skills |
 
 ### Skill packs: domain skills only where they apply
 
@@ -286,6 +292,7 @@ straight into the catalog:
 ```bash
 npx skills find changelog                                    # search https://skills.sh
 npx skills add owner/repo --skill some-skill -g -a claude-code codex
+uv run .agents/skills/skill-scanner/scripts/scan_skill.py .agents/skills/some-skill
 repo-template globals            # links it for Claude and adds the repository mirror link
 uv run pytest                    # validates every SKILL.md and the mirror
 git add .agents/skills/some-skill .claude/skills/some-skill
@@ -321,8 +328,6 @@ plugin, and follow `writing-for-agents`.
 
 ## Current limitations
 
-- Some skills predate the lock file and have no recorded source, so `npx skills update` skips
-  them; reinstall them with `npx skills add` to track them.
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
 - Skill packs scope skills for Claude Code only. Codex reads every skill in `~/.agents/skills`,
