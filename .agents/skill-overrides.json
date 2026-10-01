@@ -1,0 +1,44 @@
+{
+  "find-skills": {
+    "why": "Upstream triggers on any \"how do I do X\" question; fire only on explicit requests for a skill.",
+    "frontmatter": {
+      "description": "Discover and install agent skills from the open skills ecosystem (npx skills, skills.sh). Use when the user explicitly asks to find, search for, compare, or install a skill, or asks whether a skill exists for a task. Not for answering ordinary how-to questions."
+    }
+  },
+  "github-actions-hardening": {
+    "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the catalog of topics.",
+    "frontmatter": {
+      "description": "Security review and hardening of GitHub Actions workflows (.github/workflows/*.yml): script injection through ${{ }} expressions, pull_request_target and workflow_run privilege escalation, SHA-pinning actions, least-privilege GITHUB_TOKEN permissions, and secret exposure. Use when writing a workflow, or when asked to review, audit, harden, or pin a workflow or its actions."
+    }
+  },
+  "langchain-dependencies": {
+    "why": "Upstream triggers on \"setting up a new project\" of any kind.",
+    "frontmatter": {
+      "description": "INVOKE THIS SKILL when installing, upgrading, or choosing versions of LangChain, LangGraph, LangSmith, or Deep Agents packages, in Python or TypeScript. Covers required packages, minimum versions, environment requirements, versioning practices, and common community tool packages. Not for setting up projects that don't use LangChain."
+    }
+  },
+  "langchain-fundamentals": {
+    "why": "Upstream description says what it covers but never when to use it.",
+    "frontmatter": {
+      "description": "Create LangChain agents with create_agent, define tools, and use middleware for human-in-the-loop and error handling. Use when writing or debugging LangChain agent code in Python or TypeScript."
+    }
+  },
+  "langchain-middleware": {
+    "why": "Upstream triggers on any human-in-the-loop or structured-output work, LangChain or not.",
+    "frontmatter": {
+      "description": "INVOKE THIS SKILL when writing LangChain agent middleware: HumanInTheLoopMiddleware approval for dangerous tool calls, custom middleware hooks, Command resume patterns, or structured output with Pydantic/Zod in a LangChain agent. Not for other frameworks or the Claude API's own structured output."
+    }
+  },
+  "langchain-rag": {
+    "why": "Upstream triggers on building ANY RAG system, whatever the framework.",
+    "frontmatter": {
+      "description": "INVOKE THIS SKILL when building a retrieval-augmented generation (RAG) system with LangChain. Covers LangChain document loaders, RecursiveCharacterTextSplitter, embeddings, and vector stores (Chroma, FAISS, Pinecone). Not for RAG built without LangChain."
+    }
+  },
+  "property-based-testing": {
+    "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the long list of cases.",
+    "frontmatter": {
+      "description": "Write, review, and debug property-based tests (Hypothesis, fast-check, proptest, jqwik, rapid). Use when tests should cover a whole input domain rather than hand-picked examples: round-trips such as encode/decode, parsers and normalizers, idempotent operations, invariants, and ordering, or when judging a shrunk counterexample. Not for coverage-guided fuzzing, mutation testing, or end-to-end tests."
+    }
+  }
+}

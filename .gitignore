@@ -1,31 +1,46 @@
-.venv/
+# >>> repo-template managed defaults
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+.venv/
 dist/
 build/
 
+# Test and tool caches
 .coverage
 htmlcov/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 
+# Local configuration and secrets
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
+# Personal AI tooling is centralized outside each repository
+.agents/
+.claude/
+.codex/
+CLAUDE.local.md
+
+# Editors and operating systems
 .idea/
 .DS_Store
+# <<< repo-template managed defaults
 
-# This repository intentionally versions its portable global standards even when
-# a user's global Git excludes .agents and .claude directories. Only the portable
-# subsets are re-included; machine-local Claude state remains ignored.
+# This repository versions its portable global standards even though the block above (and a
+# user's global Git ignore) excludes .agents and .claude. Only the portable subsets are
+# re-included; machine-local Claude state stays ignored. Keep these rules below the block:
+# Git applies the last matching rule.
 !/.agents/
 /.agents/*
 !/.agents/.skill-lock.json
+!/.agents/skill-packs.json
+!/.agents/skill-overrides.json
 !/.agents/skills/
 !/.agents/skills/**
 !/.agents/hooks/

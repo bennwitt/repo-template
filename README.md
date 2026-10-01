@@ -19,9 +19,10 @@ agents (Claude Code, Codex) find what they need and do their best work.**
 AI agents are only as good as the repository they land in and the workflows they're given.
 
 - **Agents need context in predictable places.** An `AGENTS.md` with the real commands and the
-  system's purpose and boundaries, a `GLOSSARY.md` of domain terms, and ADRs that explain past decisions give an agent the context a new
-  teammate would ask for. Skills such as `domain-modeling`, `codebase-design`,
-  `improve-codebase-architecture` and `grill-with-docs` read and write exactly these files.
+  system's purpose and boundaries, a `GLOSSARY.md` of domain terms, and ADRs that explain past
+  decisions give an agent the context a new teammate would ask for. Skills such as
+  `domain-modeling`, `codebase-design`, `improve-codebase-architecture` and `grill-with-docs`
+  read and write exactly these files.
   Every generated repository has them.
 - **Agents need a fast, strict feedback loop.** `tdd` and `diagnosing-bugs` work only when tests,
   lint and type checks fail loudly. Every repository gets the same `pytest` / `ruff` /
@@ -61,8 +62,8 @@ Every file in the project baseline has a policy that decides what `update` may d
 | **Merged** | `pyproject.toml`, `.gitignore`, `.vscode/*.json` | Adds what is missing and never removes anything: dev dependencies and tool tables in `pyproject.toml`, a marked block in `.gitignore`, missing keys, extension recommendations and tasks in VS Code files. Project metadata and dependencies are not touched. |
 
 Each generated repository commits a `.repo-template.json` manifest that records the template
-version, the project variables, and a SHA-256 of every file as generated. That hash is how
-`update` tells "unchanged since generation, safe to upgrade" from "you edited this, leave it".
+version, the project variables, and a SHA-256 of every managed file as generated. That hash is
+how `update` tells "unchanged since generation, safe to upgrade" from "you edited this, leave it".
 
 ```mermaid
 flowchart TD
@@ -86,8 +87,9 @@ Running `update` a second time changes nothing.
   from here);
 - links `~/.claude/settings.json` → `<standards>/.claude/settings.json` (model, effort level,
   enabled plugins, deny rules for reading `.env` and key files, and the skill receipt hooks);
-- creates one link per skill, `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`,
-  and removes links that point at a skill no longer in the catalog;
+- creates one link per skill that isn't in a skill pack,
+  `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`, and removes links to skills
+  that were deleted or moved into a pack;
 - keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
   they work on every machine);
 - adds `.agents/`, `.claude/` and `.codex/` to your global Git ignore, so personal agent
@@ -210,6 +212,7 @@ flowchart LR
 | Fix a hard bug or regression | `diagnosing-bugs` |
 | Improve structure | `/improve-codebase-architecture`, `codebase-design`, `domain-modeling` |
 | Review changes | `code-review` (against repository standards and against the spec) |
+| Describe a PR | `pr` |
 | Manage issues | `/triage`, `/to-questionnaire` |
 | Pause and resume | `/handoff`, `/claude-handoff` |
 | Write | `writing-for-agents`, `/writing-fragments`, `/writing-shape`, `/writing-beats` |
@@ -220,15 +223,41 @@ Run `/setup-matt-pocock-skills` once in each repository. It records where issues
 the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `to-spec`,
 `to-tickets` and `triage` read.
 
-### Domain and tooling packs
+### Other global skills
+
+| Area | Skills | Source |
+| --- | --- | --- |
+| Python tooling | `uv`, `ruff` | astral-sh/claude-code-plugins |
+| Testing | `property-based-testing` (Hypothesis and friends; `update` idempotence is a property) | trailofbits/skills |
+| Security | `supply-chain-risk-auditor` (dependency and lockfile risk), `github-actions-hardening` (workflow review, SHA pins) | trailofbits/skills, github/awesome-copilot |
+| Pull requests | `pr` (PR body with evidence, blast radius and rollback) | mattpocock/skills |
+| Skill hygiene | `skill-scanner` (vet a third-party skill before adding it), `find-skills` | getsentry/skills, vercel-labs/skills |
+| Agent and Git safety | `git-guardrails-claude-code`, `resolving-merge-conflicts` | mattpocock/skills |
+
+### Skill packs: domain skills only where they apply
+
+A skill's description is listed in every session, so a LangChain skill costs context in a repository
+that has nothing to do with LangChain, and its broad triggers can fire there. Skills that only make
+sense in some repositories are grouped into packs in `.agents/skill-packs.json`. `globals` doesn't
+link pack skills into `~/.claude/skills`; a repository opts in instead:
+
+```bash
+repo-template new my-agent --pack langchain        # start with a pack
+repo-template update /path/to/repo --pack gradio   # add one later (also applies the baseline)
+```
+
+The pack is recorded under `skill_packs` in `.repo-template.json`, and `update` links each of its
+skills into the repository's `.claude/skills/` (ignored by Git) as links to `~/.agents/skills/`.
+To drop a pack, remove it from `skill_packs` and run `update`; its links are removed and nothing
+else in `.claude/skills/` is touched. On another machine, `update` recreates the links.
 
 | Pack | Skills | Source |
 | --- | --- | --- |
-| LangChain, LangGraph, Deep Agents, LangSmith | `ecosystem-primer` (start here), `langchain-*`, `langgraph-*`, `deep-agents-*`, `deepagents-*-quickstart`, `managed-deep-agents`, `langsmith-online-eval-engineering`, `eval-engineering` | langchain-ai/langchain-skills |
-| Knowledge graphs | `knowledge-graph-extraction` | local |
-| Gradio | `gradio`, `hf-gradio` | gradio-app |
-| Agent and Git hygiene | `find-skills`, `git-guardrails-claude-code`, `resolving-merge-conflicts` | vercel-labs/skills, mattpocock/skills |
-| TypeScript | `setup-ts-deep-modules`, `migrate-to-shoehorn` | mattpocock/skills |
+| `langchain` | `ecosystem-primer` (start here), `langchain-*`, `langgraph-*`, `deep-agents-*`, `deepagents-*-quickstart`, `managed-deep-agents`, `langsmith-online-eval-engineering` | langchain-ai/langchain-skills |
+| `agent-evals` | `eval-engineering` | langchain-ai/langchain-skills |
+| `gradio` | `gradio`, `hf-gradio` | gradio-app/gradio |
+| `knowledge-graph` | `knowledge-graph-extraction` | local |
+| `typescript` | `setup-ts-deep-modules`, `migrate-to-shoehorn` | mattpocock/skills |
 
 Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
 `.claude/settings.json` rather than vendored here.
@@ -263,10 +292,19 @@ straight into the catalog:
 ```bash
 npx skills find changelog                                    # search https://skills.sh
 npx skills add owner/repo --skill some-skill -g -a claude-code codex
+uv run .agents/skills/skill-scanner/scripts/scan_skill.py .agents/skills/some-skill
 repo-template globals            # links it for Claude and adds the repository mirror link
 uv run pytest                    # validates every SKILL.md and the mirror
 git add .agents/skills/some-skill .claude/skills/some-skill
 git commit -m "Add some-skill skill"
+```
+
+To change a vendored skill's description or other frontmatter, don't edit its `SKILL.md`:
+`npx skills update` would overwrite the edit. Add it to `.agents/skill-overrides.json` with a
+`why`, and `repo-template globals` re-applies it after every update (a test fails until it does):
+
+```json
+{"langchain-rag": {"why": "Upstream triggers on any RAG work.", "frontmatter": {"description": "…"}}}
 ```
 
 `npx skills` records each skill's source in `.agents/.skill-lock.json`, which is committed, so
@@ -290,10 +328,10 @@ plugin, and follow `writing-for-agents`.
 
 ## Current limitations
 
-- Some skills predate the lock file and have no recorded source, so `npx skills update` skips
-  them; reinstall them with `npx skills add` to track them.
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
+- Skill packs scope skills for Claude Code only. Codex reads every skill in `~/.agents/skills`,
+  so it still sees pack skills everywhere.
 - Python/uv is the only project profile.
 
 ## Developing this repository
@@ -307,12 +345,15 @@ uv run repo-template --help
 ```
 
 - Template content: `src/repo_template/templates.py`, one `add()` call per file with its policy.
-- File update and merge logic: `src/repo_template/scaffold.py`. Hook path and lockfile, shared
-  by `new`, `update` and `check`: `src/repo_template/repository.py`. Global linking:
+- What each policy may do to a file (managed, seed, merged): `src/repo_template/policies.py`,
+  one class per policy behind a single `decide` interface. Applying them to a repository and
+  writing the manifest: `src/repo_template/scaffold.py`. Hook path and lockfile, shared by `new`,
+  `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`.
-- This repository's own CI, hooks, Dependabot config and build pins must match the baseline;
-  `tests/test_baseline_sync.py` fails when a Dependabot update here hasn't reached
-  `templates.py`, or the reverse.
+- This repository is the first consumer of its own baseline: it commits a `.repo-template.json`
+  and `tests/test_baseline_sync.py` fails whenever `repo-template check .` would change anything,
+  or the build pins differ. A Dependabot update here therefore fails CI until `templates.py`
+  catches up.
 - When you change generated content, bump the version in `pyproject.toml` and
   `src/repo_template/__init__.py`, add a `CHANGELOG.md` entry, and add tests for any change to
   rendering, conflict handling or symlink behaviour.

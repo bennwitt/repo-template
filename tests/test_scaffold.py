@@ -6,9 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from repo_template.policies import GITIGNORE_END, GITIGNORE_START
 from repo_template.scaffold import (
-    GITIGNORE_END,
-    GITIGNORE_START,
     new_project,
     normalize_project_name,
     package_name,

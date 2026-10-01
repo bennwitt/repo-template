@@ -3,6 +3,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from repo_template.model import ProjectContext, TemplateFile
+from repo_template.policies import PolicyName
 
 
 def _clean(value: str) -> str:
@@ -23,7 +24,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         path: str,
         content: str,
         *,
-        policy: str = "managed",
+        policy: PolicyName = "managed",
         executable: bool = False,
         legacy_path: str | None = None,
     ) -> None:
@@ -41,7 +42,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         dependencies = []
 
         [build-system]
-        requires = ["uv_build>=0.12.13,<0.13.0"]
+        requires = ["uv_build>=0.12.17,<0.13.0"]
         build-backend = "uv_build"
 
         [dependency-groups]
@@ -330,8 +331,10 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
           quality:
             runs-on: ubuntu-latest
             steps:
-              - uses: actions/checkout@v7
-              - uses: astral-sh/setup-uv@v10
+              - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                  persist-credentials: false
+              - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
                 with:
                   enable-cache: true
               - run: uv python install
@@ -360,17 +363,48 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
     add(
         ".github/PULL_REQUEST_TEMPLATE.md",
         """
-        ## Summary
+        ## Description
 
-        Describe what changed and why.
+        <!-- What changed and why. Link the issue or spec it addresses, e.g. "Closes #123". -->
 
-        ## Verification
+        ## Type of change
 
-        - [ ] `uv run ruff check .`
-        - [ ] `uv run ruff format --check .`
+        - [ ] 🐞 Bug fix
+        - [ ] ✨ Feature
+        - [ ] ⚡ Enhancement
+        - [ ] 🧹 Refactor
+        - [ ] 🧪 Tests
+        - [ ] 📜 Documentation
+        - [ ] 🚀 Infrastructure / CI
+        - [ ] 💥 Breaking change <!-- explain the migration under Risk and rollback -->
+
+        ## Areas affected
+
+        - [ ] ⚙️ Application / API (`src/`)
+        - [ ] 🎨 Frontend / UI
+        - [ ] 💾 Data / migrations
+        - [ ] 📦 Dependencies (`pyproject.toml`, `uv.lock`)
+        - [ ] 🛠️ Tooling, scripts or Git hooks
+        - [ ] 🏗️ CI, GitHub or infrastructure
+        - [ ] 📜 Documentation (`README.md`, `AGENTS.md`, `GLOSSARY.md`, `docs/adr/`)
+
+        ## How to verify
+
+        <!-- Steps a reviewer can follow, one action and its expected outcome per line. -->
+
+        - [ ] **Action:** <!-- e.g. `uv run app load a.csv` --> → **Outcome:** <!-- 3 rows saved -->
+        - [ ] **Action:** <!-- e.g. rerun the import --> → **Outcome:** <!-- no duplicates -->
+
+        ## Checks
+
+        - [ ] `uv run ruff check .` and `uv run ruff format --check .`
         - [ ] `uv run mypy src`
-        - [ ] `uv run pytest`
-        - [ ] Documentation or context updated when needed
+        - [ ] `uv run pytest`, with tests added or updated for changed behavior
+        - [ ] `AGENTS.md`, `GLOSSARY.md` or an ADR updated when scope, terms or decisions changed
+
+        ## Risk and rollback
+
+        <!-- What could break, who is affected, and how to undo it, including migrations. -->
         """,
     )
     add(
@@ -484,11 +518,13 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
     add(
         "tests/test_smoke.py",
         """
+        from importlib.metadata import version
+
         import __PACKAGE_NAME__
 
 
-        def test_package_imports() -> None:
-            assert __PACKAGE_NAME__.__version__ == "0.1.0"
+        def test_version_matches_package_metadata() -> None:
+            assert __PACKAGE_NAME__.__version__ == version("__PROJECT_NAME__")
         """,
         policy="seed",
     )

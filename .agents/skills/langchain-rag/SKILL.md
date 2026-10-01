@@ -1,6 +1,6 @@
 ---
 name: langchain-rag
-description: "INVOKE THIS SKILL when building ANY retrieval-augmented generation (RAG) system. Covers document loaders, RecursiveCharacterTextSplitter, embeddings (OpenAI), and vector stores (Chroma, FAISS, Pinecone)."
+description: "INVOKE THIS SKILL when building a retrieval-augmented generation (RAG) system with LangChain. Covers LangChain document loaders, RecursiveCharacterTextSplitter, embeddings, and vector stores (Chroma, FAISS, Pinecone). Not for RAG built without LangChain."
 ---
 
 <overview>

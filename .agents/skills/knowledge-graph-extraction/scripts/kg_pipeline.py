@@ -1,7 +1,7 @@
 """Knowledge graph construction from unstructured text with Claude -- standalone.
 
-Self-contained port of bidcore's `src/kg` (same algorithms, no repository
-imports) so the skill works in any project. Four stages, each cached on disk
+Self-contained, with no imports from any host repository, so the skill works in
+any project. Four stages, each cached on disk
 so the paid ones are paid once:
 
     extract    Document -> typed entities + relations, evidence anchored to source
