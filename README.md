@@ -261,8 +261,6 @@ plugin, and follow `writing-for-agents`.
 
 ## Current limitations
 
-- Dependabot doesn't see template content in `templates.py`, so version pins there (such as
-  `uv_build`) can lag behind this repository's own `pyproject.toml`.
 - `.agents/.skill-lock.json`, where `npx skills` records each skill's source, is ignored by Git,
   so `npx skills update` knows the sources only on the machine that installed them.
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
@@ -283,6 +281,9 @@ uv run repo-template --help
 - File update and merge logic: `src/repo_template/scaffold.py`. Hook path and lockfile, shared
   by `new`, `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`.
+- This repository's own CI, hooks, Dependabot config and build pins must match the baseline;
+  `tests/test_baseline_sync.py` fails when a Dependabot update here hasn't reached
+  `templates.py`, or the reverse.
 - When you change generated content, bump the version in `pyproject.toml` and
   `src/repo_template/__init__.py`, add a `CHANGELOG.md` entry, and add tests for any change to
   rendering, conflict handling or symlink behaviour.

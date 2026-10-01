@@ -40,7 +40,7 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
         dependencies = []
 
         [build-system]
-        requires = ["uv_build>=0.11.15,<0.13.0"]
+        requires = ["uv_build>=0.12.13,<0.13.0"]
         build-backend = "uv_build"
 
         [dependency-groups]
