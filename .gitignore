@@ -25,10 +25,12 @@ htmlcov/
 # subsets are re-included; machine-local Claude state remains ignored.
 !/.agents/
 /.agents/*
+!/.agents/.skill-lock.json
 !/.agents/skills/
 !/.agents/skills/**
 !/.agents/hooks/
 !/.agents/hooks/**
+/.agents/hooks/__pycache__/
 !/.claude/
 /.claude/*
 !/.claude/settings.json

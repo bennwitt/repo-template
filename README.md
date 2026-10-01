@@ -219,11 +219,11 @@ the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `
 
 | Pack | Skills | Source |
 | --- | --- | --- |
-| LangChain, LangGraph, Deep Agents, LangSmith | `ecosystem-primer` (start here), `langchain-*`, `langgraph-*`, `deep-agents-*`, `deepagents-*-quickstart`, `managed-deep-agents`, `langsmith-online-eval-engineering`, `eval-engineering`, `swarm` | langchain-ai/langchain-skills |
-| Knowledge graphs | `knowledge-graph-extraction`, `knowledge-graph-etl` (BidCore `kg` MCP server) | local |
+| LangChain, LangGraph, Deep Agents, LangSmith | `ecosystem-primer` (start here), `langchain-*`, `langgraph-*`, `deep-agents-*`, `deepagents-*-quickstart`, `managed-deep-agents`, `langsmith-online-eval-engineering`, `eval-engineering` | langchain-ai/langchain-skills |
+| Knowledge graphs | `knowledge-graph-extraction` | local |
 | Gradio | `gradio`, `hf-gradio` | gradio-app |
 | Agent and Git hygiene | `find-skills`, `git-guardrails-claude-code`, `resolving-merge-conflicts` | vercel-labs/skills, mattpocock/skills |
-| TypeScript and course tooling | `setup-ts-deep-modules`, `migrate-to-shoehorn`, `setup-pre-commit` (Husky), `scaffold-exercises` | mattpocock/skills |
+| TypeScript | `setup-ts-deep-modules`, `migrate-to-shoehorn` | mattpocock/skills |
 
 Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
 `.claude/settings.json` rather than vendored here.
@@ -264,7 +264,9 @@ git add .agents/skills/some-skill .claude/skills/some-skill
 git commit -m "Add some-skill skill"
 ```
 
-On every other machine, run `git pull && repo-template globals`. To remove a skill, delete its
+`npx skills` records each skill's source in `.agents/.skill-lock.json`, which is committed, so
+every machine can update from the same sources. On every other machine, run
+`git pull && repo-template globals`. To remove a skill, delete its
 folder and run `repo-template globals`, which removes the stale links. `npx skills update -g`
 refreshes installed skills from their sources. To write a new skill, use the `skill-creator`
 plugin, and follow `writing-for-agents`.
@@ -283,8 +285,8 @@ plugin, and follow `writing-for-agents`.
 
 ## Current limitations
 
-- `.agents/.skill-lock.json`, where `npx skills` records each skill's source, is ignored by Git,
-  so `npx skills update` knows the sources only on the machine that installed them.
+- Some skills predate the lock file and have no recorded source, so `npx skills update` skips
+  them; reinstall them with `npx skills add` to track them.
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
 - Python/uv is the only project profile.
