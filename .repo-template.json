@@ -1,0 +1,57 @@
+{
+  "files": {
+    ".ai/.gitignore": {
+      "policy": "managed",
+      "sha256": "2986916f0b13215e61e673461a82dca859444049ad90d42232f9f8f6b2dd46ac"
+    },
+    ".ai/receipt-policy.json": {
+      "policy": "managed",
+      "sha256": "aeae010fafd9db8bc235a348dd9b94d58bfec3a6dfd24a318307457045327a5e"
+    },
+    ".editorconfig": {
+      "policy": "managed",
+      "sha256": "f831de48162f7eb824bf9dfb322403aa01a3a49750111609aa72b78da108a400"
+    },
+    ".gitattributes": {
+      "policy": "managed",
+      "sha256": "44674b3160def05bf2e4c1544d8a36fb5c9a63ce4e9f88b89a2d9b51eb0c0974"
+    },
+    ".githooks/pre-commit": {
+      "policy": "managed",
+      "sha256": "0e29cfd87339d4550e0f3965c490bf9cf79d3173d5bd201934fb290955450941"
+    },
+    ".github/PULL_REQUEST_TEMPLATE.md": {
+      "policy": "managed",
+      "sha256": "25ef25ab581ee40cbba89f51283ea609da71c6ce24fc973d0d8cd392c43fe38d"
+    },
+    ".github/dependabot.yml": {
+      "policy": "managed",
+      "sha256": "9820e8b80838dc09ae07a83813fa1ba2313126596749d4da8544482cc29bb18a"
+    },
+    ".github/workflows/ci.yml": {
+      "policy": "managed",
+      "sha256": "226dc9d88531d8d2ca301365e009b4baec054622ab38cd0c3bfc00bc243fef04"
+    },
+    ".python-version": {
+      "policy": "managed",
+      "sha256": "49a506dd32096b010d75205acf3430c9ae6c40351888129499e5a5e487126c93"
+    },
+    "CLAUDE.md": {
+      "policy": "managed",
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
+    },
+    "src/repo_template/py.typed": {
+      "policy": "managed",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  },
+  "profile": "python-uv",
+  "project": {
+    "description": "Create and safely update opinionated Python repositories and shared AI development standards.",
+    "name": "repo-template",
+    "package": "repo_template",
+    "python": "3.11"
+  },
+  "schema": 1,
+  "template_version": "0.2.0"
+}

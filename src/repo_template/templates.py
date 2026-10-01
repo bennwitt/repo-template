@@ -518,11 +518,13 @@ def project_files(context: ProjectContext) -> list[TemplateFile]:
     add(
         "tests/test_smoke.py",
         """
+        from importlib.metadata import version
+
         import __PACKAGE_NAME__
 
 
-        def test_package_imports() -> None:
-            assert __PACKAGE_NAME__.__version__ == "0.1.0"
+        def test_version_matches_package_metadata() -> None:
+            assert __PACKAGE_NAME__.__version__ == version("__PROJECT_NAME__")
         """,
         policy="seed",
     )

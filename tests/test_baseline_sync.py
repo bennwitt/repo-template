@@ -1,4 +1,4 @@
-"""This repository uses the project baseline too, so Dependabot updates here must reach it."""
+"""This repository is the first consumer of its own baseline, so drift fails CI here."""
 
 from __future__ import annotations
 
@@ -6,22 +6,11 @@ import re
 import tomllib
 from pathlib import Path
 
-import pytest
-
 from repo_template.model import ProjectContext
+from repo_template.repository import update_repository
 from repo_template.templates import project_files
 
 ROOT = Path(__file__).resolve().parents[1]
-SHARED_FILES = [
-    ".ai/.gitignore",
-    ".ai/receipt-policy.json",
-    ".editorconfig",
-    ".gitattributes",
-    ".githooks/pre-commit",
-    ".github/PULL_REQUEST_TEMPLATE.md",
-    ".github/dependabot.yml",
-    ".github/workflows/ci.yml",
-]
 
 
 def _baseline() -> dict[str, str]:
@@ -29,10 +18,14 @@ def _baseline() -> dict[str, str]:
     return {spec.relative_path: spec.content for spec in project_files(context)}
 
 
-@pytest.mark.parametrize("path", SHARED_FILES)
-def test_shared_file_matches_the_baseline(path: str) -> None:
-    assert (ROOT / path).read_text() == _baseline()[path], (
-        f"{path} differs from templates.py; copy the newer version into the other"
+def test_this_repository_meets_its_own_baseline() -> None:
+    """Dependabot updates land here first; this fails until templates.py catches up."""
+    result = update_repository(ROOT, check=True, hooks=False)
+
+    assert not result.needs_attention, (
+        "this repository has drifted from its baseline; copy the newer version into "
+        f"templates.py or run `uv run repo-template update .`: created={result.created} "
+        f"updated={result.updated} preserved={result.preserved}"
     )
 
 

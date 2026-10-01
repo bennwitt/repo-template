@@ -313,9 +313,10 @@ uv run repo-template --help
   writing the manifest: `src/repo_template/scaffold.py`. Hook path and lockfile, shared by `new`,
   `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`.
-- This repository's own CI, hooks, Dependabot config and build pins must match the baseline;
-  `tests/test_baseline_sync.py` fails when a Dependabot update here hasn't reached
-  `templates.py`, or the reverse.
+- This repository is the first consumer of its own baseline: it commits a `.repo-template.json`
+  and `tests/test_baseline_sync.py` fails whenever `repo-template check .` would change anything,
+  or the build pins differ. A Dependabot update here therefore fails CI until `templates.py`
+  catches up.
 - When you change generated content, bump the version in `pyproject.toml` and
   `src/repo_template/__init__.py`, add a `CHANGELOG.md` entry, and add tests for any change to
   rendering, conflict handling or symlink behaviour.
