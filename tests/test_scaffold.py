@@ -143,3 +143,21 @@ def test_update_asks_for_a_manual_rename_of_context_md(tmp_path: Path) -> None:
 
     (root / "CONTEXT.md").rename(root / "GLOSSARY.md")
     assert not update_project(root, check=True).needs_attention
+
+
+def test_project_owned_files_are_left_alone_and_stay_owned(tmp_path: Path) -> None:
+    root = tmp_path / "custom"
+    new_project(root, name="custom", description="Custom.", python_version="3.12")
+    workflow = root / ".github/workflows/ci.yml"
+    workflow.write_text("name: Custom CI\n")
+    assert ".github/workflows/ci.yml" in update_project(root, check=True).preserved
+
+    manifest_path = root / ".repo-template.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["project_owned"] = [".github/workflows/ci.yml"]
+    manifest_path.write_text(json.dumps(manifest))
+
+    assert not update_project(root, check=True).needs_attention
+    update_project(root)
+    assert workflow.read_text() == "name: Custom CI\n"
+    assert json.loads(manifest_path.read_text())["project_owned"] == [".github/workflows/ci.yml"]

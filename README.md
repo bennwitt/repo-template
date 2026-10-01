@@ -143,7 +143,13 @@ repo-template update /path/to/repo   # apply
 For a repository without a manifest, `update` infers the name, description and Python version
 from `pyproject.toml`. Files that already exist and differ from the standard are listed under
 **Preserved for manual review**. Compare them with a freshly generated repository, merge by
-hand, and run `update` again.
+hand, and run `update` again. If the project deliberately keeps its own version of a managed file
+(a custom CI workflow, say), list it under `project_owned` in `.repo-template.json`; `update`
+then treats it as a seed and stops reporting it:
+
+```json
+{"project_owned": [".github/workflows/ci.yml"]}
+```
 
 Repositories created before 0.2.0 have a `CONTEXT.md`. The engineering skills now read
 `GLOSSARY.md`, so `update` lists `CONTEXT.md` for manual review rather than renaming a file you

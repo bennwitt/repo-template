@@ -119,7 +119,8 @@ def _apply_file(
         return
     existing = path.read_text() if path.exists() else None
     recorded = _recorded_hash(manifest, spec.relative_path)
-    decision = POLICIES[spec.policy].decide(existing, spec.content, recorded)
+    policy = "seed" if spec.relative_path in _project_owned(manifest) else spec.policy
+    decision = POLICIES[policy].decide(existing, spec.content, recorded)
     if decision.outcome is Outcome.PRESERVE:
         note = f" ({decision.note})" if decision.note else ""
         result.preserved.append(spec.relative_path + note)
@@ -134,6 +135,12 @@ def _apply_file(
         _write(path, decision.content, spec.executable)
 
 
+def _project_owned(manifest: dict[str, Any]) -> set[str]:
+    """Baseline files the project has taken over; update treats them as seeds."""
+    owned = manifest.get("project_owned", [])
+    return {item for item in owned if isinstance(item, str)} if isinstance(owned, list) else set()
+
+
 def skill_packs(root: Path) -> list[str]:
     """The skill packs a repository's manifest lists."""
     packs = _read_manifest(root).get("skill_packs", [])
@@ -145,6 +152,7 @@ def _build_manifest(
     context: ProjectContext,
     specs: list[TemplateFile],
     packs: Sequence[str] = (),
+    owned: Sequence[str] = (),
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
@@ -168,6 +176,8 @@ def _build_manifest(
     }
     if packs:
         manifest["skill_packs"] = sorted(set(packs))
+    if owned:
+        manifest["project_owned"] = sorted(set(owned))
     return manifest
 
 
@@ -211,5 +221,6 @@ def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] 
         _apply_file(root, spec, manifest, result, check=check)
     if not check:
         packs = [*skill_packs(root), *add_packs]
-        _write_manifest(root, _build_manifest(root, context, specs, packs))
+        owned = sorted(_project_owned(manifest))
+        _write_manifest(root, _build_manifest(root, context, specs, packs, owned))
     return result
