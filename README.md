@@ -137,39 +137,50 @@ steps.
 
 ```bash
 repo-template check  /path/to/repo   # dry run: lists what would change, writes nothing
-repo-template update /path/to/repo   # apply
+repo-template update /path/to/repo   # apply, then decide each file that differs
 ```
 
-For a repository without a manifest, `update` infers the name, description and Python version
-from `pyproject.toml`, and adapts to what is already there:
+`update` creates what's missing, merges `pyproject.toml`, `.gitignore` and the VS Code files,
+configures the Git hook path (skip with `--no-hooks`), and creates or refreshes `uv.lock` when
+`pyproject.toml` changed (skip with `--no-lock`). `check` plans the same steps, so a clean `check`
+means `update` has nothing to do.
+
+#### Deciding files that differ
+
+A file that exists and differs from the baseline is never changed silently. In a terminal,
+`update` shows a diff of yours against the baseline and asks what to do:
+
+| Choice | Effect |
+| --- | --- |
+| `o` use the baseline | Replace your file with the baseline's version. |
+| `k` keep yours | Keep it, and record in `.repo-template.json` that you accepted this difference. You're asked again only when the baseline's version of the file changes. |
+| `m` merge change by change | For each place the two differ: take the baseline's (`y`), keep yours (`n`), or keep both (`b`). A result that differs from the baseline is recorded like `k`. |
+| `a` always keep yours | Add the file to `project_owned` in `.repo-template.json`; `update` leaves it alone for good. |
+| `s` skip for now | Leave it; `update` asks again next time. |
+
+A file under an old name (`CONTEXT.md` is now `GLOSSARY.md`, and a `CLAUDE.md` holding the agent
+guide moves to `AGENTS.md`) can be moved for you: with `git mv` when the file is tracked, so its
+history follows. `update` then lists the lines that still mention the old name. Commit the
+staged moves on their own before anything else to keep that history.
+
+Every decision is applied as you make it, so stopping halfway (Ctrl-C) loses nothing. Without a
+terminal (scripts, CI, agents), or with `--no-input`, `update` lists the files under
+**Preserved for manual review** and exits with `2`; the `repo-template` skill walks an agent
+through the same decisions.
+
+#### Adopting a repository the baseline didn't generate
+
+`update` infers the name, description and Python version from `pyproject.toml`, and adapts to
+what is already there:
 
 - code that lives in `src/` but not in `src/<package>/` keeps its layout: no package scaffold,
   smoke test or `[tool.mypy]` table that would name a package the repository doesn't have;
 - a tool the project already configures (any `[tool.ruff…]`, `[tool.pytest…]` or `[tool.mypy]`
   table) keeps its settings, since adding even a line length changes how it formats code;
-- a `CLAUDE.md` that holds the agent guide is reported for a move into `AGENTS.md`, instead of
+- a `CLAUDE.md` that holds the agent guide is offered a move into `AGENTS.md`, instead of
   `update` creating a generic `AGENTS.md` beside it;
-- every managed file that differs is preserved, because there's no generation hash to prove it
-  unedited.
-
-To work through the preserved files, ask Claude Code or Codex to "resolve the files repo-template
-preserved"; the `repo-template` skill takes it from there. Files that already exist and differ from the standard are listed under
-**Preserved for manual review**. Compare them with a freshly generated repository, merge by
-hand, and run `update` again. If the project deliberately keeps its own version of a managed file
-(a custom CI workflow, say), list it under `project_owned` in `.repo-template.json`; `update`
-then treats it as a seed and stops reporting it:
-
-```json
-{"project_owned": [".github/workflows/ci.yml"]}
-```
-
-Repositories created before 0.2.0 have a `CONTEXT.md`. The engineering skills now read
-`GLOSSARY.md`, so `update` lists `CONTEXT.md` for manual review rather than renaming a file you
-own: run `git mv CONTEXT.md GLOSSARY.md`, move any Purpose and Boundaries sections into
-`AGENTS.md`, and keep only terms in the glossary. `update` also configures the Git hook path (skip with
-`--no-hooks`) and creates `uv.lock` when it is missing or refreshes it when `pyproject.toml`
-changed (skip with `--no-lock`). `check` plans the same steps, including the hook path and the
-lockfile, so a clean `check` means `update` has nothing to do.
+- every managed file that differs comes up for a decision, because there's no generation hash
+  to prove it unedited.
 
 ### Exit codes
 

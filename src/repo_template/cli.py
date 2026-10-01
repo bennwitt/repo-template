@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 from repo_template.model import Result
-from repo_template.repository import create_repository, update_repository
+from repo_template.repository import SUBPROCESS, create_repository, update_repository
+from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import normalize_project_name
 from repo_template.standards import find_standards_root, sync_globals
 
@@ -57,6 +58,11 @@ def _parser() -> argparse.ArgumentParser:
         metavar="NAME",
         help="add a skill pack to the repository's manifest and link it",
     )
+    update.add_argument(
+        "--no-input",
+        action="store_true",
+        help="list files that differ from the baseline instead of asking about each one",
+    )
 
     check = subparsers.add_parser(
         "check", help="report what update would change, without writing anything"
@@ -75,7 +81,7 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_result(result: Result, *, check: bool = False) -> None:
+def _print_result(result: Result, *, check: bool = False, preserved: bool = True) -> None:
     verb = "Would create" if check else "Created"
     if result.created:
         print(f"{verb} ({len(result.created)}):")
@@ -91,7 +97,7 @@ def _print_result(result: Result, *, check: bool = False) -> None:
         print(f"{verb} ({len(result.removed)}):")
         for path in result.removed:
             print(f"  - {path}")
-    if result.preserved:
+    if result.preserved and preserved:
         print(f"Preserved for manual review ({len(result.preserved)}):")
         for path in result.preserved:
             print(f"  ! {path}")
@@ -121,11 +127,31 @@ def _new(args: argparse.Namespace) -> int:
     return 1 if result.errors else 0
 
 
+def _interactive(args: argparse.Namespace) -> bool:
+    return not args.no_input and sys.stdin.isatty() and sys.stdout.isatty()
+
+
 def _update(args: argparse.Namespace) -> int:
-    result = update_repository(
-        args.path, hooks=not args.no_hooks, lock=not args.no_lock, packs=args.pack
-    )
+    hooks, lock = not args.no_hooks, not args.no_lock
+    result = update_repository(args.path, hooks=hooks, lock=lock, packs=args.pack)
+    if result.conflicts and _interactive(args):
+        _print_result(result, preserved=False)
+        print()
+        try:
+            outcomes = resolve_conflicts(
+                result.root, result.conflicts, TerminalPrompt(), SUBPROCESS
+            )
+        except KeyboardInterrupt:
+            print("\nStopped. Decisions made so far are applied; run update again to continue.")
+            return 2
+        print("\nDecisions:")
+        for path, outcome in outcomes:
+            print(f"  {path}: {outcome}")
+        print()
+        result = update_repository(args.path, hooks=hooks, lock=lock)
     _print_result(result)
+    if result.conflicts and not _interactive(args):
+        print("Run `repo-template update` in a terminal to compare and decide each file.")
     return 2 if result.preserved else (1 if result.errors else 0)
 
 

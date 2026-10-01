@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from repo_template import __version__
-from repo_template.model import ProjectContext, Result, TemplateFile
-from repo_template.policies import POLICIES, Outcome
+from repo_template.model import Conflict, ProjectContext, Result, TemplateFile
+from repo_template.policies import POLICIES, Outcome, digest
 from repo_template.templates import project_files
 
 MANIFEST_NAME = ".repo-template.json"
@@ -103,6 +103,19 @@ def _recorded_hash(manifest: dict[str, Any], relative_path: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _accepted(manifest: dict[str, Any], relative_path: str) -> tuple[str, str] | None:
+    """(file hash, baseline hash) of a difference the project accepted, if one is recorded."""
+    files = manifest.get("files", {})
+    record = files.get(relative_path) if isinstance(files, dict) else None
+    accepted = record.get("accepted") if isinstance(record, dict) else None
+    if not isinstance(accepted, dict):
+        return None
+    file_hash, baseline_hash = accepted.get("sha256"), accepted.get("baseline")
+    if isinstance(file_hash, str) and isinstance(baseline_hash, str):
+        return file_hash, baseline_hash
+    return None
+
+
 def _reported(result: Result, relative_path: str) -> bool:
     """Whether a file is already listed for review, so each file is reported once."""
     return any(
@@ -132,14 +145,36 @@ def _apply_file(
         result.preserved.append(
             f"{spec.legacy_path} (now {spec.relative_path}: {spec.legacy_hint})"
         )
+        result.conflicts.append(
+            Conflict(
+                path=str(spec.legacy_path),
+                existing=legacy.read_text(),
+                desired="",
+                reason=spec.legacy_hint,
+                moves_to=spec.relative_path,
+                legacy_baseline=baseline.get(str(spec.legacy_path)),
+            )
+        )
         return
     existing = path.read_text() if path.exists() else None
     recorded = _recorded_hash(manifest, spec.relative_path)
     policy = "seed" if spec.relative_path in _project_owned(manifest) else spec.policy
     decision = POLICIES[policy].decide(existing, spec.content, recorded)
-    if decision.outcome is Outcome.PRESERVE:
+    if decision.outcome is Outcome.PRESERVE and existing is not None:
+        if _accepted(manifest, spec.relative_path) == (digest(existing), digest(spec.content)):
+            result.unchanged.append(spec.relative_path)
+            return
         note = f" ({decision.note})" if decision.note else ""
         result.preserved.append(spec.relative_path + note)
+        result.conflicts.append(
+            Conflict(
+                path=spec.relative_path,
+                existing=existing,
+                desired=spec.content,
+                reason=decision.note,
+                executable=spec.executable,
+            )
+        )
         return
     mode_needs_repair = existing is not None and spec.executable and not os.access(path, os.X_OK)
     if decision.outcome is Outcome.UNCHANGED and not mode_needs_repair:
@@ -169,15 +204,23 @@ def _build_manifest(
     specs: list[TemplateFile],
     packs: Sequence[str] = (),
     owned: Sequence[str] = (),
+    previous: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
         path = root / spec.relative_path
         if not path.is_file():
             continue
-        recorded = POLICIES[spec.policy].record(path.read_text(), spec.content)
+        current = path.read_text()
+        record: dict[str, Any] = {}
+        recorded = POLICIES[spec.policy].record(current, spec.content)
         if recorded is not None:
-            records[spec.relative_path] = {"policy": spec.policy, "sha256": recorded}
+            record = {"policy": spec.policy, "sha256": recorded}
+        state = (digest(current), digest(spec.content))
+        if previous and _accepted(previous, spec.relative_path) == state:
+            record.update(policy=spec.policy, accepted={"sha256": state[0], "baseline": state[1]})
+        if record:
+            records[spec.relative_path] = record
     manifest: dict[str, Any] = {
         "schema": 1,
         "template_version": __version__,
@@ -195,6 +238,30 @@ def _build_manifest(
     if owned:
         manifest["project_owned"] = sorted(set(owned))
     return manifest
+
+
+def write_file(root: Path, relative_path: str, content: str, *, executable: bool = False) -> None:
+    """Write a repository file atomically."""
+    _write(root / relative_path, content, executable)
+
+
+def accept_difference(root: Path, relative_path: str, existing: str, desired: str) -> None:
+    """Record that the project keeps `existing` while the baseline's version is `desired`.
+
+    update stops reporting the file until either side changes.
+    """
+    manifest = _read_manifest(root)
+    files = manifest.setdefault("files", {})
+    record = files.setdefault(relative_path, {})
+    record["accepted"] = {"sha256": digest(existing), "baseline": digest(desired)}
+    _write_manifest(root, manifest)
+
+
+def own_file(root: Path, relative_path: str) -> None:
+    """Add a file to project_owned: update leaves it alone from now on."""
+    manifest = _read_manifest(root)
+    manifest["project_owned"] = sorted(_project_owned(manifest) | {relative_path})
+    _write_manifest(root, manifest)
 
 
 def _write_manifest(root: Path, manifest: dict[str, Any]) -> None:
@@ -245,5 +312,5 @@ def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] 
     if not check:
         packs = [*skill_packs(root), *add_packs]
         owned = sorted(_project_owned(manifest))
-        _write_manifest(root, _build_manifest(root, context, specs, packs, owned))
+        _write_manifest(root, _build_manifest(root, context, specs, packs, owned, manifest))
     return result
