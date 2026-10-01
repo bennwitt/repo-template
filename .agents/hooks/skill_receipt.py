@@ -80,7 +80,9 @@ def record(event: Dict[str, Any]) -> Optional[str]:
     if not isinstance(policy, dict) or policy.get("mode", "log") not in MODES[1:]:
         return None
     root = policy_path.parent.parent
-    log = (root / str(policy.get("logPath") or DEFAULT_LOG)).resolve()
+    # log_path is the older spelling some repositories' policies still use.
+    log_path = policy.get("logPath") or policy.get("log_path") or DEFAULT_LOG
+    log = (root / str(log_path)).resolve()
     try:
         log.relative_to(root)
     except ValueError:

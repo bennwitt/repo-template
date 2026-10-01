@@ -161,3 +161,51 @@ def test_project_owned_files_are_left_alone_and_stay_owned(tmp_path: Path) -> No
     update_project(root)
     assert workflow.read_text() == "name: Custom CI\n"
     assert json.loads(manifest_path.read_text())["project_owned"] == [".github/workflows/ci.yml"]
+
+
+def _existing_repository(root: Path, *, claude: str | None = None) -> Path:
+    (root / "src/chat").mkdir(parents=True)
+    (root / "src/chat/__init__.py").write_text("")
+    (root / "src/config.py").write_text("")
+    (root / "pyproject.toml").write_text('[project]\nname = "flat-app"\nversion = "1.0.0"\n')
+    if claude is not None:
+        (root / "CLAUDE.md").write_text(claude)
+    return root
+
+
+def test_adoption_keeps_a_flat_src_layout(tmp_path: Path) -> None:
+    root = _existing_repository(tmp_path / "checkout-dir")
+
+    update_project(root)
+
+    assert not (root / "src/flat_app").exists()
+    assert not (root / "tests/test_smoke.py").exists()
+    assert "mypy" not in tomllib.loads((root / "pyproject.toml").read_text())["tool"]
+    assert "- Application code: `src/`" in (root / "AGENTS.md").read_text()
+    manifest = json.loads((root / ".repo-template.json").read_text())
+    assert manifest["project"]["description"] == "flat-app project."
+    assert not update_project(root, check=True).needs_attention
+
+
+def test_adoption_asks_to_move_an_existing_claude_guide_into_agents_md(tmp_path: Path) -> None:
+    root = _existing_repository(tmp_path / "guided", claude="# Guide\n\nRun the tests.\n")
+
+    result = update_project(root)
+
+    assert not (root / "AGENTS.md").exists()
+    assert [item for item in result.preserved if item.startswith("CLAUDE.md")] == [
+        "CLAUDE.md (now AGENTS.md: move its guide into AGENTS.md, then make CLAUDE.md just "
+        "@AGENTS.md)"
+    ]
+
+    (root / "AGENTS.md").write_text("# Guide\n\nRun the tests.\n")
+    (root / "CLAUDE.md").write_text("@AGENTS.md\n")
+    assert not update_project(root, check=True).needs_attention
+
+
+def test_a_bare_claude_import_does_not_block_agents_md(tmp_path: Path) -> None:
+    root = _existing_repository(tmp_path / "bare", claude="@AGENTS.md\n")
+
+    update_project(root)
+
+    assert (root / "AGENTS.md").is_file()

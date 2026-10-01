@@ -141,7 +141,19 @@ repo-template update /path/to/repo   # apply
 ```
 
 For a repository without a manifest, `update` infers the name, description and Python version
-from `pyproject.toml`. Files that already exist and differ from the standard are listed under
+from `pyproject.toml`, and adapts to what is already there:
+
+- code that lives in `src/` but not in `src/<package>/` keeps its layout: no package scaffold,
+  smoke test or `[tool.mypy]` table that would name a package the repository doesn't have;
+- a tool the project already configures (any `[tool.ruff…]`, `[tool.pytest…]` or `[tool.mypy]`
+  table) keeps its settings, since adding even a line length changes how it formats code;
+- a `CLAUDE.md` that holds the agent guide is reported for a move into `AGENTS.md`, instead of
+  `update` creating a generic `AGENTS.md` beside it;
+- every managed file that differs is preserved, because there's no generation hash to prove it
+  unedited.
+
+To work through the preserved files, ask Claude Code or Codex to "resolve the files repo-template
+preserved"; the `repo-template` skill takes it from there. Files that already exist and differ from the standard are listed under
 **Preserved for manual review**. Compare them with a freshly generated repository, merge by
 hand, and run `update` again. If the project deliberately keeps its own version of a managed file
 (a custom CI workflow, say), list it under `project_owned` in `.repo-template.json`; `update`

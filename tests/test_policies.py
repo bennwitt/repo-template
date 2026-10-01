@@ -83,3 +83,17 @@ def test_toml_merge_preserves_invalid_toml() -> None:
     decision = POLICIES["toml_merge"].decide("[project\n", '[project]\nname = "x"\n', None)
 
     assert decision == Decision(Outcome.PRESERVE, note="invalid TOML")
+
+
+def test_toml_merge_leaves_an_already_configured_tool_alone() -> None:
+    existing = '[project]\nname = "x"\n\n[tool.ruff.lint]\nselect = ["F"]\n'
+    desired = (
+        '[project]\nname = "x"\n\n[tool.ruff]\nline-length = 100\n\n'
+        '[tool.ruff.lint]\nselect = ["E", "F"]\n\n[tool.mypy]\nstrict = true\n'
+    )
+
+    merged = POLICIES["toml_merge"].decide(existing, desired, None).content
+
+    assert "line-length" not in merged
+    assert 'select = ["F"]' in merged
+    assert "[tool.mypy]" in merged

@@ -34,6 +34,7 @@ class TemplateFile:
     policy: PolicyName = "managed"
     executable: bool = False
     legacy_path: str | None = None
+    legacy_hint: str = ""
 
 
 @dataclass
