@@ -17,7 +17,7 @@ build-backend = "uv_build"
 dev = [
     "mypy>=1.18",
     "pytest>=8.4",
-    "ruff>=0.13",
+    "ruff>=0.16.9",
     "pytest-cov>=7.0",
 ]
 
