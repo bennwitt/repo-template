@@ -191,6 +191,34 @@ it inside some other repository (which may well have `.agents/skills/` of its ow
 `npx skills add`) never relinks `~/.agents` there. If you're inside a second
 repo-template checkout, it stops and asks you to pass `--standards-root`.
 
+### Per-machine tools
+
+The portable settings turn on plugins that need tools on each machine, and some skills drive
+CLIs. Pin each one to its newest release at least 7 days old (a short supply-chain cooldown);
+these were current on 2026-10-13:
+
+```bash
+# language servers for the typescript-lsp and pyright-lsp plugins
+npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414
+# Playwright CLI, in step with the playwright-cli skill, and the browser it drives
+npm install -g --ignore-scripts @playwright/cli@0.1.22
+playwright-cli install-browser chromium
+# Azure Developer CLI 1.35.0: download azd-linux-amd64.tar.gz from its GitHub release, check
+# its SHA-256 against the release's digest, put azd on PATH, then reuse the az sign-in:
+azd config set auth.useAzCliAuth true
+```
+
+- `typescript-language-server` 6 needs Node 22.22 or later; 5.3 is the newest that runs on Node
+  20, which is past its end of life, so move to Node 22 or 24 LTS when you can. TypeScript 7 is
+  the native compiler and has no `tsserver`, so the language server needs TypeScript 6.
+- Codex: `codex update` takes the very latest release. For a release at least 7 days old,
+  install its `codex-package-<target>.tar.gz` from GitHub (checking the digest) beside the
+  current one under `~/.codex/packages/standalone/releases/`, and repoint `current`.
+- The `github` plugin connects to GitHub's MCP server with `$GITHUB_PERSONAL_ACCESS_TOKEN`. Set
+  it (a fine-grained, read-only token is enough) in the environment Claude Code starts in, or
+  the plugin fails to connect with "Authorization header is badly formatted". The token never
+  goes in this repository.
+
 ### Create a repository
 
 ```bash
@@ -274,10 +302,13 @@ what is already there:
 | `check` | current (every path, when given several) | something would change, or an error was reported | n/a |
 | `globals` | applied cleanly | an error was reported (for example an override for a missing skill, or settings that aren't valid JSON) | something was preserved: a portable setting changed on this machine (reported once), a link at `~/.claude/settings.json` that repo-template didn't create, or a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
 | `globals --check` | current | a link or setting would change, or something is reported for review (once: a setting changed on this machine, a link repo-template didn't create) | n/a |
+| `globals --upstream` | every vendored skill is current | a skill changed upstream | something needs review: a skill removed or moved upstream, a license text changed, a recorded commit that doesn't hold the vendored folder |
+| `globals --upgrade` (`130` if interrupted, after listing what it applied) | applied, or nothing to do | a skill was refused (it failed verification or the scan, or runs commands when it loads), or an error was reported | a skill was left as it is (skipped, kept though gone upstream, or with `--no-input` not named or not ready to apply unattended), or something was preserved while linking |
 
 Every command also exits `1` with a `repo-template: error: …` line when it can't run at all: an
 unknown pack, an unreadable manifest, a non-empty target for `new`, or a manifest from a newer
-version. Exit `2` otherwise means only "preserved for manual review" (and command-line usage
+version. `globals --upstream` and `--upgrade` exit `3` when GitHub can't be reached or refuses a
+request; a repository, ref or folder that is gone (404) is reported for that skill instead. Exit `2` otherwise means only "preserved for manual review" (and command-line usage
 errors, which print the usage). When a run has both errors and preserved files, errors win and
 the exit is `1`: fix what failed, rerun, then decide the preserved files.
 
@@ -516,29 +547,69 @@ regenerates the catalog block above and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOT
 the catalog has no errors. A skill with a problem isn't linked until it's fixed: linking is when
 a skill goes live.
 
-Until `globals --upgrade` lands (it stages, verifies and scans a skill before it goes live),
-add a skill with a pinned `npx skills` and no telemetry, then vet it:
+Vendor skills with `globals --upgrade`, which never commits. It starts only from a clean
+`.agents`, `.claude/skills`, README, CHANGELOG and notices, so its changes can be reviewed on
+their own, and only one runs at a time in a repository. Then:
 
 ```bash
-# codex (a universal agent) is what makes skills@1.7.0 install into ~/.agents/skills, this
-# catalog; with claude-code alone it copies the skill into ~/.claude/skills instead
-DISABLE_TELEMETRY=1 npx -y skills@1.7.0 add owner/repo --skill some-skill -g -a claude-code codex -y
-uv run .agents/skills/skill-scanner/scripts/scan_skill.py .agents/skills/some-skill
-# under "skills" in .agents/skill-sources.json, record "commit" (for a skill just added from the
-# default branch, the latest commit to its folder) and "tree" (the lock's skillFolderHash):
-gh api 'repos/owner/repo/commits?path=<folder>&per_page=1' --jq '.[0].sha'
-# for a new source, also record its license, copyright and licenseFiles, copying each file to
-# .agents/licenses/<owner>_<repo>__<file>.txt (`git hash-object <copy>` gives its blob SHA)
-git add -N .agents/skills/some-skill .agents/licenses   # integrity hashes what Git tracks
-repo-template globals            # links it, regenerates the catalog and notices
-uv run pytest                    # frontmatter, integrity, licenses, generated docs
-git add .agents README.md THIRD_PARTY_NOTICES.md .claude/skills
-git commit -m "Add some-skill skill"
+repo-template globals --upstream                    # what changed upstream (read-only)
+repo-template globals --upgrade                     # one of: review each changed skill in turn,
+repo-template globals --upgrade tdd wizard          #   or only these,
+repo-template globals --upgrade owner/repo@a-skill  #   or add one (a folder path, if it isn't
+                                                    #   named after the skill; #v1.2 pins a tag)
+uv run pytest
+git add .agents README.md THIRD_PARTY_NOTICES.md CHANGELOG.md .claude/skills
+git commit -m "Upgrade skills: tdd, wizard"
 ```
 
-To update a vendored skill, run the same `npx skills add` again: it replaces the folder and its
-lock entry. Then record the new `commit` and `tree`, and run the `git add -N`, `globals` and
-`pytest` steps above; `globals` re-applies any override.
+For each skill, `--upgrade`:
+
+1. **Stages** the upstream folder in a staging folder at the repository root, through the GitHub
+   API (`gh` with its telemetry off, or `$GH_TOKEN`). It refuses symlinks, submodules, unsafe
+   paths, files that would be one file on a case-insensitive file system, `.gitignore`,
+   `.gitattributes` and `.gitmodules` files, files this repository's Git ignores, more than
+   2,000 files or 20 MB, and any file whose bytes don't match its blob SHA. Then it
+   **verifies** that the folder hashes to upstream's tree SHA, from the listing and again from
+   the files written.
+2. **Scans** it with `skill-scanner` as committed at `HEAD`, never the copy being replaced, run
+   by uv from an empty directory with its dependencies pinned to that commit's date. A crash,
+   or critical or high findings beyond the skill's reviewed allowance (`allowFindings` under
+   `skills` in `.agents/skill-sources.json`), refuse it. `--allow-findings REASON` applies it
+   anyway, after you confirm, and records the reason and counts. A skill with a command that
+   runs when it loads, in any of its Markdown files, is refused until it is allowed under
+   `allowCommands`.
+3. **Shows** each changed file (with its line counts, and whether it's binary or executable),
+   then the diff, with control characters escaped so a file can't hide lines from you. For an
+   overridden skill the diff is against its upstream original, and it says when upstream
+   changed a field the override replaces. It names what needs your eyes: the files `skill-scanner`
+   didn't read (it lists the ones it did), binary files, new URLs, and changed frontmatter that
+   decides what the skill may do (such as `allowed-tools` or `hooks`). Code is shown even with
+   a NUL byte in it. A clean scan is not a review. Then it asks: apply, skip, quit, or view the whole diff when it's long. A skill
+   that moved upstream (its folder, or a folder named after it, holding its SKILL.md) is
+   followed; one in several folders is left for you to name; one gone from the whole
+   repository is removed only if you say so, along with its pack membership and
+   `allowCommands` entry. Before any of this, a refresh is refused when its source's pinned
+   license text changed upstream, and an addition or refresh that carries its own license is
+   refused until that license is recorded. `--no-input` applies only the skills you name, and
+   only when the scan is clean and nothing needs review; it never removes. `skill-scanner` itself
+   is upgraded on its own, in a terminal.
+4. **Swaps** it in and writes its records as one journaled transaction. The journal, written
+   first, holds the record files as they were, so an error, a signal or a kill at any point
+   before it completes rolls back to the state before it: now, or in the next run (`globals`
+   reports the leftover). An override is applied to the staged copy, so the folder is never
+   live without it, and records are re-read first, so edits made meanwhile are kept. It records the lock entry (keeping the lock's order and
+   fields), the commit and tree, and a new source's license as GitHub identifies it, with
+   every license and notice file at its root (refusing a license GitHub can't name). It
+   records the new files with `git add -N`, which stages no content, then re-applies any
+   override, links the skill, regenerates the catalog and notices, and notes the skills in
+   `CHANGELOG.md` under `## Unreleased`, even when a later skill fails.
+
+`--upstream` also confirms each recorded commit holds the vendored folder, says when upstream
+changed a field an override replaces, and, for a skill pinned to a tag (not a branch), when a
+newer release is out, with the command that re-pins it. A repository that is itself one skill (`SKILL.md` at its root) can't be vendored yet.
+
+A weekly workflow (`.github/workflows/catalog-drift.yml`) runs `globals --upstream` with a
+read-only token and fails when something changed, so drift shows up without anyone looking.
 
 To change a vendored skill's description or other frontmatter, don't edit its `SKILL.md`:
 integrity would flag it, and vendoring the skill again would undo it. Add the fields to
@@ -612,7 +683,8 @@ uv run repo-template --help
   shared by `new`, `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`. Catalog provenance (integrity against the lock, licenses,
   the generated catalog block and notices): `src/repo_template/catalog.py`. SKILL.md
-  frontmatter: `src/repo_template/skillfile.py`.
+  frontmatter: `src/repo_template/skillfile.py`. The catalog against upstream, the only code
+  that uses the network (`globals --upstream` and `--upgrade`): `src/repo_template/upstream.py`.
 - This repository is the first consumer of its own baseline: it commits a `.repo-template.json`
   and `tests/test_baseline_sync.py` fails whenever `repo-template check .` would change anything,
   or the build pins differ. A Dependabot update here therefore fails CI until `templates.py`

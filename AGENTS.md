@@ -10,8 +10,10 @@ AI-development configuration across machines. Domain terms are defined in `GLOSS
 ## Boundaries
 
 The CLI creates and updates Python/uv repository scaffolding and installs global symlinks. It does
-not create GitHub repositories, push commits, copy secrets, or overwrite conflicting
-project-owned files.
+not create GitHub repositories, commit or push, copy secrets, or overwrite conflicting
+project-owned files. Only `globals --upstream` (read-only) and `globals --upgrade` use the network;
+`--upgrade` records the files it vendors (skills and license copies) with `git add -N` and
+leaves committing to you.
 
 ## Commands
 

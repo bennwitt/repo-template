@@ -81,6 +81,11 @@ change only its own frontmatter fields, to exactly what it writes), and every sk
 and licensed. `globals --check` and the tests verify it offline; a skill that fails isn't
 linked.
 
+**Catalog upgrade**:
+`globals --upgrade`: vendoring a skill from upstream, refreshed or added. Each one is staged,
+verified against the upstream tree SHA, scanned by the committed `skill-scanner`, shown as a diff,
+and swapped in only when you apply it. `globals --upstream` reports what an upgrade would bring.
+
 **Skill override**:
 A frontmatter edit to a vendored skill, kept in `.agents/skill-overrides.json` with the upstream
 text of each field it replaces and the upstream SKILL.md's blob SHA, marked in the SKILL.md, and

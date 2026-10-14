@@ -749,6 +749,7 @@ def test_a_skill_with_its_own_license_needs_it_recorded(tmp_path: Path) -> None:
     [
         (_set(["sources", "o/r"], "MIT"), "source o/r: no license record"),
         (_set(["skills", "gone"], {"commit": COMMIT}), "gone: under 'skills'"),
+        (_set(["skills", "s", "allowFindings"], {"counts": {"high": 1}}), "'allowFindings' needs"),
     ],
 )
 def test_malformed_and_stale_records_are_reported(
