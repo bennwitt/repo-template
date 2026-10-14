@@ -65,10 +65,10 @@ only once everything is healthy.
 
 ## 4. Share the GPU deliberately
 
-- vLLM takes `--gpu-memory-utilization` (default 0.9) of the whole GPU at start, whether it
-  needs it or not. With other models on the same GPU, set it so the fractions add up to at most
-  about 0.95, and cap `--max-model-len` so the KV cache fits. A SAM 3 service next to it needs
-  roughly 4 to 8 GiB.
+- vLLM takes `--gpu-memory-utilization` of the whole GPU at start (0.92 by default in v0.29
+  to v0.31), whether it needs it or not. With other models on the same GPU, set it so the
+  fractions add up to at most about 0.95, and cap `--max-model-len` so the KV cache fits. A
+  SAM 3 service next to it needs roughly 4 to 8 GiB.
 - PyTorch workers need shared memory: `shm_size: 16gb`. `ipc: host` also works but shares the
   host's IPC namespace; prefer `shm_size`.
 - Measure, don't guess: `nvidia-smi` while every service is loaded and serving.

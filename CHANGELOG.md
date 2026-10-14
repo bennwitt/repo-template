@@ -10,8 +10,9 @@
   `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`,
   `azure-resource-lookup`, `azure-storage`, `azure-validate`, `docker-build-strategies`,
   `docker-compose-patterns`, `docker-destructive-guardrails`, `entra-app-registration`, `fastapi`,
-  `frontend-design`, `microsoft-foundry`, `playwright-best-practices`, `playwright-cli`,
-  `playwright-trace`, `vercel-composition-patterns`, `vercel-react-best-practices`.
+  `frontend-design`, `hf-mem`, `huggingface-local-models`, `microsoft-foundry`, `model-recipes`,
+  `playwright-best-practices`, `playwright-cli`, `playwright-trace`, `vercel-composition-patterns`,
+  `vercel-react-best-practices`, `vllm-bench-serve`.
 - New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
   healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
 - Pack `react`: `frontend-design` (anthropics/skills, Apache-2.0) and a `shadcn` skill derived
@@ -41,6 +42,16 @@
 - New derived skill `web-interface-guidelines` in pack `react`: Vercel's Web Interface
   Guidelines (vercel-labs/web-interface-guidelines, MIT) copied at a fixed commit. The upstream
   `web-design-guidelines` skill fetched them from `main` at every review, so it isn't vendored.
+- Pack `local-inference`: `model-recipes` (vllm-project/vllm), `vllm-bench-serve`
+  (vllm-project/vllm-skills), `hf-mem` and `huggingface-local-models` (huggingface/skills), all
+  Apache-2.0, and two local skills: `local-model-serving` (vLLM, llama.cpp and Ollama on a
+  workstation GPU: pinned images, parsers, Ampere quantization, co-resident memory, exposure,
+  clients and Claude Code against a local model) and `muse-glimmer` (Meta Muse Glimmer on vLLM:
+  sampling, reasoning strength, tool calls, LangChain, Open WebUI and Claude Code).
+- Pack `vision`: local skills `opencv-python` (one headless wheel, colour order, dtypes and
+  EXIF at every hand-off, video I/O, servers, tests) and `sam3` (Meta SAM 3 and 3.1: hosted,
+  transformers and native paths, prompts, coordinates, GPU memory, the SAM License).
+- `compose-gpu-serving`: vLLM's `--gpu-memory-utilization` default is 0.92 (v0.29 to v0.31).
 - The `azure` plugin is off (the packs replace it: about 16,000 characters of descriptions in
   every session, a telemetry hook, and an MCP server that runs `@azure/mcp@latest`).
 - Portable settings ask before Azure deploys, deletes and purges, role assignments, admin

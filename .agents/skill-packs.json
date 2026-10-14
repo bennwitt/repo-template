@@ -116,6 +116,17 @@
       "reference-langchain"
     ]
   },
+  "local-inference": {
+    "description": "Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer.",
+    "skills": [
+      "hf-mem",
+      "huggingface-local-models",
+      "local-model-serving",
+      "model-recipes",
+      "muse-glimmer",
+      "vllm-bench-serve"
+    ]
+  },
   "playwright": {
     "description": "Playwright end-to-end tests: best practices and reading traces.",
     "skills": [
@@ -143,6 +154,13 @@
     "skills": [
       "migrate-to-shoehorn",
       "setup-ts-deep-modules"
+    ]
+  },
+  "vision": {
+    "description": "Computer vision in Python: OpenCV, and Meta SAM 3 segmentation.",
+    "skills": [
+      "opencv-python",
+      "sam3"
     ]
   }
 }

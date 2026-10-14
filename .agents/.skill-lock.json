@@ -801,6 +801,42 @@
       "skillFolderHash": "bf90d0a4b83ea054653350f9c67f6de235d3a368",
       "installedAt": "2026-10-14T08:32:59.806Z",
       "updatedAt": "2026-10-14T08:32:59.806Z"
+    },
+    "model-recipes": {
+      "source": "vllm-project/vllm",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vllm-project/vllm.git",
+      "skillPath": ".agents/skills/model-recipes/SKILL.md",
+      "skillFolderHash": "76900a2f39c39db1d5095ecffe51760124a07c56",
+      "installedAt": "2026-10-14T08:34:40.951Z",
+      "updatedAt": "2026-10-14T08:34:40.951Z"
+    },
+    "vllm-bench-serve": {
+      "source": "vllm-project/vllm-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vllm-project/vllm-skills.git",
+      "skillPath": "plugins/vllm-skills/skills/vllm-bench-serve/SKILL.md",
+      "skillFolderHash": "501330d7c1209a1fda10fd9e6cab51e629e3a2bc",
+      "installedAt": "2026-10-14T08:34:44.032Z",
+      "updatedAt": "2026-10-14T08:34:44.032Z"
+    },
+    "hf-mem": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/huggingface/skills.git",
+      "skillPath": "skills/hf-mem/SKILL.md",
+      "skillFolderHash": "a36ea7843be90b3d3b8a78fdb8ac23950a98a451",
+      "installedAt": "2026-10-14T08:34:47.094Z",
+      "updatedAt": "2026-10-14T08:34:47.094Z"
+    },
+    "huggingface-local-models": {
+      "source": "huggingface/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/huggingface/skills.git",
+      "skillPath": "skills/huggingface-local-models/SKILL.md",
+      "skillFolderHash": "89782df299cf7514502688a9f5f174a875e9927d",
+      "installedAt": "2026-10-14T08:34:49.629Z",
+      "updatedAt": "2026-10-14T08:34:49.629Z"
     }
   },
   "dismissed": {

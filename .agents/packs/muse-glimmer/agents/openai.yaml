@@ -1,0 +1,3 @@
+interface:
+  display_name: "Muse Glimmer on vLLM"
+  short_description: "Serve and call Meta Muse Glimmer through vLLM"

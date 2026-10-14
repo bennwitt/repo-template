@@ -62,6 +62,14 @@
       },
       "discover": "none"
     },
+    "huggingface/skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
+    },
     "langchain-ai/langchain-skills": {
       "license": "MIT",
       "copyright": "Copyright (c) LangChain, Inc.",
@@ -134,6 +142,22 @@
         "LICENSE": "eabe3008f6c0275929faa8b07d406e82717648cc"
       },
       "discover": "none"
+    },
+    "vllm-project/vllm": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
+    },
+    "vllm-project/vllm-skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "5e6620780bdc6b10758bc814e621981705080bbe"
+      },
+      "discover": "none"
     }
   },
   "local": {
@@ -153,7 +177,19 @@
         "commit": "ef99c70e2e6d5e4f5e227ee6745df32bcac72fdc"
       }
     },
+    "local-model-serving": {
+      "license": "MIT"
+    },
+    "muse-glimmer": {
+      "license": "MIT"
+    },
+    "opencv-python": {
+      "license": "MIT"
+    },
     "repo-template": {
+      "license": "MIT"
+    },
+    "sam3": {
       "license": "MIT"
     },
     "shadcn": {
@@ -357,6 +393,14 @@
       "commit": "3cae4986c69fc851a4b18c340f7cbeb9dcdee410",
       "tree": "cf152b8708e94e97902eb340d24e17fc2a746694"
     },
+    "hf-mem": {
+      "commit": "c3ff942be3e07116b475253f0a8fc4f54682c1a8",
+      "tree": "a36ea7843be90b3d3b8a78fdb8ac23950a98a451"
+    },
+    "huggingface-local-models": {
+      "commit": "c3ff942be3e07116b475253f0a8fc4f54682c1a8",
+      "tree": "89782df299cf7514502688a9f5f174a875e9927d"
+    },
     "implement": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "4804b466ab26c9b9d8d42917547db133d1f20a9f"
@@ -432,6 +476,10 @@
     "migrate-to-shoehorn": {
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
       "tree": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23"
+    },
+    "model-recipes": {
+      "commit": "bb1438a93f8873c30176d93267d0647f8e4c7b83",
+      "tree": "76900a2f39c39db1d5095ecffe51760124a07c56"
     },
     "playwright-best-practices": {
       "commit": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
@@ -537,6 +585,10 @@
     "vercel-react-best-practices": {
       "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",
       "tree": "343db72180d05814949fef7d46be96b5c6ee86b3"
+    },
+    "vllm-bench-serve": {
+      "commit": "c99623410c1531148ff9b39fe1dcb27efbf4bf23",
+      "tree": "501330d7c1209a1fda10fd9e6cab51e629e3a2bc"
     },
     "wait-what": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
