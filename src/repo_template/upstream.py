@@ -51,6 +51,7 @@ from repo_template.catalog import (
     own_license,
     read_skill,
     runs_on_load,
+    skill_folder,
     upstream_skill_md,
     upstream_url,
 )
@@ -731,7 +732,12 @@ def _files(folder: Path | None, only: set[str] | None = None) -> dict[str, Path]
 
 
 def _home(root: Path, name: str) -> str:
-    """The folder a skill belongs in: .agents/packs when a pack lists it, else .agents/skills."""
+    """The folder a skill is in: where it lives, so a refresh or removal acts on the live files
+    (integrity reports one that is out of place), else where it belongs: .agents/packs when a
+    pack lists it, .agents/skills otherwise."""
+    live = skill_folder(root, name)
+    if (live / "SKILL.md").is_file():
+        return PACKS_DIR if live.parent == root / PACKS_DIR else SKILLS_DIR
     path = root / PACKS_NAME
     try:
         packs = json.loads(path.read_text()) if path.is_file() else {}
@@ -919,6 +925,7 @@ class Transaction:
             os.rename(self.target, self.stage_dir / PREVIOUS)
             _step("moved-out")
         if incoming is not None:
+            self.target.parent.mkdir(parents=True, exist_ok=True)
             os.rename(incoming, self.target)
             _step("moved-in")
 

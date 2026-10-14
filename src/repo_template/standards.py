@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import tomllib
 from collections.abc import Callable, Sequence
 from datetime import datetime
@@ -22,6 +23,7 @@ from repo_template.catalog import (
     lock_completion,
     origin,
     override,
+    placement,
     read_skill,
     skill_folder,
     sync_documents,
@@ -270,38 +272,106 @@ def _points_into_any(*parents: Path) -> Callable[[Path], bool]:
     return lambda entry: Path(os.readlink(entry)).parent in parents
 
 
+def _blocked(directory: Path, stop: Path) -> Path | None:
+    """The first of directory and its parents below `stop` that is there but isn't a folder (a
+    file, or a dangling link): links can't go under it."""
+    for path in (directory, *directory.parents):
+        if path == stop or stop not in path.parents:
+            return None
+        if (path.is_symlink() or path.exists()) and not path.is_dir():
+            return path
+    return None
+
+
 def _sync_links(
     directory: Path,
     targets: dict[str, Path],
+    owned: Callable[[Path], bool],
     result: Result,
     *,
     check: bool,
+    stop: Path,
     base: Path | None = None,
+    ignored: Callable[[list[Path]], set[Path]] | None = None,
 ) -> None:
-    """Make directory/<name> a symlink to targets[name] for every name."""
+    """Make directory/<name> a symlink to targets[name] for every name. Real files and folders,
+    and links this tool didn't make, are kept and reported; so is a new link that `ignored`
+    says Git wouldn't ignore."""
+
+    def label(path: Path) -> str:
+        return str(path.relative_to(base)) if base else str(path)
+
+    blocked = _blocked(directory, stop)
+    if blocked is not None:
+        if targets:
+            result.preserved.append(f"{label(blocked)} (not a folder; skill links skipped)")
+        return
+    changes: list[Path] = []
     for name, target in targets.items():
         link = directory / name
-        label = str(link.relative_to(base)) if base else str(link)
         if link.is_symlink() and Path(os.readlink(link)) == target:
-            result.unchanged.append(label)
+            result.unchanged.append(label(link))
+        elif link.is_symlink() and not owned(link):
+            result.preserved.append(
+                f"{label(link)} (a link this tool didn't make; remove it so the skill can be "
+                f"linked)"
+            )
+        elif link.exists() and not link.is_symlink():
+            result.preserved.append(
+                f"{label(link)} (not a link; remove it so the skill can be linked)"
+            )
+        else:
+            changes.append(link)
+    tracked = set(changes) - ignored(changes) if ignored and changes else set()
+    for link in changes:
+        if link in tracked:
+            result.preserved.append(
+                f"{label(link)} (Git wouldn't ignore this link; ignore it so the skill can be "
+                f"linked)"
+            )
             continue
-        if link.exists() and not link.is_symlink():
-            result.preserved.append(f"{label} (not a link; remove it so the skill can be linked)")
-            continue
-        (result.updated if link.is_symlink() else result.created).append(label)
+        (result.updated if link.is_symlink() else result.created).append(label(link))
         if check:
             continue
         directory.mkdir(parents=True, exist_ok=True)
         if link.is_symlink():
             link.unlink()
-        link.symlink_to(target, target_is_directory=True)
+        link.symlink_to(targets[link.name], target_is_directory=True)
 
 
 def _sync_mirror(standards_root: Path, names: list[str], result: Result, *, check: bool) -> None:
     """Keep <standards>/.claude/skills/<name> as relative links to .agents/skills/<name>."""
     mirror = standards_root / ".claude/skills"
-    _sync_links(mirror, {name: SKILL_MIRROR_TARGET / name for name in names}, result, check=check)
-    _prune_links(mirror, _points_into(SKILL_MIRROR_TARGET), set(names), result, check=check)
+    owned = _points_into(SKILL_MIRROR_TARGET)
+    targets = {name: SKILL_MIRROR_TARGET / name for name in names}
+    _sync_links(mirror, targets, owned, result, check=check, stop=standards_root)
+    _prune_links(mirror, owned, set(names), result, check=check)
+
+
+def _git_ignores(root: Path) -> Callable[[list[Path]], set[Path]]:
+    """Which of the given paths under root Git would ignore. Without a .git folder (or Git)
+    there is nothing to commit them to, so all of them."""
+
+    def ignored(paths: list[Path]) -> set[Path]:
+        if not (root / ".git").exists():
+            return set(paths)
+        real = root.resolve()
+        relative = {
+            (path.parent.resolve() / path.name).relative_to(real).as_posix(): path for path in paths
+        }
+        try:
+            done = subprocess.run(
+                ["git", "-C", str(root), "check-ignore", "--stdin", "-z"],
+                input="\0".join(relative).encode(),
+                capture_output=True,
+                check=False,
+            )
+        except FileNotFoundError:
+            return set(paths)
+        listed = {os.fsdecode(item) for item in done.stdout.split(b"\0") if item}
+        return {path for key, path in relative.items() if key in listed}
+
+    return ignored
 
 
 def sync_project_packs(
@@ -313,15 +383,17 @@ def sync_project_packs(
     agents_dir: Path,
 ) -> None:
     """Link each skill of the repository's packs into <root>/.claude/skills, for Claude Code, and
-    <root>/.agents/skills, for Codex (both ignored by Git).
+    <root>/.agents/skills, for Codex. A new link is made only where Git would ignore it.
 
     Links point at <agents_dir>/packs/<name>, normally ~/.agents/packs, so they follow the
     standards repository wherever it lives. Pack skills live there, outside every folder Codex
     reads on its own, so Codex sees them only in repositories with the pack. Links for packs no
     longer listed are removed, unless a listed pack isn't defined: its links can't be told
     apart, so nothing is removed. Links into <agents_dir>/skills, where pack skills used to
-    live, are this tool's too, and are replaced.
+    live, are this tool's too, and are replaced. Nothing is linked into a folder that resolves
+    outside the repository or into the catalog.
     """
+    agents_dir = agents_dir.absolute()  # link targets resolve against the link's own folder
     definitions = load_skill_packs(agents_dir)
     packs_dir, skills_dir = agents_dir / "packs", agents_dir / "skills"
     wanted: dict[str, Path] = {}
@@ -339,12 +411,44 @@ def sync_project_packs(
                 wanted[name] = skills_dir / name
             else:
                 result.errors.append(f"skill pack {pack!r} lists {name!r}, which isn't installed")
-    targets = [root / ".claude/skills"]
-    if (root / ".agents").resolve() != agents_dir.resolve():  # never link the catalog into itself
-        targets.append(root / ".agents/skills")
     owned = _points_into_any(packs_dir, skills_dir)
-    for target_dir in targets:
-        _sync_links(target_dir, dict(sorted(wanted.items())), result, check=check, base=root)
+    real_root, catalog = root.resolve(), agents_dir.resolve()
+    seen: set[Path] = set()
+    for relative in (".claude/skills", ".agents/skills"):
+        target_dir = root / relative
+        if _blocked(target_dir, root) is None:
+            real = target_dir.resolve()
+            if real in seen:  # .claude/skills -> ../.agents/skills: one folder for both
+                continue
+            seen.add(real)
+            if (
+                real == catalog
+                or catalog in real.parents
+                or (relative == ".agents/skills" and _is_standards_root(root))
+            ):
+                if wanted:
+                    result.preserved.append(
+                        f"{relative} (the skill catalog itself, so pack skills aren't linked "
+                        f"there; make .agents a folder of this repository's own)"
+                    )
+                continue
+            if real != real_root and real_root not in real.parents:
+                if wanted:
+                    result.preserved.append(
+                        f"{relative} (resolves outside this repository; pack skills aren't "
+                        f"linked there)"
+                    )
+                continue
+        _sync_links(
+            target_dir,
+            dict(sorted(wanted.items())),
+            owned,
+            result,
+            check=check,
+            stop=root,
+            base=root,
+            ignored=_git_ignores(root),
+        )
         if not undefined:
             _prune_links(target_dir, owned, set(wanted), result, check=check, base=root)
 
@@ -429,6 +533,7 @@ def sync_globals(
     skill_root = standards_root / ".agents/skills"
     names = skill_names(standards_root)
     packs = load_skill_packs(standards_root / ".agents")
+    in_packs = {name for skills in packs.values() for name in skills}
     unsafe: set[str] = set()
     if _is_full_catalog(standards_root):
         # documents wait for a sound catalog, and a skill with a problem isn't linked
@@ -436,7 +541,10 @@ def sync_globals(
         result.errors.extend(problems)
         if not problems:
             sync_documents(standards_root, names, packs, result, check=check)
-    in_packs = {name for skills in packs.values() for name in skills}
+    else:  # no provenance to check, but a skill still has to be where it's linked from
+        for name, why in placement(standards_root, names, in_packs):
+            result.errors.append(f"{name}: {why}")
+            unsafe.add(name)
     for missing in sorted(in_packs - set(names)):
         result.errors.append(f"{SKILL_PACKS_NAME} lists {missing!r}, which isn't in the catalog")
     for name in sorted(unsafe - in_packs):

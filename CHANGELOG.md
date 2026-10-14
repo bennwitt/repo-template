@@ -6,7 +6,12 @@
   sees them only where a repository lists the pack, like Claude Code. `update` links a pack's
   skills into the repository's `.agents/skills/` (for Codex) as well as `.claude/skills/`, and
   repoints links from before the move. Integrity checks that a skill lives in `.agents/packs/`
-  exactly when a pack lists it. Verified with Codex 0.160.1's `debug prompt-input`.
+  exactly when a pack lists it (by where its SKILL.md is, so a moved skill's leftover caches don't
+  count), in every standards repository. Verified with Codex 0.160.1's `debug prompt-input`.
+- `update` makes a pack link only where Git ignores it, and never replaces a link it didn't make.
+  It skips a folder that isn't one (a dangling `.agents` link), resolves outside the repository,
+  or is the catalog, and reports each. `globals --upgrade` refreshes or removes a skill in the
+  folder it lives in.
 - `globals --upstream` compares every vendored skill and license text with upstream, read-only, and
   confirms each recorded commit holds the vendored folder. `globals --upgrade [SKILL …]` refreshes
   skills, or adds one as `owner/repo@skill-or-path[#ref]`. Each is staged, verified against the

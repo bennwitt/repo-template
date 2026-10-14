@@ -18,7 +18,7 @@ import os
 import re
 import stat
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -125,9 +125,33 @@ def _license_file(source: str, name: str) -> str:
 
 
 def skill_folder(root: Path, name: str) -> Path:
-    """Where a catalog skill lives: under .agents/packs if a pack holds it, else .agents/skills."""
+    """Where a catalog skill lives: the folder holding its SKILL.md, under .agents/packs (pack
+    skills) or .agents/skills. A folder without one (the ignored caches a moved skill leaves
+    behind) counts only when neither holds a SKILL.md."""
+    for folder in (PACKS_DIR, SKILLS_DIR):
+        if (root / folder / name / "SKILL.md").is_file():
+            return root / folder / name
     packed = root / PACKS_DIR / name
     return packed if packed.is_dir() else root / SKILLS_DIR / name
+
+
+def placement(
+    root: Path, names: Iterable[str], in_packs: AbstractSet[str]
+) -> list[tuple[str, str]]:
+    """Each skill that isn't where it belongs, with why: a skill a pack lists lives in
+    .agents/packs, where Codex doesn't look on its own, and every other in .agents/skills."""
+    found = []
+    for name in names:
+        held = [d for d in (SKILLS_DIR, PACKS_DIR) if (root / d / name / "SKILL.md").is_file()]
+        wanted = PACKS_DIR if name in in_packs else SKILLS_DIR
+        if len(held) > 1:
+            found.append((name, f"is in both {SKILLS_DIR} and {PACKS_DIR}; keep one"))
+        elif held and held[0] != wanted:
+            why = "a pack lists it" if name in in_packs else "no pack lists it"
+            found.append(
+                (name, f"{why}, so it belongs in {wanted}: git mv {held[0]}/{name} {wanted}/{name}")
+            )
+    return found
 
 
 def read_skill(path: Path) -> str:
@@ -444,17 +468,9 @@ def integrity(
         for skill in pack.get("skills", [])
         if isinstance(skill, str)
     }
+    for name, why in placement(root, names, in_packs):
+        problems.add(name, why)
     for name in names:
-        placed = PACKS_DIR if (root / PACKS_DIR / name).is_dir() else SKILLS_DIR
-        wanted = PACKS_DIR if name in in_packs else SKILLS_DIR
-        if (root / PACKS_DIR / name).is_dir() and (root / SKILLS_DIR / name).is_dir():
-            problems.add(name, f"is in both {SKILLS_DIR} and {PACKS_DIR}; keep one")
-        elif placed != wanted:
-            problems.add(
-                name,
-                f"{'a pack lists it' if name in in_packs else 'no pack lists it'}, so it belongs "
-                f"in {wanted}: git mv {placed}/{name} {wanted}/{name}",
-            )
         if skill_folder(root, name).is_symlink():
             problems.add(name, "its folder is a symlink; a skill is a folder in this repository")
         if name in lock and name in local:

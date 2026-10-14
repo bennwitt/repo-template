@@ -40,7 +40,7 @@ AI agents are only as good as the repository they land in and the workflows they
 flowchart LR
   subgraph S["Standards repository (this repo)"]
     T["Project baseline<br/>src/repo_template/templates.py"]
-    K["Skill catalog<br/>.agents/skills/"]
+    K["Skill catalog<br/>.agents/skills/ (global)<br/>.agents/packs/ (packs)"]
     C["Portable settings<br/>.agents/claude-settings.json"]
   end
   T -- "repo-template new / update" --> P1["my-service/"]
@@ -399,14 +399,23 @@ repo-template update /path/to/repo --pack gradio   # add one later (also applies
 ```
 
 The pack is recorded under `skill_packs` in `.repo-template.json`, and `update` links each of its
-skills into the repository's `.claude/skills/` (for Claude Code) and `.agents/skills/` (for Codex,
-which reads a repository's `.agents/skills` from its root down), both ignored by Git, as links to
-`~/.agents/packs/`. To drop a pack, remove it from `skill_packs` and run `update`; its links are
-removed and nothing else in either folder is touched. Links from before pack skills moved to
-`.agents/packs/` are repointed by the next `update`. On another machine, `update` recreates the links. If
-`skill_packs` lists a pack that `skill-packs.json` no longer defines (renamed, or a machine that
-hasn't pulled), `update` reports it and removes no links at all, since it can't tell which ones
-belonged to that pack.
+skills into the repository's `.claude/skills/` (for Claude Code) and `.agents/skills/` (for Codex),
+as links to `~/.agents/packs/`. To drop a pack, remove it from `skill_packs` and run `update`; its
+links are removed and nothing else in either folder is touched. Links from before pack skills
+moved to `.agents/packs/` are repointed by the next `update`. On another machine, `update`
+recreates the links. If `skill_packs` lists a pack that `skill-packs.json` no longer defines
+(renamed, or a machine that hasn't pulled), `update` reports it and removes no links at all, since
+it can't tell which ones belonged to that pack.
+
+`update` only makes links it can own, and reports the rest for you to decide:
+
+- A link is made only where Git ignores it (generated repositories ignore both folders), so a
+  link to this machine's catalog is never committed.
+- A file, a folder, or a link it didn't make (such as `npx skills add` leaves) keeps its name.
+- Nothing is linked into a folder that resolves outside the repository, or into the catalog
+  (a repository whose `.agents` is a link to `~/.agents`); `check` keeps reporting it.
+- Codex reads a repository's `.agents/skills` from the Git root down to the folder it runs in.
+  Without a `.git` folder (`new --no-git`) it sees pack skills only when run from the root.
 
 A skill can belong to several packs; it's linked once. A skill lives in `.agents/packs/` exactly
 when some pack lists it, and integrity says which `git mv` to run when that changes.
@@ -664,8 +673,8 @@ and follow `writing-for-agents`.
 ## License
 
 repo-template's own code and documentation are under the MIT License ([LICENSE](LICENSE)).
-Vendored agent skills under `.agents/skills/` and `.agents/packs/` keep their own licenses: the catalog above names
-each one, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) has the full texts. A vendored
+Vendored agent skills under `.agents/skills/` and `.agents/packs/` keep their own licenses: the
+catalog above names each one, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) has the full texts. A vendored
 skill's entry in `.agents/skill-overrides.json`, and the `SKILL.md` it produces, are under that
 skill's license.
 
