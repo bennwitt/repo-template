@@ -1,22 +1,36 @@
-"""setup-machine.sh, run in a temporary home with stand-ins for `uv` and `repo-template`: no
-network, no real home, no terminal (each run gets a session of its own, so it can't ask)."""
+"""setup-machine.sh, run in a temporary home with stand-ins for `uv`, `repo-template` and the
+tools it installs: no network and no real home. A run has no terminal (a session of its own, so
+it can't ask), unless it is a conversation (`_converse`), which answers in a terminal of its own."""
 
 from __future__ import annotations
 
+import hashlib
+import io
+import json
 import os
+import pty
+import select
 import shutil
+import signal
 import subprocess
+import sys
+import tarfile
+import time
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "setup-machine.sh"
-GIT = ["git", "-c", "user.name=T", "-c", "user.email=t@example.com"]
-IGNORE = (
-    "# >>> repo-template personal AI directories\n**/.claude/\n"
-    "# <<< repo-template personal AI directories\n"
-)
+GIT = [
+    "git",
+    "-c",
+    "user.name=T",
+    "-c",
+    "user.email=t@example.com",
+    "-c",
+    "core.excludesFile=/dev/null",
+]
 
 UV = """#!/bin/sh
 case "$1 $2" in
@@ -25,6 +39,7 @@ case "$1 $2" in
     cp "$STUBS/repo-template.stub" "$HOME/.local/bin/repo-template" ;;
   "tool dir") echo "$HOME/.local/bin" ;;
   "tool update-shell") ;;
+  "run --no-project") shift 4; exec "$PYTHON" "$@" ;;  # uv run --no-project --quiet python ...
   *) echo "uv stub: $*" >&2; exit 9 ;;
 esac
 """
@@ -33,12 +48,35 @@ REPO_TEMPLATE = """#!/bin/sh
 echo "repo-template $*" >>"$HOME/calls.log"
 case "$*" in
   --help) exit 0 ;;
+  --version) echo "repo-template 9.9.9 ($HOME/aiDevStandards)" ;;
   *--check*) printf 'Would create (2):\\n  + first-link\\n  + second-link\\n'
     exit "${CHECK_EXIT:-1}" ;;
-  globals*) mkdir -p "$HOME/.config/git"; printf '%s' "$IGNORE" >"$HOME/.config/git/ignore"
-    exit "${APPLY_EXIT:-0}" ;;
+  globals*) exit "${APPLY_EXIT:-0}" ;;
 esac
 """
+
+# The tools the script finds or installs. Each logs its call; only reads answer.
+TOOLS = {
+    "uname": 'case "$1" in -m) echo "${UNAME_M:-x86_64}" ;; *) echo "${UNAME_S:-Linux}" ;; esac\n',
+    "node": "echo v22.11.0\n",
+    "claude": "echo '2.1.0 (Claude Code)'\n",
+    "az": 'echo "az $*" >>"$HOME/calls.log"\n',
+    "npm": 'echo "npm $*" >>"$HOME/calls.log"\n[ "$1" != ls ] || printf "%s" "${NPM_LS-}"\n',
+    "curl": 'echo "curl $*" >>"$HOME/calls.log"\n'
+    'while [ "$1" != -o ]; do shift; done\n'
+    'cp "$RELEASE/${3##*/}" "$2"\n',  # curl -fsSL -o FILE URL: the release's file
+}
+AZD = (  # azd itself, as its release ships it
+    'echo "azd $*" >>"$HOME/calls.log"\n'
+    '[ "$1" != version ] || echo "azd version 1.2.3 (commit abc)"\n'
+)
+PINS = {
+    "codex": ("@openai/codex", "0.1.0"),
+    "playwright-cli": ("@playwright/cli", "0.1.2"),
+    "pyright": ("pyright", "1.1.4"),
+    "typescript": ("typescript", "6.0.3"),
+    "typescript-language-server": ("typescript-language-server", "5.3.0"),
+}
 
 
 def _git(root: Path, *args: str) -> str:
@@ -54,38 +92,108 @@ def machine(tmp_path: Path) -> dict[str, Path]:
     stubs.mkdir()
     (stubs / "uv").write_text(UV)
     (stubs / "repo-template.stub").write_text(REPO_TEMPLATE)
-    for stub in (stubs / "uv", stubs / "repo-template.stub"):
+    for name, body in TOOLS.items():
+        (stubs / name).write_text("#!/bin/sh\n" + body)
+    for stub in stubs.iterdir():
         stub.chmod(0o755)
+    release = tmp_path / "release"  # azd's release on GitHub, for linux-amd64
+    release.mkdir()
+    archive = io.BytesIO()
+    with tarfile.open(fileobj=archive, mode="w:gz") as tar:
+        program = ("#!/bin/sh\n" + AZD).encode()
+        binary = tarfile.TarInfo("azd-linux-amd64")
+        binary.size, binary.mode = len(program), 0o755
+        tar.addfile(binary, io.BytesIO(program))
+    (release / "azd-linux-amd64.tar.gz").write_bytes(archive.getvalue())
     origin.mkdir()  # the standards repository, as GitHub has it
     (origin / "pyproject.toml").write_text('[project]\nname = "repo-template"\nversion = "9.9.9"\n')
+    tools: dict[str, object] = {
+        name: {"registry": "npm", "package": package, "version": version}
+        for name, (package, version) in PINS.items()
+    }
+    tools["azd"] = {
+        "registry": "github",
+        "package": "Azure/azure-dev",
+        "tag": "azure-dev-cli_{version}",
+        "version": "1.2.3",
+        "assets": {
+            "linux-amd64": {
+                "file": "azd-linux-amd64.tar.gz",
+                "sha256": hashlib.sha256(archive.getvalue()).hexdigest(),
+            }
+        },
+    }
+    (origin / ".agents").mkdir()
+    (origin / ".agents/machine-tools.json").write_text(json.dumps({"schema": 1, "tools": tools}))
     _git(origin, "init", "-q", "-b", "main")
     _git(origin, "add", "-A")
     _git(origin, "commit", "-q", "-m", "standards")
-    return {"home": home, "stubs": stubs, "origin": origin}
+    return {"home": home, "stubs": stubs, "origin": origin, "release": release}
 
 
-def _run(machine: dict[str, Path], *args: str, **env: str) -> subprocess.CompletedProcess[str]:
+def _environment(machine: dict[str, Path], **env: str) -> dict[str, str]:
     home = machine["home"]
-    environment = {
+    return {
         "HOME": str(home),
         "USER": "tester",
         "SHELL": "/bin/zsh",
         "PATH": f"{machine['stubs']}:/usr/bin:/bin",
         "STUBS": str(machine["stubs"]),
-        "IGNORE": IGNORE,
+        "PYTHON": sys.executable,
+        "RELEASE": str(machine["release"]),
         "REPO_TEMPLATE_URL": str(machine["origin"]),
         "GIT_CONFIG_GLOBAL": str(home / ".gitconfig"),
         **env,
     }
+
+
+def _run(machine: dict[str, Path], *args: str, **env: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["bash", str(SCRIPT), *args],
-        cwd=home,  # a relative path in a run can only land in the temporary home
-        env=environment,
+        cwd=machine["home"],  # a relative path in a run can only land in the temporary home
+        env=_environment(machine, **env),
         capture_output=True,
         text=True,
         start_new_session=True,  # no terminal: it must never wait for an answer
         timeout=120,
     )
+
+
+def _converse(
+    machine: dict[str, Path], answers: list[tuple[str, str]], *args: str, **env: str
+) -> tuple[int, str]:
+    """A run in a terminal of its own: each answer is typed once its question appears, in
+    order. Returns the exit code and everything the terminal showed; every answer must be used."""
+    pid, terminal = pty.fork()
+    if pid == 0:  # the child: the script, with the terminal as its own
+        try:
+            os.chdir(machine["home"])
+            os.execve("/bin/bash", ["bash", str(SCRIPT), *args], _environment(machine, **env))
+        finally:
+            os._exit(127)
+    shown, asked_up_to, pending, ended = "", 0, list(answers), False
+    deadline = time.monotonic() + 120
+    try:
+        while not ended:
+            ready, _, _ = select.select([terminal], [], [], max(0.0, deadline - time.monotonic()))
+            if not ready:
+                raise TimeoutError(shown)
+            try:
+                chunk = os.read(terminal, 4096)
+            except OSError:  # Linux: the script exited
+                chunk = b""
+            ended = not chunk  # macOS reads nothing once the script exited
+            shown += chunk.decode(errors="replace")
+            while pending and (at := shown.find(pending[0][0], asked_up_to)) >= 0:
+                asked_up_to = at + len(pending[0][0])
+                os.write(terminal, (pending.pop(0)[1] + "\n").encode())
+    finally:
+        if not ended:
+            os.kill(pid, signal.SIGKILL)
+        _, status = os.waitpid(pid, 0)
+        os.close(terminal)
+    assert not pending, f"never asked {pending[0][0]!r}:\n{shown}"
+    return os.waitstatus_to_exitcode(status), shown
 
 
 def _calls(home: Path) -> list[str]:
@@ -189,19 +297,6 @@ def test_a_checkout_with_local_changes_isnt_pulled(machine: dict[str, Path]) -> 
     assert _git(target, "rev-parse", "HEAD") == before
 
 
-def test_ignores_are_copied_where_git_reads_them(machine: dict[str, Path]) -> None:
-    home = machine["home"]
-    mine = home / ".gitignore_global"
-    mine.write_text(".DS_Store\n")
-    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = {mine}\n")
-
-    first = _run(machine, "--yes", "--no-tools")
-    second = _run(machine, "--yes", "--no-tools")
-
-    assert first.returncode == second.returncode == 0, first.stderr + second.stderr
-    assert mine.read_text() == ".DS_Store\n\n" + IGNORE  # once, after the user's own lines
-
-
 def test_the_profile_block_replaces_an_old_one_and_keeps_the_rest(
     machine: dict[str, Path],
 ) -> None:
@@ -283,15 +378,11 @@ def test_a_broken_block_in_the_profile_is_left_alone(machine: dict[str, Path]) -
 
 
 def test_a_failing_step_doesnt_stop_the_rest(machine: dict[str, Path]) -> None:
-    home = machine["home"]
-    mine = home / ".gitignore_global"
-    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = {mine}\n")
-
-    result = _run(machine, "--yes", "--no-tools", APPLY_EXIT="1")
+    result = _run(machine, "--yes", APPLY_EXIT="1")
 
     assert result.returncode == 1 and "reported errors" in result.stderr
-    assert "AI_DEV_STANDARDS" in (home / ".zshrc").read_text()
-    assert mine.read_text() == IGNORE and "==> Done" in result.stdout  # the steps after it ran
+    assert "AI_DEV_STANDARDS" in (machine["home"] / ".zshrc").read_text()
+    assert "==> Optional tools" in result.stdout and "==> Done" in result.stdout  # the steps after
 
 
 def test_git_must_really_run(machine: dict[str, Path], tmp_path: Path) -> None:
@@ -327,40 +418,20 @@ def test_zsh_with_zdotdir_gets_its_own_zshrc(machine: dict[str, Path]) -> None:
 
 
 def test_bash_on_a_mac_writes_to_the_startup_file_it_already_reads(
-    machine: dict[str, Path], tmp_path: Path
+    machine: dict[str, Path],
 ) -> None:
-    mac = tmp_path / "mac"
-    mac.mkdir()
-    (mac / "uname").write_text("#!/bin/sh\necho Darwin\n")
-    (mac / "uname").chmod(0o755)
     home = machine["home"]
     (home / ".profile").write_text("export FROM_PROFILE=yes\n")
 
     result = _run(
-        machine, "--yes", "--no-globals", "--no-tools",
-        SHELL="/bin/bash", PATH=f"{mac}:{machine['stubs']}:/usr/bin:/bin",
-    )  # fmt: skip
+        machine, "--yes", "--no-globals", "--no-tools", SHELL="/bin/bash", UNAME_S="Darwin"
+    )
 
     assert result.returncode == 0, result.stderr
     assert not (home / ".bash_profile").exists()  # it would hide ~/.profile from login shells
     assert (
         (home / ".profile").read_text().startswith("export FROM_PROFILE=yes\n\n# >>> repo-template")
     )
-
-
-def test_the_ignore_copy_is_kept_current_even_without_globals(machine: dict[str, Path]) -> None:
-    home = machine["home"]
-    (home / ".config/git").mkdir(parents=True)
-    (home / ".config/git/ignore").write_text(IGNORE)  # written by an earlier globals
-    mine = home / ".gitignore_global"
-    stale = IGNORE.replace("**/.claude/\n", "**/.old/\n")
-    mine.write_text(".DS_Store\n\n" + stale)
-    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = {mine}\n")
-
-    result = _run(machine, "--yes", "--no-globals", "--no-tools")
-
-    assert result.returncode == 0, result.stderr
-    assert mine.read_text() == ".DS_Store\n\n" + IGNORE
 
 
 def test_a_first_run_summarizes_the_globals_plan_and_a_later_one_lists_it(
@@ -404,3 +475,137 @@ def test_a_settings_link_whose_file_a_pull_removed_is_reported_and_passed(
 
     assert result.returncode == 0, result.stderr
     assert "globals writes fresh settings in its place" in result.stderr
+
+
+def _set_up(machine: dict[str, Path]) -> Path:
+    """A machine this script has set up: the checkout, the CLI, and the ~/.agents link."""
+    target = machine["home"] / "aiDevStandards"
+    assert _run(machine, "--yes", "--no-globals", "--no-tools").returncode == 0
+    (machine["home"] / ".agents").symlink_to(target / ".agents")
+    (machine["home"] / "calls.log").unlink()
+    return target
+
+
+def _npm_has(**versions: str) -> str:
+    return json.dumps(
+        {"dependencies": {PINS[name][0]: {"version": v} for name, v in versions.items()}}
+    )
+
+
+def _tool_calls(home: Path) -> list[str]:
+    return [call for call in _calls(home) if not call.startswith(("uv ", "repo-template "))]
+
+
+def _installed(stubs: Path, name: str, body: str) -> None:
+    (stubs / name).write_text("#!/bin/sh\n" + body)
+    (stubs / name).chmod(0o755)
+
+
+def test_check_reports_a_machine_that_is_set_up_and_changes_nothing(
+    machine: dict[str, Path],
+) -> None:
+    home, stubs = machine["home"], machine["stubs"]
+    target = _set_up(machine)
+    _installed(stubs, "azd", AZD)
+    before = sorted(str(p) for p in home.rglob("*"))
+    everything = {name: version for name, (_, version) in PINS.items()}
+
+    result = _run(
+        machine, "--check",
+        PATH=f"{stubs}:{home}/.local/bin:/usr/bin:/bin", AI_DEV_STANDARDS=str(target),
+        CHECK_EXIT="0", NPM_LS=_npm_has(**everything),
+    )  # fmt: skip
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "!" not in result.stdout and "==> All set" in result.stdout
+    for line in ("up to date with GitHub's main", "repo-template on PATH runs from it",
+                 "globals: current", "typescript 6.0.3", "azd 1.2.3"):  # fmt: skip
+        assert f"ok  {line}" in result.stdout
+    assert _calls(home) == [  # only reads
+        "repo-template --version",
+        f"repo-template globals --check --standards-root {target}",
+        "npm ls -g --depth=0 --json",
+        "azd version",
+    ]
+    (home / "calls.log").unlink()
+    assert sorted(str(p) for p in home.rglob("*")) == before  # nothing else written
+
+
+def test_check_lists_each_problem_and_fails(machine: dict[str, Path]) -> None:
+    home, stubs = machine["home"], machine["stubs"]
+    target = _set_up(machine)
+    _git(machine["origin"], "commit", "-q", "--allow-empty", "-m", "newer standards")
+    _installed(stubs, "azd", AZD.replace("1.2.3", "1.0.0"))
+    _installed(stubs, "node", "echo v20.9.0\n")
+
+    result = _run(
+        machine, "--check",
+        PATH=f"{stubs}:{home}/.local/bin:/usr/bin:/bin", NPM_LS=_npm_has(typescript="5.9.0"),
+    )  # fmt: skip
+
+    assert result.returncode == 1
+    problems = [line.strip() for line in result.stdout.splitlines() if line.startswith("    !")]
+    assert problems == [
+        "!   node v20.9.0: past its end of life; install 22 or 24 LTS",
+        "!   GitHub's main has moved on: run this script, or git pull",
+        f"!   AI_DEV_STANDARDS isn't {target} in this shell: open a new terminal",
+        "!   globals has changes to make: 'repo-template globals --check' lists them",
+        "!   typescript 5.9.0: the pin is 6.0.3 (this script installs it)",
+        "!   azd: 'azd version 1.0.0 (commit abc)', but the pin is 1.2.3 (this script installs it)",
+    ]
+    assert "==> 6 to fix" in result.stdout
+    assert "pyright: not installed (optional; this script installs 1.1.4)" in result.stdout
+
+
+def test_check_without_a_standards_link_says_how_to_set_up(machine: dict[str, Path]) -> None:
+    result = _run(machine, "--check", "--offline")
+
+    assert result.returncode == 1
+    assert f"{machine['home']}/.agents isn't a link into a standards repository" in result.stdout
+    assert not (machine["home"] / "aiDevStandards").exists()
+
+
+def test_the_tools_install_at_their_pins_and_azd_only_with_its_checksum(
+    machine: dict[str, Path],
+) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+
+    code, shown = _converse(
+        machine,
+        [("language servers", "y"), ("Codex CLI", "y"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+    )  # fmt: skip
+
+    assert code == 0, shown
+    npm, codex, download, *rest = _tool_calls(home)
+    assert npm == (
+        "npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 "
+        "pyright@1.1.4 @playwright/cli@0.1.2"
+    )
+    assert codex == "npm install -g --ignore-scripts @openai/codex@0.1.0"
+    assert download.startswith("curl -fsSL -o ") and download.endswith(
+        " https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_1.2.3/"
+        "azd-linux-amd64.tar.gz"
+    )
+    assert rest == ["az account show", "azd config set auth.useAzCliAuth true"]
+    assert os.access(home / ".local/bin/azd", os.X_OK) and "SHA-256 checked" in shown
+
+
+def test_an_azd_download_that_doesnt_match_its_pin_isnt_installed(
+    machine: dict[str, Path],
+) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+    (machine["release"] / "azd-linux-amd64.tar.gz").write_bytes(b"something else")
+
+    code, shown = _converse(
+        machine,
+        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+    )  # fmt: skip
+
+    assert code == 0, shown  # an optional tool: reported, never fatal
+    assert "not the pinned" in shown and "Installing azd didn't work" in shown
+    assert not (home / ".local/bin/azd").exists()
+    assert [call.split(" ")[0] for call in _tool_calls(home)] == ["curl", "az"]

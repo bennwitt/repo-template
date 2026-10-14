@@ -11,6 +11,8 @@
 #   bash setup-machine.sh --dir PATH --yes       no questions (optional tools are skipped)
 #   bash setup-machine.sh --no-globals           everything but `repo-template globals`
 #   bash setup-machine.sh --no-tools             skip the optional tools
+#   bash setup-machine.sh --check [--offline]    report what is set up and what isn't; changes
+#                                                nothing (--offline skips asking GitHub)
 #
 # On a new machine, download it, read it, then run it:
 #   curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
@@ -23,17 +25,17 @@ REPO_URL="${REPO_TEMPLATE_URL:-https://github.com/bennwitt/repo-template.git}"
 DEFAULT_DIR="$HOME/aiDevStandards"
 PROFILE_START="# >>> repo-template (setup-machine.sh) >>>"
 PROFILE_END="# <<< repo-template (setup-machine.sh) <<<"
-IGNORE_START="# >>> repo-template personal AI directories"
-IGNORE_END="# <<< repo-template personal AI directories"
 STAMP=$(date +%Y%m%d-%H%M%S)
 
 dir=""
 assume_yes=0
 run_globals=1
 run_tools=1
+check_only=0
+offline=0
 status=0 # 1 once a step reported an error; the run goes on, and exits 1 at the end
 
-usage() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; }
 
 say() { printf '\n==> %s\n' "$*"; }
 note() { printf '    %s\n' "$*"; }
@@ -87,6 +89,14 @@ while [ $# -gt 0 ]; do
       run_tools=0
       shift
       ;;
+    --check)
+      check_only=1
+      shift
+      ;;
+    --offline)
+      offline=1
+      shift
+      ;;
     -h | --help)
       usage
       exit 0
@@ -100,7 +110,7 @@ done
 
 tty_ok=0
 if { : </dev/tty; } 2>/dev/null; then tty_ok=1; fi
-if [ "$assume_yes" = 0 ] && [ "$tty_ok" = 0 ]; then
+if [ "$check_only" = 0 ] && [ "$assume_yes" = 0 ] && [ "$tty_ok" = 0 ]; then
   die "no terminal to ask in: run it with --yes (and --dir PATH) instead"
 fi
 
@@ -189,6 +199,193 @@ case "$(uname -s)" in
   *) die "only macOS and Linux are supported" ;;
 esac
 [ "$(id -u)" != 0 ] || die "run it as yourself, not as root: everything goes in your home folder"
+case "$(uname -m)" in
+  x86_64 | amd64) arch=amd64 ;;
+  arm64 | aarch64) arch=arm64 ;;
+  *) arch=$(uname -m) ;;
+esac
+if [ "$os" = mac ]; then platform="darwin-$arch"; else platform="linux-$arch"; fi
+
+# pinned CHECKOUT NAME: an npm tool's package@version; a GitHub tool's "file sha256 url" for this
+# platform. From the checkout's .agents/machine-tools.json.
+pinned() {
+  uv run --no-project --quiet python -c '
+import json, sys
+tool = json.load(open(sys.argv[1]))["tools"][sys.argv[2]]
+if tool["registry"] == "npm":
+    print(tool["package"] + "@" + tool["version"])
+else:
+    asset = tool["assets"][sys.argv[3]]
+    tag = tool["tag"].replace("{version}", tool["version"])
+    url = "https://github.com/" + tool["package"] + "/releases/download/" + tag + "/" + asset["file"]
+    print(asset["file"], asset["sha256"], url)
+' "$1/.agents/machine-tools.json" "$2" "$platform"
+}
+
+# npm_pins NAME...: each npm tool's package@version, from the standards repository at $dir
+npm_pins() {
+  local name
+  for name in "$@"; do
+    pinned "$dir" "$name" || {
+      warn "$dir/.agents/machine-tools.json has no pin for $name: not installed"
+      return 1
+    }
+  done
+}
+
+# pin_version CHECKOUT NAME: the version machine-tools.json pins for a tool
+pin_version() {
+  uv run --no-project --quiet python -c \
+    'import json, sys; print(json.load(open(sys.argv[1]))["tools"][sys.argv[2]]["version"])' \
+    "$1/.agents/machine-tools.json" "$2"
+}
+
+# install_azd: azd at its pinned release, into ~/.local/bin, once the download's SHA-256 matches
+# shellcheck disable=SC2329 # it runs through `optional`
+install_azd() {
+  local info file sha url work got binary
+  info=$(pinned "$dir" azd) || {
+    warn "no azd is pinned for $platform"
+    return 1
+  }
+  read -r file sha url <<<"$info"
+  work=$(mktemp -d)
+  if ! curl -fsSL -o "$work/$file" "$url"; then
+    rm -rf "$work"
+    return 1
+  fi
+  if have sha256sum; then got=$(sha256sum "$work/$file" | cut -d' ' -f1); else got=$(shasum -a 256 "$work/$file" | cut -d' ' -f1); fi
+  if [ "$got" != "$sha" ]; then
+    warn "$file has SHA-256 $got, not the pinned $sha: not installed"
+    rm -rf "$work"
+    return 1
+  fi
+  mkdir -p "$work/unpacked" "$HOME/.local/bin"
+  case "$file" in
+    *.zip) unzip -q "$work/$file" -d "$work/unpacked" ;;
+    *) tar -xzf "$work/$file" -C "$work/unpacked" ;;
+  esac
+  binary="$work/unpacked/${file%%.*}"
+  if [ ! -f "$binary" ]; then
+    warn "$file holds no ${file%%.*}: not installed"
+    rm -rf "$work"
+    return 1
+  fi
+  install -m 755 "$binary" "$HOME/.local/bin/azd"
+  rm -rf "$work"
+  note "installed azd ($file, SHA-256 checked) as ~/.local/bin/azd"
+}
+
+# check_machine: what is set up and what isn't, one line each; changes nothing. Exit 1 on a problem.
+problems=0
+ok() { printf '    ok  %s\n' "$*"; }
+bad() {
+  printf '    !   %s\n' "$*"
+  problems=$((problems + 1))
+}
+check_machine() {
+  local version major checkout branch remote tools_file state name want got
+  say "Checking this machine ($os, $platform); nothing is changed"
+  if git --version >/dev/null 2>&1; then ok "$(git --version)"; else bad "git doesn't run"; fi
+  if have uv; then ok "$(uv --version)"; else bad "uv isn't installed"; fi
+  if have node; then
+    version=$(node --version)
+    major=${version#v}
+    major=${major%%.*}
+    case "$major" in
+      '' | *[!0-9]*) bad "node $version: its version can't be read" ;;
+      *)
+        if [ "$major" -ge 22 ]; then
+          ok "node $version"
+        elif [ "$major" -ge 20 ]; then
+          bad "node $version: past its end of life; install 22 or 24 LTS"
+        else
+          bad "node $version: too old for the MCP servers; install 22 or 24 LTS"
+        fi
+        ;;
+    esac
+  else
+    bad "node isn't installed: the MCP servers started with npx need it"
+  fi
+  if have claude; then ok "claude $(claude --version 2>/dev/null | head -n 1)"; else bad "claude isn't on PATH"; fi
+  checkout=""
+  if [ -L "$HOME/.agents" ]; then
+    checkout=$(readlink "$HOME/.agents")
+    checkout=${checkout%/.agents}
+  fi
+  if [ -z "$checkout" ] || ! is_standards "$checkout"; then
+    bad "$HOME/.agents isn't a link into a standards repository: run this script without --check"
+  else
+    ok "standards repository $checkout (repo-template $(version_of "$checkout"))"
+    branch=$(git -C "$checkout" rev-parse --abbrev-ref HEAD)
+    if [ "$branch" != main ]; then bad "it is on branch $branch, not main"; fi
+    if [ -n "$(git -C "$checkout" status --porcelain --untracked-files=no)" ]; then bad "it has uncommitted changes"; fi
+    if [ "$offline" = 0 ]; then
+      remote=$(git -C "$checkout" ls-remote origin refs/heads/main 2>/dev/null | cut -f1)
+      if [ -z "$remote" ]; then
+        bad "its origin couldn't be reached (--offline skips this)"
+      elif [ "$remote" = "$(git -C "$checkout" rev-parse HEAD)" ]; then
+        ok "up to date with GitHub's main"
+      else
+        bad "GitHub's main has moved on: run this script, or git pull"
+      fi
+    fi
+    if have repo-template && repo-template --version 2>/dev/null | grep -qF "($checkout)"; then
+      ok "repo-template on PATH runs from it"
+    else
+      bad "repo-template on PATH doesn't run from it: run this script without --check"
+    fi
+    if [ "${AI_DEV_STANDARDS:-}" = "$checkout" ]; then ok "AI_DEV_STANDARDS is set"; else bad "AI_DEV_STANDARDS isn't $checkout in this shell: open a new terminal"; fi
+    if have repo-template && repo-template globals --check --standards-root "$checkout" >/dev/null 2>&1; then
+      ok "globals: current (skills, settings, MCP servers, Git ignore)"
+    else
+      bad "globals has changes to make: 'repo-template globals --check' lists them"
+    fi
+    tools_file="$checkout/.agents/machine-tools.json"
+    if [ -f "$tools_file" ] && have npm && have uv; then
+      while read -r state name want got; do
+        case "$state" in
+          ok) ok "$name $want" ;;
+          missing) note "$name: not installed (optional; this script installs $want)" ;;
+          *) bad "$name $got: the pin is $want (this script installs it)" ;;
+        esac
+      done < <(uv run --no-project --quiet python -c '
+import json, subprocess, sys
+pins = json.load(open(sys.argv[1]))["tools"]
+listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "--json"], capture_output=True, text=True)
+have = {k: v.get("version") for k, v in json.loads(listed.stdout or "{}").get("dependencies", {}).items()}
+for name, tool in sorted(pins.items()):
+    if tool["registry"] == "npm":
+        got = have.get(tool["package"])
+        state = "ok" if got == tool["version"] else ("missing" if got is None else "other")
+        print(state, name, tool["version"], got or "-")
+' "$tools_file" 2>/dev/null)
+    fi
+    if have azd; then
+      want=$(pin_version "$checkout" azd 2>/dev/null || true)
+      got=$(azd version 2>/dev/null | head -n 1)
+      case "$got" in
+        *" $want "* | *" $want") ok "azd $want" ;;
+        *) if [ -n "$want" ]; then bad "azd: '$got', but the pin is $want (this script installs it)"; else note "azd: $got (no pin to compare with)"; fi ;;
+      esac
+    else
+      note "azd: not installed (optional; for the azure and foundry packs)"
+    fi
+  fi
+  if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+    ok "GITHUB_PERSONAL_ACCESS_TOKEN is set (the github plugin)"
+  else
+    note "GITHUB_PERSONAL_ACCESS_TOKEN isn't set: the github plugin won't connect (optional)"
+  fi
+  note "the MCP servers: run 'claude mcp list' (it starts each one, so it isn't run here)"
+  if [ "$problems" = 0 ]; then
+    say "All set"
+    exit 0
+  fi
+  say "$problems to fix (the ! lines)"
+  exit 1
+}
+if [ "$check_only" = 1 ]; then check_machine; fi
 
 # 1. What the machine has.
 
@@ -426,47 +623,45 @@ if [ "$run_globals" = 1 ]; then
   rm -f "$output"
 fi
 
-# globals writes the personal ignores to ~/.config/git/ignore. Git reads the file core.excludesFile
-# names (in an included config file too), or $XDG_CONFIG_HOME/git/ignore: keep a copy there.
-written="$HOME/.config/git/ignore"
-reads=$(git config --global --includes --get core.excludesFile 2>/dev/null || true)
-reads=${reads:-${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore}
-case "$reads" in \~/*) reads="$HOME/${reads#\~/}" ;; esac
-if [ "$reads" != "$written" ] && grep -qxF "$IGNORE_START" "$written" 2>/dev/null; then
-  ignores=$(sed -n "/^$IGNORE_START\$/,/^$IGNORE_END\$/p" "$written")
-  if grep -qxF "$IGNORE_START" "$reads" 2>/dev/null \
-    || confirm "Git reads ignores from $reads, not $written: copy repo-template's lines there?" y; then
-    put_block "$reads" "$IGNORE_START" "$IGNORE_END" "$ignores" "Git ignores" || status=1
-  fi
-fi
-
-# 6. Optional tools.
+# 6. Optional tools, at the versions .agents/machine-tools.json pins.
 
 if [ "$run_tools" = 1 ]; then
-  say "Optional tools (each asks first; the default is no)"
+  say "Optional tools (each asks first; the default is no; the versions are pinned in .agents/machine-tools.json)"
   if have npm && confirm "Install the TypeScript and Python language servers and the Playwright CLI (global npm packages)?" n; then
-    optional "Installing the npm packages" npm install -g --ignore-scripts \
-      typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22
-    if have playwright-cli; then optional "Downloading Chromium" playwright-cli install-browser chromium; fi
+    if packages=$(npm_pins typescript-language-server typescript pyright playwright-cli); then
+      # shellcheck disable=SC2086 # one package@version per word
+      optional "Installing the npm packages" npm install -g --ignore-scripts $packages
+      if have playwright-cli; then optional "Downloading Chromium" playwright-cli install-browser chromium; fi
+    fi
+  fi
+  if have npm && confirm "Install the Codex CLI (a global npm package)?" n; then
+    if packages=$(npm_pins codex); then
+      # shellcheck disable=SC2086 # one package@version per word
+      optional "Installing Codex" npm install -g --ignore-scripts $packages
+      note "run codex once, then this script again, so Codex gets its MCP servers"
+    fi
   fi
   if confirm "Set up the Azure CLI and azd, for the azure and foundry packs?" n; then
-    if [ "$os" = mac ] && have brew; then
-      have az || optional "Installing the Azure CLI" brew install azure-cli
-      have azd || { optional "Adding azd's Homebrew tap" brew tap azure/azd && optional "Installing azd" brew install azd; }
-    elif ! have az || ! have azd; then
-      note "Install the Azure CLI and azd: see section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md (on a Mac, install Homebrew first: https://brew.sh)"
+    if ! have az; then
+      if [ "$os" = mac ] && have brew; then # Homebrew's current release: the one exception to the 7-day rule
+        optional "Installing the Azure CLI" brew install azure-cli
+      else
+        note "Install the Azure CLI: see section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md (on a Mac, install Homebrew first: https://brew.sh)"
+      fi
     fi
+    if ! have azd; then optional "Installing azd" install_azd; fi
+    PATH="$HOME/.local/bin:$PATH"
     if have az; then
       az account show >/dev/null 2>&1 || optional "az login" az login
       note "choose your subscription with: az account set --subscription \"<name>\""
     fi
     if have azd; then optional "azd's sign-in setting" azd config set auth.useAzCliAuth true; fi
-    pinned=$(uv run --no-project --quiet python -c \
+    azure_mcp=$(uv run --no-project --quiet python -c \
       'import json, sys; p = json.load(open(sys.argv[1]))["servers"]["azure"]["pin"]; print(p["package"] + "==" + p["version"])' \
       "$dir/.agents/mcp-servers.json" 2>/dev/null || true)
-    if [ -n "$pinned" ]; then
-      note "fetching the Azure MCP server ($pinned) once, so its first start doesn't time out"
-      optional "Fetching $pinned" uvx --quiet --from "$pinned" azmcp --version
+    if [ -n "$azure_mcp" ]; then
+      note "fetching the Azure MCP server ($azure_mcp) once, so its first start doesn't time out"
+      optional "Fetching $azure_mcp" uvx --quiet --from "$azure_mcp" azmcp --version
     fi
   fi
   if [ "$os" = mac ] && confirm "Store a GitHub token in the Keychain for Claude Code's github plugin?" n; then
@@ -476,7 +671,6 @@ if [ "$run_tools" = 1 ]; then
   elif [ "$os" = linux ]; then
     note "github plugin: export GITHUB_PERSONAL_ACCESS_TOKEN from a file only you can read (chmod 600), sourced by your shell profile; never in a repository"
   fi
-  note "Codex (optional): npm install -g --ignore-scripts @openai/codex@<a release at least 7 days old>; then run codex once, and this script again, so Codex gets its MCP servers"
 fi
 
 say "Done"
