@@ -58,7 +58,7 @@ Every file in the project baseline has a policy that decides what `update` may d
 | Policy | Files | What `update` does |
 | --- | --- | --- |
 | **Managed** | CI workflow, Dependabot, PR template, pre-commit hook, `.editorconfig`, `.gitattributes`, `.python-version`, `CLAUDE.md` | Upgrades the file to the current standard **only if** it is unchanged since it was generated. Edited files are left alone and reported. |
-| **Seed** | `README.md`, `AGENTS.md`, `GLOSSARY.md`, `CHANGELOG.md`, `.env.example`, issue templates, `docs/adr/README.md`, package `__init__.py`, smoke test | Written once if missing, then the file is yours. Never touched again. |
+| **Seed** | `README.md`, `AGENTS.md`, `GLOSSARY.md`, `CHANGELOG.md`, `.env.example`, issue templates, `docs/adr/README.md`, package `__init__.py`, smoke test | Created whenever it is missing (also after you delete it), then the file is yours: `update` never changes one that exists. To delete one for good, add it to `project_owned`. |
 | **Merged** | `pyproject.toml`, `.gitignore`, `.vscode/*.json` | Adds what is missing and never removes anything: dev dependencies and tool tables in `pyproject.toml`, a marked block in `.gitignore`, missing keys, extension recommendations and tasks in VS Code files. Project metadata and dependencies are not touched. |
 
 Each generated repository commits a `.repo-template.json` manifest that records the template
@@ -117,7 +117,10 @@ repo-template globals --standards-root /aiDevStandards           # apply
 Because the install is editable, a `git pull` updates the CLI and its templates without a
 reinstall. Set `AI_DEV_STANDARDS=/aiDevStandards` in your shell profile to omit
 `--standards-root`. A root named either way must be a standards repository, or the command stops
-with an error.
+with an error. Without either, `globals` uses the checkout the CLI is installed from, so running
+it inside some other repository (which may well have `.agents/skills/` and
+`.claude/settings.json` of its own) never relinks `~/.agents` there. If you're inside a second
+repo-template checkout, it stops and asks you to pass `--standards-root`.
 
 ### Create a repository
 
@@ -138,12 +141,18 @@ steps.
 ```bash
 repo-template check  /path/to/repo   # dry run: lists what would change, writes nothing
 repo-template update /path/to/repo   # apply, then decide each file that differs
+repo-template check  ~/code/*/       # several repositories: one summary line each
 ```
 
 `update` creates what's missing, merges `pyproject.toml`, `.gitignore` and the VS Code files,
 configures the Git hook path (skip with `--no-hooks`), and creates or refreshes `uv.lock` when
-`pyproject.toml` changed (skip with `--no-lock`). `check` plans the same steps, so a clean `check`
-means `update` has nothing to do.
+`pyproject.toml` changed (skip with `--no-lock`). `check` plans the same steps and also reports
+`.repo-template.json` when it is out of date (a new template version, a stale hash), so a clean
+`check` means `update` has nothing to do. While other files are out of date too, it lists the
+manifest whenever its hashes would change.
+
+A manifest written by a newer `repo-template` than the one you're running stops both commands:
+`git pull` the standards repository first, so an out-of-date machine can't downgrade a repository.
 
 #### Deciding files that differ
 
@@ -155,8 +164,13 @@ A file that exists and differs from the baseline is never changed silently. In a
 | `o` use the baseline | Replace your file with the baseline's version. |
 | `k` keep yours | Keep it, and record in `.repo-template.json` that you accepted this difference. You're asked again only when the baseline's version of the file changes. |
 | `m` merge change by change | For each place the two differ: take the baseline's (`y`), keep yours (`n`), or keep both (`b`). A result that differs from the baseline is recorded like `k`. |
-| `a` always keep yours | Add the file to `project_owned` in `.repo-template.json`; `update` leaves it alone for good. |
+| `a` always keep yours | Add the file to `project_owned` in `.repo-template.json`; `update` leaves it alone for good, and doesn't recreate it if you delete it. |
 | `s` skip for now | Leave it; `update` asks again next time. |
+
+A merged file that `update` can't merge into (`pyproject.toml` or `.vscode/*.json` that doesn't
+parse) offers only keep, always keep or skip: the baseline's version of it is a bare template that
+would replace your project's metadata and dependencies, or your editor settings. Fix it by hand
+and run `update` again.
 
 A file under an old name (`CONTEXT.md` is now `GLOSSARY.md`, and a `CLAUDE.md` holding the agent
 guide moves to `AGENTS.md`) can be moved for you: with `git mv` when the file is tracked, so its
@@ -187,9 +201,21 @@ what is already there:
 | Command | `0` | `1` | `2` |
 | --- | --- | --- | --- |
 | `new` | created | created, but a Git or uv step failed | n/a |
-| `update` | applied cleanly | a Git or uv step failed | files preserved for manual review |
-| `check` | current | something would change | n/a |
+| `update` | applied cleanly | an error was reported: a Git or uv step failed, or a listed skill pack isn't defined or lists a skill that isn't installed | files preserved for manual review |
+| `check` | current (every path, when given several) | something would change, or an error was reported | n/a |
+| `globals` | applied cleanly | an error was reported (for example an override for a missing skill) | something was preserved: a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
 | `globals --check` | current | links would change | n/a |
+
+Every command also exits `1` with a `repo-template: error: …` line when it can't run at all: an
+unknown pack, an unreadable manifest, a non-empty target for `new`, or a manifest from a newer
+version. Exit `2` otherwise means only "preserved for manual review" (and command-line usage
+errors, which print the usage). When a run has both errors and preserved files, errors win and
+the exit is `1`: fix what failed, rerun, then decide the preserved files.
+
+With several paths, `check` prints one line per repository on stdout, such as
+`../svc: current (0.4.1)` or `../api: 1 to create, 2 to update, 1 for review (0.3.0)` (the
+version recorded in its manifest), and each error as a `repo-template: error: <path>: …` line on
+stderr.
 
 This makes the CLI easy to script, for example `repo-template check . || echo "standards drifted"`.
 
@@ -279,7 +305,10 @@ repo-template update /path/to/repo --pack gradio   # add one later (also applies
 The pack is recorded under `skill_packs` in `.repo-template.json`, and `update` links each of its
 skills into the repository's `.claude/skills/` (ignored by Git) as links to `~/.agents/skills/`.
 To drop a pack, remove it from `skill_packs` and run `update`; its links are removed and nothing
-else in `.claude/skills/` is touched. On another machine, `update` recreates the links.
+else in `.claude/skills/` is touched. On another machine, `update` recreates the links. If
+`skill_packs` lists a pack that `skill-packs.json` no longer defines (renamed, or a machine that
+hasn't pulled), `update` reports it and removes no links at all, since it can't tell which ones
+belonged to that pack.
 
 | Pack | Skills | Source |
 | --- | --- | --- |
@@ -386,6 +415,8 @@ uv run repo-template --help
   catches up.
 - When you change generated content, bump the version in `pyproject.toml` and
   `src/repo_template/__init__.py`, add a `CHANGELOG.md` entry, and add tests for any change to
-  rendering, conflict handling or symlink behaviour.
+  rendering, conflict handling or symlink behaviour. Then run `uv run repo-template update .` and
+  commit the refreshed `.repo-template.json` (and `uv.lock`) with the bump:
+  `tests/test_baseline_sync.py` fails until this repository's manifest records the new version.
 - `GLOSSARY.md` defines the domain terms used here, such as standards repository, project
   baseline, managed file, seed file, portable global, machine state and skill receipt.

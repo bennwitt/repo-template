@@ -86,13 +86,6 @@ def _merge_json_value(existing: Any, desired: Any, *, key: str = "") -> Any:
     return existing
 
 
-def _merge_json(existing: str, desired: str) -> str:
-    old_value = json.loads(existing)
-    new_value = json.loads(desired)
-    merged = _merge_json_value(old_value, new_value)
-    return json.dumps(merged, indent=2, ensure_ascii=False) + "\n"
-
-
 def _dependency_name(specifier: str) -> str:
     match = re.match(r"[A-Za-z0-9_.-]+", specifier)
     return match.group(0).lower().replace("_", "-") if match else specifier.lower()
@@ -104,6 +97,33 @@ def _table_block(content: str, table: str) -> str | None:
     )
     match = pattern.search(content)
     return match.group(0).rstrip() if match else None
+
+
+def _array_end(text: str, start: int) -> int:
+    """Index of the `]` closing the TOML array that opens at text[start], skipping brackets
+    inside strings (`"coverage[toml]"`) and comments."""
+    depth, index, quote = 0, start, ""
+    while index < len(text):
+        char = text[index]
+        if quote:
+            if char == "\\" and quote == '"':
+                index += 1
+            elif char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char == "#":
+            newline = text.find("\n", index)
+            index = len(text) if newline == -1 else newline
+            continue
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                return index
+        index += 1
+    raise ValueError("unterminated TOML array")
 
 
 def _append_dev_dependencies(content: str, required: list[str]) -> str:
@@ -131,14 +151,14 @@ def _append_dev_dependencies(content: str, required: list[str]) -> str:
         return content.rstrip() + f"\n\n[dependency-groups]\ndev = [\n{entries}\n]\n"
 
     section_text = section.group(0)
-    dev = re.search(r"(?ms)^dev\s*=\s*\[(.*?)\]", section_text)
+    dev = re.search(r"(?m)^dev\s*=\s*\[", section_text)
     if dev is None:
         entries = "\n".join(f'    "{item}",' for item in missing)
         insertion = f"dev = [\n{entries}\n]\n"
         return content[: section.end()] + insertion + content[section.end() :]
 
-    inner_start = section.start() + dev.start(1)
-    inner_end = section.start() + dev.end(1)
+    opening = section.start() + dev.end() - 1
+    inner_start, inner_end = opening + 1, _array_end(content, opening)
     inner = content[inner_start:inner_end]
     stripped = inner.rstrip()
     if "\n" in inner:
@@ -224,9 +244,14 @@ class JsonMerge:
             normalized = json.dumps(json.loads(desired), indent=2, ensure_ascii=False) + "\n"
             return Decision(Outcome.CREATE, normalized)
         try:
-            return _compare(existing, _merge_json(existing, desired))
+            current = json.loads(existing)
+            merged = _merge_json_value(current, json.loads(desired))
         except json.JSONDecodeError:
             return Decision(Outcome.PRESERVE, note="invalid JSON")
+        if merged == current:
+            # Nothing is missing: keep the project's own formatting.
+            return Decision(Outcome.UNCHANGED, existing)
+        return Decision(Outcome.UPGRADE, json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
 
     def record(self, existing: str, desired: str) -> str | None:
         return None
@@ -242,9 +267,14 @@ class TomlMerge:
         if existing is None:
             return Decision(Outcome.CREATE, desired)
         try:
-            return _compare(existing, _merge_pyproject(existing, desired))
+            tomllib.loads(existing)
         except tomllib.TOMLDecodeError:
             return Decision(Outcome.PRESERVE, note="invalid TOML")
+        try:
+            return _compare(existing, _merge_pyproject(existing, desired))
+        except (tomllib.TOMLDecodeError, ValueError):
+            # The file is valid, but its layout defeated the merge: say so, not "invalid".
+            return Decision(Outcome.PRESERVE, note="couldn't merge the baseline's entries")
 
     def record(self, existing: str, desired: str) -> str | None:
         return None

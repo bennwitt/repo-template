@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import json
+import tomllib
 
 import pytest
 
+from repo_template import policies
 from repo_template.policies import (
     GITIGNORE_END,
     GITIGNORE_START,
     POLICIES,
     Decision,
     Outcome,
+    TomlMerge,
     digest,
     merge_marked_block,
 )
@@ -97,3 +100,39 @@ def test_toml_merge_leaves_an_already_configured_tool_alone() -> None:
     assert "line-length" not in merged
     assert 'select = ["F"]' in merged
     assert "[tool.mypy]" in merged
+
+
+@pytest.mark.parametrize(
+    "dev",
+    [
+        'dev = ["coverage[toml]>=7.0"]',
+        'dev = [\n    "coverage[toml]>=7.0",  # extras [toml]\n]',
+    ],
+)
+def test_pyproject_merge_handles_extras_in_the_dev_group(dev: str) -> None:
+    """The `]` in `coverage[toml]` once ended the array early and made a valid file look like
+    invalid TOML."""
+    existing = f'[project]\nname = "app"\nversion = "1.0.0"\n\n[dependency-groups]\n{dev}\n'
+    desired = '[dependency-groups]\ndev = ["coverage[toml]>=7.0", "ruff>=0.13"]\n'
+
+    decision = TomlMerge().decide(existing, desired, None)
+
+    assert decision.outcome is Outcome.UPGRADE
+    assert tomllib.loads(decision.content)["dependency-groups"]["dev"] == [
+        "coverage[toml]>=7.0",
+        "ruff>=0.13",
+    ]
+
+
+def test_a_valid_pyproject_that_defeats_the_merge_is_not_called_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(existing: str, desired: str) -> str:
+        raise ValueError("unterminated TOML array")
+
+    monkeypatch.setattr(policies, "_merge_pyproject", fail)
+
+    decision = TomlMerge().decide('[project]\nname = "app"\n', "[project]\n", None)
+
+    assert decision.outcome is Outcome.PRESERVE
+    assert decision.note == "couldn't merge the baseline's entries"

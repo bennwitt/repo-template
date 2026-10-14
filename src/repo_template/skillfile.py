@@ -13,7 +13,10 @@ BLOCK_SCALARS = {">", ">-", "|", "|-"}
 def _bounds(lines: list[str]) -> tuple[int, int]:
     if not lines or lines[0] != "---":
         raise ValueError("SKILL.md must start with a --- frontmatter block")
-    return 0, lines.index("---", 1)
+    try:
+        return 0, lines.index("---", 1)
+    except ValueError:
+        raise ValueError("SKILL.md frontmatter has no closing ---") from None
 
 
 def read_fields(text: str) -> dict[str, str]:
@@ -51,9 +54,10 @@ def format_value(value: str | bool) -> str:
 def set_field(text: str, key: str, value: str | bool) -> str:
     """Set a top-level frontmatter field, replacing its old value and any continuation lines."""
     lines = text.splitlines(keepends=True)
-    stripped = [line.rstrip("\n") for line in lines]
+    stripped = [line.rstrip("\r\n") for line in lines]
     start, end = _bounds(stripped)
-    rendered = f"{key}: {format_value(value)}\n"
+    newline = "\r\n" if "\r\n" in text else "\n"
+    rendered = f"{key}: {format_value(value)}{newline}"
     for index in range(start + 1, end):
         if stripped[index].partition(":")[0].strip() == key and stripped[index][:1] not in " \t":
             stop = index + 1

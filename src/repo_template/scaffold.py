@@ -10,10 +10,11 @@ from typing import Any
 
 from repo_template import __version__
 from repo_template.model import Conflict, ProjectContext, Result, TemplateFile
-from repo_template.policies import POLICIES, Outcome, digest
+from repo_template.policies import POLICIES, Outcome, PolicyName, digest
 from repo_template.templates import project_files
 
 MANIFEST_NAME = ".repo-template.json"
+MERGED_POLICIES = {"json_merge", "toml_merge"}
 
 
 def normalize_project_name(value: str) -> str:
@@ -41,6 +42,29 @@ def _read_manifest(root: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{path} must contain a JSON object")
     return value
+
+
+def _version_key(version: str) -> tuple[int, int, int]:
+    """major.minor.patch, padded: "0.4" and "0.4.0" are the same release."""
+    major, minor, patch = (*(int(part) for part in re.findall(r"\d+", version)[:3]), 0, 0, 0)[:3]
+    return major, minor, patch
+
+
+def _refuse_downgrade(root: Path, manifest: dict[str, Any]) -> None:
+    """A manifest written by a newer repo-template means this copy of the CLI is out of date."""
+    recorded = manifest.get("template_version")
+    if isinstance(recorded, str) and _version_key(recorded) > _version_key(__version__):
+        raise ValueError(
+            f"{root / MANIFEST_NAME} was written by repo-template {recorded}, newer than this "
+            f"repo-template {__version__}; pull the standards repository (git pull) and run "
+            "the command again"
+        )
+
+
+def manifest_version(root: Path) -> str | None:
+    """The template version recorded in a repository's manifest, if it has one."""
+    value = _read_manifest(root).get("template_version")
+    return value if isinstance(value, str) else None
 
 
 def _infer_context(root: Path) -> ProjectContext:
@@ -130,17 +154,20 @@ def _apply_file(
     result: Result,
     *,
     check: bool,
-    baseline: dict[str, str],
+    baseline: dict[str, TemplateFile],
 ) -> None:
     path = root / spec.relative_path
     if _reported(result, spec.relative_path):
         return
+    owned = spec.relative_path in _project_owned(manifest)
     legacy = root / spec.legacy_path if spec.legacy_path else None
+    legacy_spec = baseline.get(str(spec.legacy_path)) if spec.legacy_path else None
     if (
         legacy is not None
+        and not owned  # a project that took the file over decides about its old name too
         and not path.exists()
         and legacy.is_file()
-        and legacy.read_text() != baseline.get(str(spec.legacy_path))
+        and legacy.read_text() != (legacy_spec.content if legacy_spec else None)
     ):
         result.preserved.append(
             f"{spec.legacy_path} (now {spec.relative_path}: {spec.legacy_hint})"
@@ -152,13 +179,18 @@ def _apply_file(
                 desired="",
                 reason=spec.legacy_hint,
                 moves_to=spec.relative_path,
-                legacy_baseline=baseline.get(str(spec.legacy_path)),
+                legacy_baseline=legacy_spec.content if legacy_spec else None,
+                legacy_policy=legacy_spec.policy if legacy_spec else "managed",
             )
         )
         return
     existing = path.read_text() if path.exists() else None
+    if owned and existing is None:
+        # The project took the file over and then deleted it: that is its decision too.
+        result.unchanged.append(spec.relative_path)
+        return
     recorded = _recorded_hash(manifest, spec.relative_path)
-    policy = "seed" if spec.relative_path in _project_owned(manifest) else spec.policy
+    policy = "seed" if owned else spec.policy
     decision = POLICIES[policy].decide(existing, spec.content, recorded)
     if decision.outcome is Outcome.PRESERVE and existing is not None:
         if _accepted(manifest, spec.relative_path) == (digest(existing), digest(spec.content)):
@@ -173,6 +205,10 @@ def _apply_file(
                 desired=spec.content,
                 reason=decision.note,
                 executable=spec.executable,
+                # A merged file is preserved only when it can't be merged; the baseline's version
+                # of it is a bare template that would replace the project's metadata.
+                replaceable=policy not in MERGED_POLICIES,
+                policy=spec.policy,
             )
         )
         return
@@ -245,15 +281,32 @@ def write_file(root: Path, relative_path: str, content: str, *, executable: bool
     _write(root / relative_path, content, executable)
 
 
-def accept_difference(root: Path, relative_path: str, existing: str, desired: str) -> None:
+def accept_difference(
+    root: Path, relative_path: str, existing: str, desired: str, policy: PolicyName = "managed"
+) -> None:
     """Record that the project keeps `existing` while the baseline's version is `desired`.
 
-    update stops reporting the file until either side changes.
+    update stops reporting the file until either side changes. The record has the shape
+    update itself writes, so a resolved file leaves nothing for the next update to do.
     """
     manifest = _read_manifest(root)
     files = manifest.setdefault("files", {})
-    record = files.setdefault(relative_path, {})
-    record["accepted"] = {"sha256": digest(existing), "baseline": digest(desired)}
+    files[relative_path] = {
+        "policy": policy,
+        "accepted": {"sha256": digest(existing), "baseline": digest(desired)},
+    }
+    _write_manifest(root, manifest)
+
+
+def record_baseline(root: Path, relative_path: str, content: str, policy: PolicyName) -> None:
+    """Record a file that now holds the baseline's `content`, as update would."""
+    manifest = _read_manifest(root)
+    files = manifest.setdefault("files", {})
+    recorded = POLICIES[policy].record(content, content)
+    if recorded is None:
+        files.pop(relative_path, None)
+    else:
+        files[relative_path] = {"policy": policy, "sha256": recorded}
     _write_manifest(root, manifest)
 
 
@@ -261,6 +314,9 @@ def own_file(root: Path, relative_path: str) -> None:
     """Add a file to project_owned: update leaves it alone from now on."""
     manifest = _read_manifest(root)
     manifest["project_owned"] = sorted(_project_owned(manifest) | {relative_path})
+    files = manifest.get("files")
+    if isinstance(files, dict):
+        files.pop(relative_path, None)  # it differs from the baseline, so update keeps no hash
     _write_manifest(root, manifest)
 
 
@@ -303,14 +359,22 @@ def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] 
     if not root.is_dir():
         raise ValueError(f"repository directory does not exist: {root}")
     manifest = _read_manifest(root)
+    _refuse_downgrade(root, manifest)
     context = _context_from_manifest(root, manifest)
     specs = project_files(context, package=_uses_package_layout(root, context))
-    baseline = {spec.relative_path: spec.content for spec in specs}
+    baseline = {spec.relative_path: spec for spec in specs}
     result = Result(root)
     for spec in specs:
         _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
+    packs = [*skill_packs(root), *add_packs]
+    owned = sorted(_project_owned(manifest))
+    proposed = _build_manifest(root, context, specs, packs, owned, manifest)
+    if proposed == manifest:
+        result.unchanged.append(MANIFEST_NAME)
+        return result
+    # In check mode the records come from the files as they are now. When no file changes,
+    # that is exactly what update would write, so a clean check still means nothing to do.
+    (result.updated if (root / MANIFEST_NAME).exists() else result.created).append(MANIFEST_NAME)
     if not check:
-        packs = [*skill_packs(root), *add_packs]
-        owned = sorted(_project_owned(manifest))
-        _write_manifest(root, _build_manifest(root, context, specs, packs, owned, manifest))
+        _write_manifest(root, proposed)
     return result

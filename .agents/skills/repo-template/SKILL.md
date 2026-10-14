@@ -19,7 +19,15 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
    stop here. Otherwise read the plan: `+` create, `~` update, `-` remove, `!` preserved.
 2. **Apply.** Run `repo-template update <repo>`.
    - Exit 0: go to step 4.
-   - Exit 1: an error line names a missing tool (git, uv) or a failed `uv lock`. Fix it, rerun.
+   - Exit 1: fix what an error line says, then rerun. Errors win over preserved files, so a
+     run can exit 1 with `!` lines too: fix the error first.
+     - `x` lines: a missing tool (git, uv), a failed `uv lock`, or `skill pack '<name>' is listed
+       in .repo-template.json but not defined`. For that last one, `git pull` the standards
+       repository behind `~/.agents`, or remove the pack from `skill_packs` if it was renamed or
+       dropped.
+     - A `repo-template: error:` line means the command couldn't run at all: `--pack` named an
+       unknown pack, the manifest doesn't parse, or the manifest was written by a newer version
+       (`git pull` the standards repository).
    - Exit 2: go to step 3. (A person running `update` in a terminal is asked about each file
      instead, with a diff and the choice to use the baseline, keep, merge or skip. When the user
      is at a terminal, offering that is often faster than step 3.)
@@ -37,6 +45,10 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
    - **`(invalid JSON)` or `(invalid TOML)`**: the file doesn't parse; VS Code files with comments
      or trailing commas are the usual cause. Rewrite it as strict JSON or TOML with every setting
      kept; Claude Code may ask the user to approve edits under `.vscode/`.
+   - **`(couldn't merge the baseline's entries)`**: the file is valid, but its layout defeated the
+     merge. Add what the baseline wants by hand (compare with the pristine baseline's
+     `pyproject.toml`: missing dev dependencies, tool tables for tools the project doesn't
+     configure), then rerun.
    - **`CLAUDE.md (now AGENTS.md …)`**: the agent guide lives in `CLAUDE.md`, so Codex can't
      read it. `git mv CLAUDE.md AGENTS.md`, then write a new `CLAUDE.md` containing only
      `@AGENTS.md`.
@@ -46,7 +58,8 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
    - **`(not a link …)`**: a real folder sits where a skill link belongs. Ask the user before
      moving it.
 
-   Rerun `repo-template update <repo>`; this step is done when it exits 0.
+   Rerun `repo-template update <repo>`; this step is done when it exits 0. An exit 1 goes back to
+   step 2's exit-1 handling.
 4. **Verify and commit.** Run the repository's checks (`uv run pytest`, `uv run ruff check .`,
    `uv run mypy src`), then `repo-template check <repo>` must print "Standards are current."
    Commit everything in one commit, including `.repo-template.json` and `uv.lock`.

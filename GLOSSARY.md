@@ -21,7 +21,8 @@ A baseline file that `update` may upgrade only while it is unchanged since gener
 _Avoid_: generated file, owned file
 
 **Seed file**:
-A baseline file written once if missing, which then belongs to the project.
+A baseline file created whenever it is missing, which then belongs to the project: `update`
+never changes one that exists.
 _Avoid_: starter file
 
 **Merged file**:
