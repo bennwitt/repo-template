@@ -10,7 +10,10 @@
   new `mcp_servers` and `mcp_kept`): an entry changed by hand is kept and reported once, and one
   removed stays removed. A denied tool is denied in both clients. The catalog accepts only `npx`
   and `uvx` commands that run their pin first, pins at least 7 days old (or with a
-  `pinException`), and nothing that looks like a secret; pack args are checked the same way.
+  `pinException`; a younger one isn't installed), and nothing that looks like a secret or a
+  machine's Azure IDs. A pack may add only the flags its server lists in `packArgs`, checked
+  the same way, so `--read-only` can't be undone; `--dangerously-*`, `--insecure-*` and a
+  non-stdio `--transport` are refused.
   Global: `playwright` (0.0.83, isolated, headless), `huggingface`, and `microsoft-learn` for
   Codex; the `langchain` pack gets the LangChain docs and reference servers, `gradio` its docs
   server.

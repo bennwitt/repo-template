@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import tomllib
 from collections.abc import Callable, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from repo_template.catalog import (
@@ -28,7 +28,7 @@ from repo_template.catalog import (
     skill_folder,
     sync_documents,
 )
-from repo_template.mcp import load_mcp_servers
+from repo_template.mcp import load_mcp_servers, usable
 from repo_template.mcp_globals import (
     ClaudeCli,
     ClaudeMcp,
@@ -511,7 +511,7 @@ def _sync_global_mcp(
     """The global MCP servers, in Claude Code's user scope and ~/.codex/config.toml. With no
     servers in the catalog, the ones installed before are removed."""
     try:
-        servers = load_mcp_servers(agents)
+        servers = usable(load_mcp_servers(agents), datetime.now(UTC), result.errors)
     except ValueError as exc:
         result.errors.append(str(exc))
         return

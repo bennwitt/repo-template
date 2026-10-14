@@ -207,6 +207,7 @@ def test_pack_args_are_the_sorted_union_over_the_packs(tmp_path: Path) -> None:
     azure = {**URL, "url": None, "command": "uvx"}
     del azure["url"]
     azure["args"] = ["--from", "msmcp-azure==1", "azmcp", "--read-only"]
+    azure["packArgs"] = ["--namespace"]
     azure["pin"] = {
         "registry": "pypi",
         "package": "msmcp-azure",
@@ -1028,23 +1029,94 @@ def test_an_undefined_pack_freezes_its_servers(tmp_path: Path) -> None:
     assert ((root / ".mcp.json").read_text(), (root / ".codex/config.toml").read_text()) == before
 
 
+AZ = {
+    **NPX,
+    "scope": "pack",
+    "command": "uvx",
+    "args": ["--from", "msmcp-azure==1", "azmcp", "server", "start", "--read-only"],
+    "pin": {**NPX["pin"], "registry": "pypi", "package": "msmcp-azure", "version": "1"},
+    "packArgs": ["--namespace"],
+}
+
+
 @pytest.mark.parametrize(
     ("ref", "message"),
     [
-        ({"server": "docs", "args": {"--header": ["${GITHUB_TOKEN}"]}}, "no placeholders"),
-        ({"server": "docs", "args": {"--api-key": ["x"]}}, "no secrets in args"),
-        ({"server": "docs", "args": {"--x": ["--dangerously-disable-elicitation"]}}, "never"),
-        ({"server": "docs", "args": {"-x": ["y"]}}, "maps --flags"),
-        ({"server": "docs", "argz": {}}, "an MCP ref takes"),
+        ({"server": "az", "args": {"--namespace": ["${GITHUB_TOKEN}"]}}, "no placeholders"),
+        ({"server": "az", "args": {"--namespace": ["hf_abcdefghijklmnop"]}}, "no secrets in args"),
+        ({"server": "az", "args": {"--namespace": ["--dangerously-x"]}}, "never allowed"),
+        ({"server": "az", "args": {"--read-only": ["false"]}}, "takes \\['--namespace'\\]"),
+        ({"server": "az", "args": {"--mode": ["all"]}}, "takes \\['--namespace'\\]"),
+        ({"server": "docs", "args": {"--header": ["x"]}}, "takes none from packs"),
+        (
+            {"server": "az", "args": {"--namespace": ["00000000-1111-2222-3333-444444444444"]}},
+            "belong to each machine",
+        ),
+        ({"server": "az", "args": {"-x": ["y"]}}, "maps --flags"),
+        ({"server": "az", "argz": {}}, "an MCP ref takes"),
     ],
 )
-def test_pack_args_are_checked_like_server_args(
+def test_pack_args_are_only_the_flags_a_server_allows_and_checked_like_its_own(
     tmp_path: Path, ref: dict[str, Any], message: str
 ) -> None:
-    agents = _agents(tmp_path, {"docs": URL}, {"p": {"skills": [], "mcp": [ref]}})
+    agents = _agents(tmp_path, {"docs": URL, "az": AZ}, {"p": {"skills": [], "mcp": [ref]}})
 
     with pytest.raises(ValueError, match=message):
         pack_servers(agents, load_mcp_servers(agents))
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"args": [*AZ["args"], "false"]}, "--read-only takes no value"),
+        ({"args": [*AZ["args"][:-1], "--read-only=false"]}, "--read-only takes no value"),
+        ({"args": [*AZ["args"], "--transport", "http"]}, "--transport is stdio only"),
+        ({"args": [*AZ["args"], "--transport=http"]}, "--transport is stdio only"),
+        ({"args": [*AZ["args"], "--dangerously-disable-ssrf-protections-by-namespace"]}, "never"),
+        ({"args": [*AZ["args"], "--insecure-x"]}, "never allowed"),
+        ({"args": [*AZ["args"], "--outgoing-auth-strategy", "x"]}, "never allowed"),
+        ({"args": [*AZ["args"], "--subscription", "x"]}, "belong to each machine"),
+        ({"env": {"AZURE_SUBSCRIPTION_ID": "x"}}, "belong to each machine"),
+        ({"env": {"X": "00000000-1111-2222-3333-444444444444"}}, "belong to each machine"),
+        ({"packArgs": ["--read-only"]}, "decides what the server may do"),
+        ({"packArgs": ["--from"]}, "decides what the server may do"),
+    ],
+)
+def test_the_catalog_refuses_what_would_widen_a_server(
+    tmp_path: Path, change: dict[str, Any], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        load_mcp_servers(_agents(tmp_path, {"az": {**AZ, **change}}))
+
+
+def test_a_transport_of_stdio_is_fine(tmp_path: Path) -> None:
+    server = {**AZ, "args": [*AZ["args"], "--transport", "stdio"]}
+
+    assert "stdio" in load_mcp_servers(_agents(tmp_path, {"az": server}))["az"].args
+
+
+def test_a_young_pin_is_held_back_from_both_syncs(tmp_path: Path) -> None:
+    """The catalog check reports it; the syncs don't install it meanwhile."""
+    from datetime import UTC, datetime, timedelta
+
+    from repo_template.mcp import usable
+
+    recent = (datetime.now(UTC) - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    young = {**NPX, "pin": {**NPX["pin"], "publishedAt": recent}}
+    servers = load_mcp_servers(_agents(tmp_path / "c", {"x": young, "docs": URL}))
+    errors: list[str] = []
+
+    kept = usable(servers, datetime.now(UTC), errors)
+
+    assert list(kept) == ["docs"] and len(errors) == 1 and "not installed" in errors[0]
+    root, catalog = _repository(tmp_path)
+    catalog_servers = json.loads((catalog / "mcp-servers.json").read_text())
+    catalog_servers["servers"]["docs"] = {**young, "scope": "pack"}
+    (catalog / "mcp-servers.json").write_text(json.dumps(catalog_servers))
+    result = _update(root, catalog, packs=["lc"])
+    assert any("less than 7 days old" in error for error in result.errors)
+    project = root / ".mcp.json"
+    assert not project.exists() or "docs" not in json.loads(project.read_text())["mcpServers"]
 
 
 def test_a_pack_with_an_unknown_key_is_refused(tmp_path: Path) -> None:

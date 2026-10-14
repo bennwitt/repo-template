@@ -40,7 +40,15 @@ PACK_KEYS = {"description", "skills", "mcp"}
 REF_KEYS = {"server", "args"}
 REGISTRY = {"npx": "npm", "uvx": "pypi"}
 CACHE = "{cache}"  # in args: the machine's repo-template cache folder
-FORBIDDEN_ARGS = {"--dangerously-disable-elicitation", "--allow-unrestricted-file-access"}
+FORBIDDEN_ARGS = {
+    "--dangerously-disable-elicitation",
+    "--allow-unrestricted-file-access",
+    "--outgoing-auth-strategy",
+}
+FORBIDDEN_PREFIXES = ("--dangerously-", "--insecure-")  # every flag that says it widens access
+GUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
+MACHINE_ENV = {"AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID"}  # set by each machine
+MACHINE_FLAGS = {"--tenant", "--tenant-id", "--subscription", "--subscription-id"}
 SERVER_KEYS = {
     "scope",
     "clients",
@@ -53,6 +61,7 @@ SERVER_KEYS = {
     "deny",
     "source",
     "why",
+    "packArgs",
 }
 CODEX_KEYS = {"startup_timeout_sec", "tool_timeout_sec", "enabled_tools"}
 PIN_KEYS = {"registry", "package", "version", "publishedAt", "pinException"}
@@ -86,6 +95,7 @@ class Server:
     source: str = ""
     why: str = ""
     pack_args: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    pack_flags: tuple[str, ...] = ()  # the flags a pack may add (packArgs)
 
 
 def _fail(path: Path, where: str, message: str) -> ValueError:
@@ -122,18 +132,73 @@ def _pin(path: Path, name: str, raw: Any) -> Pin | None:
     return Pin(raw["registry"], raw["package"], raw["version"], raw["publishedAt"], exception)
 
 
+COOLDOWN = timedelta(days=7)  # how old a release must be before it is pinned
+
+
+def cooldown_problem(server: Server, now: datetime) -> str | None:
+    """Why a server's pin can't be used yet: published in the future, or less than COOLDOWN
+    old without a pinException saying why."""
+    pin = server.pin
+    if pin is None:
+        return None
+    published = datetime.fromisoformat(pin.published_at.replace("Z", "+00:00"))
+    if published > now:
+        return f"MCP server {server.name}: its pin's publishedAt is in the future"
+    if now - published < COOLDOWN and not pin.exception:
+        return (
+            f"MCP server {server.name}: {pin.package}@{pin.version} is less than "
+            f"{COOLDOWN.days} days old; pin an older release, or give the pin a pinException "
+            f"saying why"
+        )
+    return None
+
+
+def usable(servers: Mapping[str, Server], now: datetime, errors: list[str]) -> dict[str, Server]:
+    """The servers whose pins may run now; each one held back is reported in errors."""
+    kept = {}
+    for name, server in servers.items():
+        problem = cooldown_problem(server, now)
+        if problem:
+            errors.append(f"{problem}; not installed")
+        else:
+            kept[name] = server
+    return kept
+
+
 def _secret_arg(value: str) -> bool:
     return bool(SECRET_FLAG.match(value) or SECRET_VALUE.match(value))
 
 
 def _check_arg(path: Path, where: str, value: str) -> None:
-    """Refuse an argument that is a placeholder, a secret, or one that widens access."""
+    """Refuse an argument that is a placeholder, a secret, a machine's own Azure ID, or one
+    that widens access."""
     if not _printable(value) or "${" in value:
         raise _fail(path, where, f"{value!r}: no placeholders or control characters")
-    if value in FORBIDDEN_ARGS or value.split("=", 1)[0] in FORBIDDEN_ARGS:
+    flag = value.split("=", 1)[0]
+    if flag in FORBIDDEN_ARGS or flag.startswith(FORBIDDEN_PREFIXES):
         raise _fail(path, where, f"{value} is never allowed")
+    if flag in MACHINE_FLAGS or GUID.search(value):
+        raise _fail(path, where, f"{value!r}: tenant, subscription and client IDs belong to each "
+                    f"machine (az login or its environment), not the catalog")  # fmt: skip
     if _secret_arg(value):
         raise _fail(path, where, f"{value!r}: servers are keyless; no secrets in args")
+
+
+def _check_args(path: Path, where: str, args: Sequence[str]) -> None:
+    """The arguments one by one, then together: --read-only takes no value, and --transport
+    only stdio (a server reached over HTTP would listen on a port)."""
+    for value in args:
+        _check_arg(path, where, value)
+    for index, value in enumerate(args):
+        following = args[index + 1] if index + 1 < len(args) else None
+        if value.startswith("--read-only="):
+            raise _fail(path, where, "--read-only takes no value")
+        if value == "--read-only" and following is not None and not following.startswith("-"):
+            raise _fail(path, where, "--read-only takes no value")
+        if value.split("=", 1)[0] == "--transport":
+            chosen = value.split("=", 1)[1] if "=" in value else following
+            if chosen != "stdio":
+                raise _fail(path, where, "--transport is stdio only")
 
 
 def runs_pin(command: str, args: Sequence[str], pin: Pin) -> bool:
@@ -190,7 +255,8 @@ def _server(path: Path, name: str, raw: Any) -> Server:
             raise _fail(path, name, "'url' carries no credentials, query or fragment")
     if command is not None and command not in REGISTRY:
         raise _fail(path, name, f"'command' is {' or '.join(sorted(REGISTRY))}, running a pin")
-    for value in [*(args or []), url or "", command or ""]:
+    _check_args(path, name, list(args or []))
+    for value in (url or "", command or ""):
         _check_arg(path, name, value)
     env = raw.get("env", {})
     if not isinstance(env, dict):
@@ -198,6 +264,9 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     for key, value in env.items():
         if not ENV_NAME.fullmatch(key) or not isinstance(value, str) or not _printable(value):
             raise _fail(path, name, f"env {key!r}: an upper-case name and a printable default")
+        if key in MACHINE_ENV or GUID.search(value):
+            raise _fail(path, name, f"env {key!r}: tenant, subscription and client IDs belong to "
+                        f"each machine (az login or its environment), not the catalog")  # fmt: skip
         if "$" in value or "}" in value or SECRET_NAME.search(key) or SECRET_VALUE.match(value):
             raise _fail(path, name, f"env {key!r}: servers are keyless; no secrets or placeholders")
     if url is not None and env:
@@ -214,6 +283,13 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         raise _fail(path, name, "a url server has no 'pin'")
     if any("azmcp" in arg for arg in args) and "--read-only" not in args:
         raise _fail(path, name, "an Azure MCP server runs --read-only")
+    pack_flags = raw.get("packArgs", [])
+    if not _strings(pack_flags) or not all(FLAG.fullmatch(flag) for flag in pack_flags):
+        raise _fail(path, name, "'packArgs' lists the --flags a pack may add")
+    for flag in pack_flags:
+        _check_args(path, name, [flag])
+        if flag in {"--read-only", "--transport", "--mode", "--tool"} or flag in args:
+            raise _fail(path, name, f"'packArgs': {flag} decides what the server may do")
     deny = raw.get("deny", [])
     if not _strings(deny) or not all(TOOL_NAME.fullmatch(tool) for tool in deny):
         raise _fail(path, name, "'deny' lists tool names")
@@ -250,6 +326,7 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         enabled_tools=tuple(enabled) if enabled is not None else None,
         source=raw["source"],
         why=raw["why"],
+        pack_flags=tuple(pack_flags),
     )
 
 
@@ -309,8 +386,13 @@ def pack_servers(
             ):
                 raise ValueError(f"{path}: pack {pack!r}: 'args' maps --flags to lists of values")
             for flag, values in args.items():
-                for value in [flag, *values]:
-                    _check_arg(path, f"pack {pack!r}", value)
+                if flag not in servers[name].pack_flags:
+                    allowed = list(servers[name].pack_flags) or "none"
+                    raise ValueError(
+                        f"{path}: pack {pack!r}: {name!r} takes {allowed} from packs ('packArgs'), "
+                        f"not {flag}"
+                    )
+                _check_args(path, f"pack {pack!r}", [arg for v in values for arg in (flag, v)])
             found.setdefault(pack, []).append((name, {flag: tuple(v) for flag, v in args.items()}))
     return found
 

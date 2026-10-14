@@ -432,8 +432,14 @@ The catalog refuses what it can't vouch for:
 - a command other than `npx` or `uvx`, and args that don't run the pinned package first
   (`npx -y package@version`, `uvx --from package==version <tool>`): no `--package`, `--with`
   or `--index` that would run something else;
-- a pin less than 7 days old without a `pinException` giving the reason (`globals --check`
-  checks this; `--upstream` says when the exception can go);
+- a pin less than 7 days old without a `pinException` giving the reason: `globals --check`
+  reports it, `globals` and `update` don't install that server, and `--upstream` says when an
+  exception can go;
+- a flag that widens access (`--dangerously-*`, `--insecure-*`, a `--transport` other than
+  stdio, a value after `--read-only`), and pack args other than the flags the server lists in
+  `packArgs` (so a pack can add `--namespace`, never undo `--read-only`);
+- a tenant, subscription or client ID (a GUID, `AZURE_SUBSCRIPTION_ID`, `--subscription`):
+  each machine has its own, through `az login` or its environment;
 - anything that looks like a secret: env names like `*_TOKEN`, `*_PAT` or `*AUTH*`, secret-like
   flags or values in args (pack args included), and credentials or a query in a URL. Servers
   are keyless and read-only.

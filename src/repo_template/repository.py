@@ -6,11 +6,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from repo_template.mcp import Server, for_packs, load_mcp_servers, pack_servers
+from repo_template.mcp import Server, for_packs, load_mcp_servers, pack_servers, usable
 from repo_template.mcp_project import (
     McpPlan,
     apply_codex_mcp,
@@ -97,6 +98,7 @@ class _Mcp:
     owned: set[str]
     removals: bool
     cache: str
+    errors: list[str] = field(default_factory=list)  # servers held back, and why
 
 
 def _mcp(
@@ -110,11 +112,14 @@ def _mcp(
     definitions = load_skill_packs(agents_dir)
     known = [pack for pack in packs if pack in definitions]
     owned = manifest.get("project_owned", [])
+    errors: list[str] = []
+    wanted = for_packs(known, servers, pack_servers(agents_dir, servers))
     return _Mcp(
-        for_packs(known, servers, pack_servers(agents_dir, servers)),
+        usable(wanted, datetime.now(UTC), errors),
         {item for item in owned if isinstance(item, str)} if isinstance(owned, list) else set(),
         removals=len(known) == len(packs),
         cache=str(Path.home() / ".cache/repo-template"),
+        errors=errors,
     )
 
 
@@ -163,6 +168,8 @@ def create_repository(
     if plan:
         apply_project_mcp(result.root, plan, result, check=False)
     _sync_codex(result.root, mcp, result, check=False)
+    if mcp:
+        result.errors.extend(mcp.errors)
     sync_project_packs(result.root, packs, result, check=False, agents_dir=agents_dir)
     if git:
         if not runner.which("git"):
@@ -208,6 +215,8 @@ def update_repository(
         apply_project_mcp(root.resolve(), plan, first, check=check)
     result = update_project(root, check=check, add_packs=packs, mcp=plan.manifest if plan else None)
     _merge(first, result)
+    if mcp:
+        result.errors.extend(mcp.errors)
     _sync_codex(result.root, mcp, result, check=check)
     sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
     if hooks:
