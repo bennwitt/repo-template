@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- `globals --upstream` compares every vendored skill and license text with upstream, read-only, and
+  confirms each recorded commit holds the vendored folder. `globals --upgrade [SKILL …]` refreshes
+  skills, or adds one as `owner/repo@skill-or-path[#ref]`. Each is staged, verified against the
+  upstream tree SHA (from the listing and from the files written), scanned with the committed
+  `skill-scanner`, shown as a terminal-safe diff that names the files the scanner doesn't read (and
+  new URLs, binary files and permission frontmatter), and swapped in with its records only when you
+  apply it, as one journaled transaction that a failure, signal or kill rolls back. A scanner crash,
+  new critical/high findings, a changed upstream license or an unrecorded skill-level license refuse
+  it; moved skills are followed; nothing is committed. `npx skills` is no longer part of the catalog
+  workflow. `--upstream` and `--upgrade` exit `3` when GitHub can't be reached. A weekly
+  `catalog-drift.yml` runs `--upstream`.
+- The README lists the per-machine tools the portable plugins and skills need (language servers,
+  Playwright CLI and its browser, azd, Codex), each pinned to its newest release at least 7 days
+  old, and explains the `github` plugin's token.
 - Catalog integrity, checked offline by `globals --check` and the tests: every skill is recorded,
   in the lock or as a local skill in the new `.agents/skill-sources.json`, with the upstream
   commit it came from and the tree that commit was recorded for. Every vendored skill hashes to

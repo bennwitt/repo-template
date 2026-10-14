@@ -52,6 +52,8 @@ CLAUDE.local.md
 /.agents/skills/**/*.py[cod]
 /.agents/skills/**/.DS_Store
 /.agents/skills/**/.ruff_cache/
+# A `globals --upgrade` staging folder; removed when the upgrade ends or the next one starts.
+/.repo-template-upgrade-*/
 !/.agents/hooks/
 !/.agents/hooks/**
 /.agents/hooks/__pycache__/

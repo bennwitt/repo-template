@@ -11,6 +11,7 @@ from __future__ import annotations
 import difflib
 import os
 import sys
+import unicodedata
 from collections.abc import Sequence
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -50,16 +51,31 @@ class Prompt(Protocol):
     def choose(self, question: str, options: Options) -> str: ...
 
 
+def visible(line: str) -> str:
+    """A line made safe for a terminal: tabs kept, every other control or format character
+    (escape sequences, bidirectional overrides, zero-width marks) shown as an escape."""
+    body, ending = (line[:-1], "\n") if line.endswith("\n") else (line, "")
+    shown = "".join(
+        char
+        if char == "\t" or unicodedata.category(char)[0] != "C"
+        else f"\\x{ord(char):02x}"
+        if ord(char) < 0x100
+        else f"\\u{ord(char):04x}"
+        for char in body
+    )
+    return shown + ending
+
+
 class TerminalPrompt:
     def __init__(self) -> None:
         self.color = sys.stdout.isatty() and "NO_COLOR" not in os.environ
 
     def say(self, text: str = "") -> None:
-        print(text)
+        print("\n".join(visible(line) for line in text.split("\n")))
 
     def diff(self, lines: Sequence[str]) -> None:
         for line in lines:
-            line = line.rstrip("\n")
+            line = visible(line.rstrip("\n"))
             if self.color and line.startswith(("+++", "---")):
                 line = f"\033[1m{line}\033[0m"
             elif self.color and line.startswith("+"):

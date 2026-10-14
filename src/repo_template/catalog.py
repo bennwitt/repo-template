@@ -51,6 +51,7 @@ README_START = (
 README_END = "<!-- <<< repo-template catalog -->"
 DESCRIPTION_LIMIT = 350  # for descriptions this repository writes: overrides and local skills
 SHA = re.compile(r"[0-9a-f]{40}")
+STAGE_PREFIX = ".repo-template-upgrade-"  # a `globals --upgrade` staging folder
 LICENSE_FILE = re.compile(r"(licen[cs]e|notice|copying)([.-].*)?", re.I)
 
 # What Claude Code (2.1) runs when it loads a skill, found as it finds it. It drops a leading
@@ -270,7 +271,7 @@ def origin(root: Path, name: str) -> str:
     source = entry.get("source", "?")
     record = sources.get("skills", {}).get(name, {})
     spdx = record.get("license") or sources.get("sources", {}).get(source, {}).get("license", "?")
-    url = _upstream_url(source, record.get("commit", "HEAD"), _folder(entry))
+    url = upstream_url(source, record.get("commit", "HEAD"), _folder(entry))
     return f"Original: {url} ({spdx})."
 
 
@@ -380,7 +381,7 @@ def _license_files(skill_dir: Path) -> list[str]:
     )
 
 
-def _own_license(skill_dir: Path, text: str, source_license: str) -> list[str]:
+def own_license(skill_dir: Path, text: str, source_license: str) -> list[str]:
     """Why a vendored skill may carry a license of its own: license files, or a frontmatter
     `license` field that isn't its source's."""
     found = _license_files(skill_dir)
@@ -431,6 +432,12 @@ def integrity(
     for name in sorted(set(lock) - set(names)):
         if (root / ".agents/skills" / name).is_dir():
             problems.add(name, "its folder has no SKILL.md")
+        elif any(root.glob(f"{STAGE_PREFIX}*")):
+            problems.add(
+                name,
+                "has no folder: an interrupted `globals --upgrade` holds it; run "
+                "`repo-template globals --upgrade` to put it back",
+            )
         else:
             problems.add(name, f"in {LOCK_NAME} but has no folder; remove the lock entry")
     for name in sorted(set(local) - set(names)):
@@ -457,7 +464,7 @@ def integrity(
         skill_dir = root / ".agents/skills" / name
         spdx = licensed.get(lock[name].get("source"), {})
         spdx = spdx.get("license", "") if isinstance(spdx, dict) else ""
-        own[name] = _own_license(skill_dir, read_skill(skill_dir / "SKILL.md"), str(spdx))
+        own[name] = own_license(skill_dir, read_skill(skill_dir / "SKILL.md"), str(spdx))
     for source in sorted(licensed):
         record = licensed[source]
         users = [name for name in own if lock[name].get("source") == source]
@@ -479,6 +486,17 @@ def integrity(
                 f"its recorded commit is for tree {str(record.get('tree'))[:12]}, not the lock's "
                 f"{str(entry.get('skillFolderHash'))[:12]}; record the commit you vendored "
                 f"('commit' and 'tree' under 'skills' in {SOURCES_NAME})",
+            )
+        allowance = record.get("allowFindings")
+        if allowance is not None and not (
+            isinstance(allowance, dict)
+            and isinstance(allowance.get("reason"), str)
+            and allowance["reason"].strip()
+            and isinstance(allowance.get("counts"), dict)
+            and all(isinstance(count, int) for count in allowance["counts"].values())
+        ):
+            problems.add(
+                None, f"{name}: 'allowFindings' needs a 'reason' and the 'counts' it allows"
             )
         if own[name] and not record.get("license"):
             problems.add(
@@ -514,6 +532,12 @@ def integrity(
                 f"'allowCommands' in {SOURCES_NAME}",
             )
 
+    for leftover in sorted(root.glob(f"{STAGE_PREFIX}*")):
+        problems.add(
+            None,
+            f"{leftover.name}: an interrupted `globals --upgrade` left it; run "
+            f"`repo-template globals --upgrade` to restore or clear it",
+        )
     try:
         listing = list_skill_files(root)
     except (OSError, ValueError) as exc:
@@ -576,7 +600,7 @@ def _where(name: str, packs: dict[str, list[str]]) -> str:
     return ", ".join(f"pack `{pack}`" for pack in member) if member else "global"
 
 
-def _upstream_url(source: str, commit: str, path: str) -> str:
+def upstream_url(source: str, commit: str, path: str) -> str:
     return f"https://github.com/{source}/tree/{commit}/{path}"
 
 
@@ -604,7 +628,7 @@ def render_catalog(root: Path, names: list[str], packs: dict[str, list[str]]) ->
             entry = lock[name]
             source = entry["source"]
             record = sources.get("skills", {}).get(name, {})
-            url = _upstream_url(source, record.get("commit", "HEAD"), _folder(entry))
+            url = upstream_url(source, record.get("commit", "HEAD"), _folder(entry))
             link = f"[{source}]({url})"
             license_id = record.get("license") or sources["sources"].get(source, {}).get(
                 "license", "?"
@@ -616,7 +640,7 @@ def render_catalog(root: Path, names: list[str], packs: dict[str, list[str]]) ->
             link, license_id = "this repository", record.get("license", "?")
             derived = record.get("derivedFrom")
             if derived:
-                url = _upstream_url(derived["source"], derived["commit"], derived["path"])
+                url = upstream_url(derived["source"], derived["commit"], derived["path"])
                 notes.append(f"derived from [{derived['source']}]({url})")
         fields = read_fields((root / ".agents/skills" / name / "SKILL.md").read_text())
         fields.update(  # what `globals` writes, so --check plans what it would do
@@ -667,7 +691,7 @@ def render_notices(root: Path, names: list[str]) -> str:
             folder = _folder(lock[name])
             record = vendored.get(name, {})
             commit = record.get("commit", "HEAD")
-            line = f"`{name}`: [{folder}]({_upstream_url(source, commit, folder)}) at {commit[:12]}"
+            line = f"`{name}`: [{folder}]({upstream_url(source, commit, folder)}) at {commit[:12]}"
             if name in overrides:
                 line += ", " + ", ".join(overrides[name].get("frontmatter", {})) + " modified"
             if record.get("author"):
@@ -683,7 +707,7 @@ def render_notices(root: Path, names: list[str]) -> str:
     for name, record in sorted(sources.get("local", {}).items()):
         derived = record.get("derivedFrom") if name in names else None
         if derived:
-            url = _upstream_url(derived["source"], derived["commit"], derived["path"])
+            url = upstream_url(derived["source"], derived["commit"], derived["path"])
             listed = [
                 f"`{name}` (a derived work, under {record.get('license', '?')}): from "
                 f"[{derived['path']}]({url}) at {derived['commit'][:12]}"

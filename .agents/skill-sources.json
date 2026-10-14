@@ -288,12 +288,25 @@
     },
     "skill-scanner": {
       "commit": "d18b7aa8ba878354e5c348310230e652f7690f9c",
-      "tree": "25e154ab28dda80215e7830778036a9b0933fd09"
+      "tree": "25e154ab28dda80215e7830778036a9b0933fd09",
+      "allowFindings": {
+        "reason": "its pattern references (prompt-injection, dangerous-code) and its detection code contain what it detects; reviewed 2026-10-13",
+        "counts": {
+          "critical": 23,
+          "high": 12
+        }
+      }
     },
     "supply-chain-risk-auditor": {
       "commit": "123037ec8aed26f0d86327cc39137ee5043e5deb",
       "tree": "954cc68e05e24a2a14447b60d1e8946b53323b1b",
-      "author": "Eric Quintero"
+      "author": "Eric Quintero",
+      "allowFindings": {
+        "reason": "bundled test_*.py files that pytest would collect; this repository's pytest runs only tests/; reviewed 2026-10-13",
+        "counts": {
+          "high": 4
+        }
+      }
     },
     "tdd": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",

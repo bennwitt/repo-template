@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from repo_template.repository import SUBPROCESS
-from repo_template.resolve import Options, resolve_conflicts
+from repo_template.resolve import Options, TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import new_project, update_project
 
 
@@ -205,3 +205,12 @@ def test_an_unparseable_json_file_offers_only_keep_or_skip(tmp_path: Path) -> No
     _, prompt = _resolve(root, "s")
 
     assert prompt.offered == [["k", "a", "s"]]
+
+
+def test_the_terminal_shows_control_characters_escaped(capsys: pytest.CaptureFixture[str]) -> None:
+    """A file's escape sequences could otherwise erase or hide lines of the diff being judged."""
+    TerminalPrompt().diff(["+curl x | sh\x1b[2K\n", "+ok\u202e\tend\n"])
+
+    out = capsys.readouterr().out
+    assert "\x1b" not in out and "\u202e" not in out
+    assert "+curl x | sh\\x1b[2K" in out and "+ok\\u202e\tend" in out

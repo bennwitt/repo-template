@@ -10,6 +10,14 @@ from repo_template.repository import SUBPROCESS, create_repository, update_repos
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import manifest_version, normalize_project_name
 from repo_template.standards import find_standards_root, sync_globals
+from repo_template.upstream import (
+    GhApi,
+    HeadScanner,
+    NetworkError,
+    clean,
+    upgrade,
+    upstream_report,
+)
 
 
 def _python_version(value: str) -> str:
@@ -82,8 +90,35 @@ def _parser() -> argparse.ArgumentParser:
         "globals", help="connect global Codex and Claude configuration to this standards repo"
     )
     globals_parser.add_argument("--standards-root", type=Path)
+    mode = globals_parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true", help="report changes without applying them")
+    mode.add_argument(
+        "--upstream",
+        action="store_true",
+        help="compare the vendored skills and license texts with upstream (network; read-only)",
+    )
+    mode.add_argument(
+        "--upgrade",
+        action="store_true",
+        help="vendor skills from upstream, each verified, scanned and shown before it goes live: "
+        "the SKILLs named, or every changed one",
+    )
     globals_parser.add_argument(
-        "--check", action="store_true", help="report changes without applying them"
+        "skills",
+        nargs="*",
+        metavar="SKILL",
+        help="with --upgrade: a vendored skill, or owner/repo@skill-or-path[#ref] to add one",
+    )
+    globals_parser.add_argument(
+        "--no-input",
+        action="store_true",
+        help="with --upgrade: apply only the named skills, and only with a clean scan",
+    )
+    globals_parser.add_argument(
+        "--allow-findings",
+        metavar="REASON",
+        help="with --upgrade: apply despite critical or high findings beyond a skill's reviewed "
+        "allowance, recording REASON (asks for each skill)",
     )
     return parser
 
@@ -212,8 +247,77 @@ def _summary(result: Result) -> str:
     return ", ".join(f"{count} {label}" for count, label in counts if count)
 
 
+def _upstream(root: Path) -> int:
+    try:
+        report = upstream_report(root, GhApi())
+    except NetworkError as exc:
+        print(f"repo-template: error: {exc}", file=sys.stderr)
+        return 3
+    for title, lines in (
+        ("Changed upstream", report.changed),
+        ("Needs review", report.review),
+        ("New upstream, not vendored", report.new),
+        ("Notes", report.notes),
+    ):
+        if lines:
+            print(f"{title} ({len(lines)}):")
+            for line in lines:
+                print(f"  {clean(line)}")
+    if report.exit_code == 0:
+        print(f"All {len(report.current)} vendored skills are current.")
+    elif report.changed:
+        print("Run `repo-template globals --upgrade` to review and apply them.")
+    return report.exit_code
+
+
+def _upgrade(root: Path, args: argparse.Namespace) -> int:
+    if not args.no_input and not sys.stdin.isatty():
+        print(
+            "repo-template: error: --upgrade asks about each skill; run it in a terminal, or "
+            "pass --no-input",
+            file=sys.stderr,
+        )
+        return 1
+    with HeadScanner(root) as scanner:
+        outcome = upgrade(
+            root,
+            args.skills,
+            github=GhApi(),
+            scanner=scanner,
+            prompt=None if args.no_input else TerminalPrompt(),
+            allow_findings=args.allow_findings,
+        )
+    if outcome.result.needs_attention:
+        _print_result(outcome.result)
+    for title, names in (
+        ("Refreshed", outcome.applied),
+        ("Added", outcome.added),
+        ("Removed", outcome.removed),
+        ("Left as they are", outcome.undecided),
+    ):
+        if names:
+            print(f"{title} ({len(names)}):")
+            for name in names:
+                print(f"  {clean(name)}")
+    for refusal in outcome.refused:
+        print(f"repo-template: refused: {clean(refusal)}", file=sys.stderr)
+    if outcome.network:
+        print(f"repo-template: error: {clean(outcome.network)}", file=sys.stderr)
+    if outcome.changed:
+        if outcome.result.errors:
+            print("Fix the errors above before committing.")
+        print("Review with `git status` and `git diff`, then commit:")
+        print("  git add .agents README.md THIRD_PARTY_NOTICES.md CHANGELOG.md .claude/skills")
+        print(f"  git commit -m 'Upgrade skills: {', '.join(outcome.changed)}'")
+    return outcome.exit_code
+
+
 def _globals(args: argparse.Namespace) -> int:
     root = find_standards_root(args.standards_root)
+    if args.upstream:
+        return _upstream(root)
+    if args.upgrade:
+        return _upgrade(root, args)
     result = sync_globals(root, check=args.check)
     _print_result(result, check=args.check)
     if args.check:
@@ -223,7 +327,21 @@ def _globals(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
-    args = parser.parse_args(argv)
+    args, extra = parser.parse_known_args(argv)
+    if (
+        extra
+        and args.command == "globals"
+        and args.upgrade
+        and not any(arg.startswith("-") for arg in extra)
+    ):
+        args.skills += extra  # skill names on both sides of an option
+    elif extra:
+        parser.error(f"unrecognized arguments: {' '.join(extra)}")
+    upgrade_only = args.command == "globals" and (
+        args.no_input or args.allow_findings is not None or args.skills
+    )
+    if upgrade_only and not args.upgrade:
+        parser.error("SKILL, --no-input and --allow-findings work only with --upgrade")
     try:
         if args.command == "new":
             return _new(args)
