@@ -23,31 +23,78 @@ PROFILE_START="# >>> repo-template (setup-machine.sh) >>>"
 PROFILE_END="# <<< repo-template (setup-machine.sh) <<<"
 IGNORE_START="# >>> repo-template personal AI directories"
 IGNORE_END="# <<< repo-template personal AI directories"
+STAMP=$(date +%Y%m%d-%H%M%S)
 
 dir=""
 assume_yes=0
 run_globals=1
 run_tools=1
+status=0 # 1 once a step reported an error; the run goes on, and exits 1 at the end
 
 usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; }
-
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --dir) [ $# -ge 2 ] || { echo "--dir needs a path" >&2; exit 2; }; dir=$2; shift 2 ;;
-    --dir=*) dir=${1#--dir=}; shift ;;
-    -y|--yes) assume_yes=1; shift ;;
-    --no-globals) run_globals=0; shift ;;
-    --no-tools) run_tools=0; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "unknown option: $1 (see --help)" >&2; exit 2 ;;
-  esac
-done
 
 say() { printf '\n==> %s\n' "$*"; }
 note() { printf '    %s\n' "$*"; }
 warn() { printf '    ! %s\n' "$*" >&2; }
-die() { printf '\nsetup-machine: %s\n' "$*" >&2; exit 1; }
+die() {
+  printf '\nsetup-machine: %s\n' "$*" >&2
+  exit 1
+}
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# clean_path TEXT: a typed, pasted or Finder-dragged folder, without surrounding spaces or
+# quotes and without the backslashes a drag puts before spaces; ~ means the home folder
+clean_path() {
+  local path=$1
+  path="${path#"${path%%[![:space:]]*}"}"
+  path="${path%"${path##*[![:space:]]}"}"
+  case "$path" in
+    \"*\") path=${path#\"} && path=${path%\"} ;;
+    \'*\') path=${path#\'} && path=${path%\'} ;;
+  esac
+  path=$(printf '%s' "$path" | sed 's/\\\(.\)/\1/g')
+  case "$path" in
+    \~) path=$HOME ;;
+    \~/*) path="$HOME/${path#\~/}" ;;
+  esac
+  case "$path" in /*) ;; *) path="$PWD/$path" ;; esac
+  while [ "$path" != / ] && [ "${path%/}" != "$path" ]; do path=${path%/}; done
+  printf '%s\n' "$path"
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dir)
+      [ $# -ge 2 ] || die "--dir needs a path"
+      dir=$2
+      shift 2
+      ;;
+    --dir=*)
+      dir=${1#--dir=}
+      shift
+      ;;
+    -y | --yes)
+      assume_yes=1
+      shift
+      ;;
+    --no-globals)
+      run_globals=0
+      shift
+      ;;
+    --no-tools)
+      run_tools=0
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "unknown option: $1 (see --help)" >&2
+      exit 2
+      ;;
+  esac
+done
 
 tty_ok=0
 if { : </dev/tty; } 2>/dev/null; then tty_ok=1; fi
@@ -62,7 +109,6 @@ ask() {
     printf '%s\n' "$2"
     return
   fi
-  [ "$tty_ok" = 1 ] || die "no terminal to ask in: run it with --yes (and --dir PATH) instead"
   printf '%s [%s]: ' "$1" "$2" >/dev/tty
   IFS= read -r answer </dev/tty || answer=""
   printf '%s\n' "${answer:-$2}"
@@ -76,7 +122,62 @@ confirm() {
   esac
 }
 
+# optional WHAT COMMAND...: run an optional step; a failure is reported, never fatal
+optional() {
+  local what=$1
+  shift
+  if ! "$@"; then warn "$what didn't work; you can run it later: $*"; fi
+}
+
 is_standards() { [ -f "$1/pyproject.toml" ] && grep -q '^name = "repo-template"' "$1/pyproject.toml"; }
+
+# put_block FILE START END BLOCK: FILE with its START..END lines replaced by BLOCK, or BLOCK
+# added at the end. A file whose markers aren't one START before one END is left alone. The file
+# is backed up before it changes, and written in place (through a symlink, keeping the target).
+# Succeeds when the file holds BLOCK afterwards.
+put_block() {
+  local file=$1 start=$2 end=$3 block=$4 starts ends first last new
+  starts=$(grep -cxF -- "$start" "$file" 2>/dev/null || true)
+  ends=$(grep -cxF -- "$end" "$file" 2>/dev/null || true)
+  starts=${starts:-0}
+  ends=${ends:-0}
+  if [ "$starts" = 1 ] && [ "$ends" = 1 ]; then
+    first=$(grep -nxF -- "$start" "$file" | cut -d: -f1)
+    last=$(grep -nxF -- "$end" "$file" | cut -d: -f1)
+  fi
+  if [ "$starts$ends" != 00 ] && { [ "$starts$ends" != 11 ] || [ "$first" -gt "$last" ]; }; then
+    warn "$file has a broken repo-template block (a '$start' line without its end line, or the other way round); fix it by hand, then run this again"
+    return 1
+  fi
+  new=$(mktemp)
+  if [ "$starts" = 1 ]; then
+    BLOCK=$block awk -v s="$start" -v e="$end" \
+      '$0 == s { print ENVIRON["BLOCK"]; skip = 1; next } $0 == e { skip = 0; next } !skip' \
+      "$file" >"$new"
+  else
+    {
+      if [ -s "$file" ]; then
+        cat "$file"
+        [ -z "$(tail -c 1 "$file")" ] || printf '\n'
+        printf '\n'
+      fi
+      printf '%s\n' "$block"
+    } >"$new"
+  fi
+  if [ -f "$file" ] && cmp -s "$new" "$file"; then
+    rm -f "$new"
+    return 0
+  fi
+  if [ -f "$file" ]; then
+    mkdir -p "$HOME/.repo-template/backups/$STAMP"
+    cp "$file" "$HOME/.repo-template/backups/$STAMP/$(basename "$file")"
+  else
+    mkdir -p "$(dirname "$file")"
+  fi
+  cat "$new" >"$file"
+  rm -f "$new"
+  note "updated $file"
+}
 
 case "$(uname -s)" in
   Darwin) os=mac ;;
@@ -88,17 +189,17 @@ esac
 # 1. What the machine has.
 
 say "Checking this machine ($os)"
-if ! have git; then
-  [ "$os" = mac ] && note "Apple's command line tools include Git: xcode-select --install"
+if ! git --version >/dev/null 2>&1; then # a new Mac's /usr/bin/git is only a stand-in
+  if [ "$os" = mac ]; then note "Apple's command line tools include Git: run xcode-select --install, then this again"; fi
   die "git is needed"
 fi
 note "git: $(git --version)"
 if ! have uv; then
   if confirm "uv (the Python package manager repo-template runs with) isn't installed. Install it?" y; then
     if [ "$os" = mac ] && have brew; then
-      brew install uv
+      brew install uv || true
     else
-      curl -LsSf https://astral.sh/uv/install.sh | sh
+      curl -LsSf https://astral.sh/uv/install.sh | sh || true
     fi
     PATH="$HOME/.local/bin:$PATH"
   fi
@@ -124,8 +225,16 @@ else
 fi
 if have codex; then note "codex: $(codex --version 2>/dev/null | head -n 1)"; else note "codex: not installed (optional)"; fi
 
+# A machine set up before 0.4.2 has ~/.claude/settings.json linked into a standards checkout.
 if [ -L "$HOME/.claude/settings.json" ]; then
-  die "$HOME/.claude/settings.json is a link (a machine set up before 0.4.2). Follow 'Upgrading a machine from a linked settings file' in the standards repository's README.md first, then run this again"
+  linked=$(readlink "$HOME/.claude/settings.json")
+  case "$linked" in
+    */.claude/settings.json)
+      if is_standards "${linked%/.claude/settings.json}"; then
+        die "$HOME/.claude/settings.json is a link into ${linked%/.claude/settings.json} (a machine set up before 0.4.2). Follow 'Upgrading a machine from a linked settings file' in that repository's README.md first, then run this again"
+      fi
+      ;;
+  esac
 fi
 
 # 2. Where the standards repository lives.
@@ -145,12 +254,10 @@ if [ -z "$dir" ]; then
   fi
   dir=$(ask "Where should the standards repository live?" "$default")
 fi
+dir=$(clean_path "$dir")
 case "$dir" in
-  \~) dir=$HOME ;;
-  \~/*) dir="$HOME/${dir#\~/}" ;;
+  *[\"\$\`\\]*) die "choose a folder whose path has no quotes, \$, backticks or backslashes: $dir" ;;
 esac
-case "$dir" in /*) ;; *) dir="$PWD/$dir" ;; esac
-while [ "$dir" != / ] && [ "${dir%/}" != "$dir" ]; do dir=${dir%/}; done
 if [ -n "$existing" ] && [ "$existing" != "$dir" ] && is_standards "$existing"; then
   warn "$HOME/.agents points into $existing; this run moves the machine to $dir"
 fi
@@ -163,16 +270,18 @@ if [ -d "$dir/.git" ]; then
     warn "it has uncommitted changes, so it wasn't pulled; commit or stash them, then run this again"
   elif [ "$branch" != main ]; then
     warn "it is on branch $branch, not main, so it wasn't pulled"
-  else
-    git -C "$dir" pull --ff-only --quiet || warn "git pull failed (above); continuing with what is there"
+  elif git -C "$dir" pull --ff-only --quiet; then
     note "up to date with origin/main: $(git -C "$dir" log -1 --format='%h %s')"
+  else
+    warn "git pull failed (above); continuing with what is there"
   fi
 elif [ -e "$dir" ] && [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
   die "$dir exists and isn't empty; choose another folder"
 else
+  confirm "Create $dir and clone the standards repository there?" y || die "stopped; nothing was changed"
   if ! mkdir -p "$dir" 2>/dev/null; then
     hint=""
-    [ "$os" = mac ] && hint=" (macOS keeps the top of the disk read-only: choose a folder in your home folder)"
+    if [ "$os" = mac ]; then hint=" (macOS keeps the top of the disk read-only: choose a folder in your home folder)"; fi
     die "can't create $dir$hint"
   fi
   git clone --quiet "$REPO_URL" "$dir"
@@ -190,13 +299,72 @@ note "$bin/repo-template (an editable install: a git pull updates it)"
 case ":$PATH:" in
   *":$bin:"*) ;;
   *)
-    uv tool update-shell >/dev/null 2>&1 || true
-    note "$bin is on PATH in new terminals (uv tool update-shell)"
+    if uv tool update-shell >/dev/null 2>&1; then
+      note "$bin is on PATH in new terminals (uv tool update-shell)"
+    else
+      warn "couldn't add $bin to PATH; add it to your shell profile: export PATH=\"$bin:\$PATH\""
+    fi
     ;;
 esac
 export AI_DEV_STANDARDS="$dir"
 
-# 4. Global skills, settings and MCP servers.
+# 4. The shell profile: AI_DEV_STANDARDS, and on a Mac the Keychain's GitHub token if it has one.
+# Written before anything optional, so a failure later can't leave it out.
+
+shell_name=$(basename "${SHELL:-}")
+profile_file() {
+  case "$shell_name" in
+    zsh) printf '%s\n' "${ZDOTDIR:-$HOME}/.zshrc" ;;
+    bash)
+      if [ "$os" = linux ]; then
+        printf '%s\n' "$HOME/.bashrc"
+        return
+      fi
+      # a login shell reads only the first of these: never create one that hides another
+      for candidate in .bash_profile .bash_login .profile; do
+        if [ -e "$HOME/$candidate" ]; then
+          printf '%s\n' "$HOME/$candidate"
+          return
+        fi
+      done
+      printf '%s\n' "$HOME/.bash_profile"
+      ;;
+    fish) printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d/repo-template.fish" ;;
+    *) printf '\n' ;;
+  esac
+}
+token_in_keychain() { [ "$os" = mac ] && security find-generic-password -a "$USER" -s github-pat >/dev/null 2>&1; }
+write_profile() {
+  local profile block
+  profile=$(profile_file)
+  if [ "$shell_name" = fish ]; then
+    block="$PROFILE_START
+set -gx AI_DEV_STANDARDS \"$dir\""
+    if token_in_keychain; then
+      block="$block
+set -gx GITHUB_PERSONAL_ACCESS_TOKEN (security find-generic-password -a \$USER -s github-pat -w 2>/dev/null)"
+    fi
+  else
+    block="$PROFILE_START
+export AI_DEV_STANDARDS=\"$dir\""
+    if token_in_keychain; then
+      block="$block
+export GITHUB_PERSONAL_ACCESS_TOKEN=\"\$(security find-generic-password -a \"\$USER\" -s github-pat -w 2>/dev/null)\""
+    fi
+  fi
+  block="$block
+$PROFILE_END"
+  if [ -z "$profile" ]; then
+    warn "don't know where ${shell_name:-your shell} reads its settings; add this to its startup file:"
+    printf '%s\n' "$block"
+    return
+  fi
+  put_block "$profile" "$PROFILE_START" "$PROFILE_END" "$block" || status=1
+}
+say "Shell profile"
+write_profile
+
+# 5. Global skills, settings and MCP servers.
 
 if [ "$run_globals" = 1 ]; then
   say "Global skills, settings and MCP servers: what would change"
@@ -214,92 +382,73 @@ if [ "$run_globals" = 1 ]; then
     case "$applied" in
       0) note "applied" ;;
       2) note "applied; the ! lines above are kept for you to review (reported once)" ;;
-      *) die "repo-template globals reported errors (above); fix them, then run this again" ;;
+      *)
+        warn "repo-template globals reported errors (above); fix them, then run this again"
+        status=1
+        ;;
     esac
   else
     note "skipped: run 'repo-template globals' when you're ready"
   fi
+fi
 
-  # globals writes the personal ignores to ~/.config/git/ignore; Git reads another file when
-  # core.excludesFile names one
-  excludes=$(git config --global --get core.excludesFile || true)
-  case "$excludes" in \~/*) excludes="$HOME/${excludes#\~/}" ;; esac
-  written="$HOME/.config/git/ignore"
-  if [ -n "$excludes" ] && [ "$excludes" != "$written" ] && grep -qF "$IGNORE_START" "$written" 2>/dev/null \
-    && ! grep -qF "$IGNORE_START" "$excludes" 2>/dev/null; then
-    warn "Git reads $excludes for ignores (core.excludesFile), not $written where globals writes them"
-    if confirm "Add repo-template's ignore lines to $excludes?" y; then
-      { printf '\n'; sed -n "/^$IGNORE_START\$/,/^$IGNORE_END\$/p" "$written"; } >>"$excludes"
-      note "added (a later change to those lines has to be copied there by hand)"
-    fi
+# globals writes the personal ignores to ~/.config/git/ignore. Git reads the file core.excludesFile
+# names (in an included config file too), or $XDG_CONFIG_HOME/git/ignore: keep a copy there.
+written="$HOME/.config/git/ignore"
+reads=$(git config --global --includes --get core.excludesFile 2>/dev/null || true)
+reads=${reads:-${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore}
+case "$reads" in \~/*) reads="$HOME/${reads#\~/}" ;; esac
+if [ "$reads" != "$written" ] && grep -qxF "$IGNORE_START" "$written" 2>/dev/null; then
+  ignores=$(sed -n "/^$IGNORE_START\$/,/^$IGNORE_END\$/p" "$written")
+  if grep -qxF "$IGNORE_START" "$reads" 2>/dev/null \
+    || confirm "Git reads ignores from $reads, not $written: copy repo-template's lines there?" y; then
+    say "Git ignores"
+    put_block "$reads" "$IGNORE_START" "$IGNORE_END" "$ignores" || status=1
   fi
 fi
 
-# 5. Optional tools.
+# 6. Optional tools.
 
 if [ "$run_tools" = 1 ]; then
   say "Optional tools (each asks first; the default is no)"
   if have npm && confirm "Install the TypeScript and Python language servers and the Playwright CLI (global npm packages)?" n; then
-    npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22
-    playwright-cli install-browser chromium || warn "the Chromium download failed; run 'playwright-cli install-browser chromium' later"
+    optional "Installing the npm packages" npm install -g --ignore-scripts \
+      typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22
+    if have playwright-cli; then optional "Downloading Chromium" playwright-cli install-browser chromium; fi
   fi
   if confirm "Set up the Azure CLI and azd, for the azure and foundry packs?" n; then
     if [ "$os" = mac ] && have brew; then
-      have az || brew install azure-cli
-      have azd || { brew tap azure/azd && brew install azd; }
+      have az || optional "Installing the Azure CLI" brew install azure-cli
+      have azd || { optional "Adding azd's Homebrew tap" brew tap azure/azd && optional "Installing azd" brew install azd; }
     elif ! have az || ! have azd; then
       note "Install the Azure CLI and azd: see 'Per-machine tools' in $dir/README.md"
     fi
     if have az; then
-      az account show >/dev/null 2>&1 || az login
+      az account show >/dev/null 2>&1 || optional "az login" az login
       note "choose your subscription with: az account set --subscription \"<name>\""
     fi
-    if have azd; then azd config set auth.useAzCliAuth true; fi
+    if have azd; then optional "azd's sign-in setting" azd config set auth.useAzCliAuth true; fi
     pinned=$(uv run --no-project --quiet python -c \
       'import json, sys; p = json.load(open(sys.argv[1]))["servers"]["azure"]["pin"]; print(p["package"] + "==" + p["version"])' \
       "$dir/.agents/mcp-servers.json" 2>/dev/null || true)
     if [ -n "$pinned" ]; then
       note "fetching the Azure MCP server ($pinned) once, so its first start doesn't time out"
-      uvx --quiet --from "$pinned" azmcp --version >/dev/null || warn "couldn't fetch $pinned; it downloads on first use instead"
+      optional "Fetching $pinned" uvx --quiet --from "$pinned" azmcp --version
     fi
   fi
   if [ "$os" = mac ] && confirm "Store a GitHub token in the Keychain for Claude Code's github plugin?" n; then
     note "Create a fine-grained, read-only token on github.com (Settings > Developer settings), then paste it when asked"
-    security add-generic-password -U -a "$USER" -s github-pat -w
+    optional "Storing the token" security add-generic-password -U -a "$USER" -s github-pat -w
+    write_profile # now with the line that reads the token
   elif [ "$os" = linux ]; then
     note "github plugin: export GITHUB_PERSONAL_ACCESS_TOKEN from a file only you can read (chmod 600), sourced by your shell profile; never in a repository"
   fi
   note "Codex (optional): npm install -g @openai/codex@<a release at least 7 days old>"
 fi
 
-# 6. The shell profile: AI_DEV_STANDARDS, and the Keychain token when there is one.
-
-case "$(basename "${SHELL:-}")" in
-  zsh) profile=$HOME/.zshrc ;;
-  bash) if [ "$os" = mac ]; then profile=$HOME/.bash_profile; else profile=$HOME/.bashrc; fi ;;
-  *) profile=$HOME/.profile ;;
-esac
-block="$PROFILE_START
-export AI_DEV_STANDARDS=\"$dir\""
-if [ "$os" = mac ] && security find-generic-password -a "$USER" -s github-pat >/dev/null 2>&1; then
-  block="$block
-export GITHUB_PERSONAL_ACCESS_TOKEN=\"\$(security find-generic-password -a \"\$USER\" -s github-pat -w 2>/dev/null)\""
-fi
-block="$block
-$PROFILE_END"
-touch "$profile"
-current=$(sed -n "/^$PROFILE_START\$/,/^$PROFILE_END\$/p" "$profile")
-if [ "$current" != "$block" ]; then
-  kept=$(mktemp)
-  awk -v s="$PROFILE_START" -v e="$PROFILE_END" '$0 == s { skip = 1; next } $0 == e { skip = 0; next } !skip' \
-    "$profile" >"$kept"
-  { cat "$kept"; [ -s "$kept" ] && printf '\n'; printf '%s\n' "$block"; } >"$profile"
-  rm -f "$kept"
-  say "Shell profile"
-  note "set AI_DEV_STANDARDS in $profile"
-fi
-
 say "Done"
-note "Open a new terminal (or run: source $profile), then restart Claude Code and Codex"
+if [ "$status" != 0 ]; then warn "some steps reported problems (above); fix them, then run this again"; fi
+note "Open a new terminal, then restart Claude Code and Codex"
 note "Check the MCP servers: claude mcp list   (playwright and huggingface, connected)"
 note "Your repositories: $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md, sections 2 and 3"
+exit "$status"

@@ -159,9 +159,11 @@ def test_it_refuses_before_changing_anything(machine: dict[str, Path], case: str
         _git(target, "init", "-q")
         (target / "pyproject.toml").write_text('[project]\nname = "something-else"\n')
         message = "not repo-template"
-    else:
+    else:  # a pre-0.4.2 machine: the settings link into an older standards checkout
+        old = home / "old-standards"
+        _git(home, "clone", "-q", str(machine["origin"]), str(old))
         (home / ".claude").mkdir()
-        (home / ".claude/settings.json").symlink_to(target / "settings.json")
+        (home / ".claude/settings.json").symlink_to(old / ".claude/settings.json")
         message = "set up before 0.4.2"
 
     result = _run(machine, "--yes")
@@ -213,7 +215,9 @@ def test_the_profile_block_replaces_an_old_one_and_keeps_the_rest(
     assert result.returncode == 0, result.stderr
     profile = (home / ".zshrc").read_text()
     assert "/old" not in profile and profile.count("AI_DEV_STANDARDS") == 1
-    assert profile.startswith("alias ll='ls -l'\nexport EDITOR=vim\n")
+    assert profile.startswith("alias ll='ls -l'\n# >>> repo-template (setup-machine.sh) >>>\n")
+    assert profile.endswith("# <<< repo-template (setup-machine.sh) <<<\nexport EDITOR=vim\n")
+    assert list((home / ".repo-template/backups").glob("*/.zshrc"))  # the old one, kept
 
 
 def test_the_script_is_executable_and_shellcheck_style_safe() -> None:
@@ -237,5 +241,114 @@ def test_a_second_run_leaves_the_profile_byte_for_byte(machine: dict[str, Path])
 
     result = _run(machine, "--yes", "--no-globals", "--no-tools")
 
-    assert result.returncode == 0 and "Shell profile" not in result.stdout
+    assert result.returncode == 0 and "updated" not in result.stdout
     assert (home / ".zshrc").read_bytes() == before
+
+
+def test_a_settings_link_of_your_own_isnt_taken_for_an_old_machine(
+    machine: dict[str, Path], tmp_path: Path
+) -> None:
+    home = machine["home"]
+    (tmp_path / "dotfiles/.claude").mkdir(parents=True)  # a dotfiles repository, not repo-template
+    (tmp_path / "dotfiles/.claude/settings.json").write_text("{}\n")
+    (home / ".claude").mkdir()
+    (home / ".claude/settings.json").symlink_to(tmp_path / "dotfiles/.claude/settings.json")
+
+    result = _run(machine, "--yes", "--no-tools")
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_a_broken_block_in_the_profile_is_left_alone(machine: dict[str, Path]) -> None:
+    home = machine["home"]
+    broken = (
+        "alias ll='ls -l'\n# >>> repo-template (setup-machine.sh) >>>\n"
+        'export AI_DEV_STANDARDS="/old"\nexport EDITOR=vim\nsource ~/.secrets.sh\n'
+    )
+    (home / ".zshrc").write_text(broken)
+
+    result = _run(machine, "--yes", "--no-globals", "--no-tools")
+
+    assert result.returncode == 1 and "broken repo-template block" in result.stderr
+    assert (home / ".zshrc").read_text() == broken
+
+
+def test_a_failing_step_doesnt_stop_the_rest(machine: dict[str, Path]) -> None:
+    home = machine["home"]
+    mine = home / ".gitignore_global"
+    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = {mine}\n")
+
+    result = _run(machine, "--yes", "--no-tools", APPLY_EXIT="1")
+
+    assert result.returncode == 1 and "reported errors" in result.stderr
+    assert "AI_DEV_STANDARDS" in (home / ".zshrc").read_text()
+    assert mine.read_text() == IGNORE and "==> Done" in result.stdout  # the steps after it ran
+
+
+def test_git_must_really_run(machine: dict[str, Path], tmp_path: Path) -> None:
+    shim = tmp_path / "shim"  # a new Mac's /usr/bin/git, before the command line tools
+    shim.mkdir()
+    (shim / "git").write_text(
+        "#!/bin/sh\necho 'xcrun: error: invalid active developer path' >&2\nexit 1\n"
+    )
+    (shim / "git").chmod(0o755)
+
+    result = _run(machine, "--yes", PATH=f"{shim}:{machine['stubs']}:/usr/bin:/bin")
+
+    assert result.returncode == 1 and "git is needed" in result.stderr
+    assert not (machine["home"] / "aiDevStandards").exists()
+
+
+def test_a_dragged_or_pasted_folder_is_cleaned_up(machine: dict[str, Path]) -> None:
+    result = _run(machine, "--yes", "--dir", " ~/My\\ Standards ", "--no-globals", "--no-tools")
+
+    assert result.returncode == 0, result.stderr
+    assert (machine["home"] / "My Standards/pyproject.toml").is_file()
+    assert [p.name for p in machine["home"].iterdir() if "Standards" in p.name] == ["My Standards"]
+
+
+def test_zsh_with_zdotdir_gets_its_own_zshrc(machine: dict[str, Path]) -> None:
+    zdotdir = machine["home"] / ".config/zsh"
+
+    result = _run(machine, "--yes", "--no-globals", "--no-tools", ZDOTDIR=str(zdotdir))
+
+    assert result.returncode == 0, result.stderr
+    assert "AI_DEV_STANDARDS" in (zdotdir / ".zshrc").read_text()
+    assert not (machine["home"] / ".zshrc").exists()
+
+
+def test_bash_on_a_mac_writes_to_the_startup_file_it_already_reads(
+    machine: dict[str, Path], tmp_path: Path
+) -> None:
+    mac = tmp_path / "mac"
+    mac.mkdir()
+    (mac / "uname").write_text("#!/bin/sh\necho Darwin\n")
+    (mac / "uname").chmod(0o755)
+    home = machine["home"]
+    (home / ".profile").write_text("export FROM_PROFILE=yes\n")
+
+    result = _run(
+        machine, "--yes", "--no-globals", "--no-tools",
+        SHELL="/bin/bash", PATH=f"{mac}:{machine['stubs']}:/usr/bin:/bin",
+    )  # fmt: skip
+
+    assert result.returncode == 0, result.stderr
+    assert not (home / ".bash_profile").exists()  # it would hide ~/.profile from login shells
+    assert (
+        (home / ".profile").read_text().startswith("export FROM_PROFILE=yes\n\n# >>> repo-template")
+    )
+
+
+def test_the_ignore_copy_is_kept_current_even_without_globals(machine: dict[str, Path]) -> None:
+    home = machine["home"]
+    (home / ".config/git").mkdir(parents=True)
+    (home / ".config/git/ignore").write_text(IGNORE)  # written by an earlier globals
+    mine = home / ".gitignore_global"
+    stale = IGNORE.replace("**/.claude/\n", "**/.old/\n")
+    mine.write_text(".DS_Store\n\n" + stale)
+    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = {mine}\n")
+
+    result = _run(machine, "--yes", "--no-globals", "--no-tools")
+
+    assert result.returncode == 0, result.stderr
+    assert mine.read_text() == ".DS_Store\n\n" + IGNORE
