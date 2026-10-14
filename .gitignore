@@ -47,11 +47,17 @@ CLAUDE.local.md
 !/.agents/licenses/**
 !/.agents/skills/
 !/.agents/skills/**
+!/.agents/packs/
+!/.agents/packs/**
 # Caches a skill's scripts leave behind when they run in place (the links point here).
 /.agents/skills/**/__pycache__/
 /.agents/skills/**/*.py[cod]
 /.agents/skills/**/.DS_Store
 /.agents/skills/**/.ruff_cache/
+/.agents/packs/**/__pycache__/
+/.agents/packs/**/*.py[cod]
+/.agents/packs/**/.DS_Store
+/.agents/packs/**/.ruff_cache/
 # A `globals --upgrade` staging folder; removed when the upgrade ends or the next one starts.
 /.repo-template-upgrade-*/
 !/.agents/hooks/

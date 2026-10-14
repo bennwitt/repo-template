@@ -978,6 +978,8 @@ def test_removing_a_skill_drops_it_from_packs_and_allowed_commands(tmp_path: Pat
     (root / ".agents/skill-packs.json").write_text(
         json.dumps({"p": {"description": "P", "skills": ["s"]}}, indent=2) + "\n"
     )
+    (root / ".agents/packs").mkdir()
+    _git(root, "mv", ".agents/skills/s", ".agents/packs/s")  # a pack skill lives in packs/
     sources = json.loads((root / ".agents/skill-sources.json").read_text())
     sources["allowCommands"] = {"s": "reviewed"}
     (root / ".agents/skill-sources.json").write_text(json.dumps(sources, indent=2) + "\n")
@@ -1392,7 +1394,7 @@ def _state(root: Path) -> tuple[str, str]:
 
 
 @pytest.mark.parametrize("step", STEPS)
-@pytest.mark.parametrize("kind", ["refresh", "addition", "removal"])
+@pytest.mark.parametrize("kind", ["refresh", "addition", "removal", "pack-refresh", "pack-removal"])
 def test_a_kill_at_any_step_recovers_to_one_state_or_the_other(
     tmp_path: Path, step: str, kind: str
 ) -> None:
@@ -1402,7 +1404,9 @@ def test_a_kill_at_any_step_recovers_to_one_state_or_the_other(
 
     github = FakeGitHub()
     root = _catalog(tmp_path, github, V1)
-    if kind == "refresh":
+    if kind.startswith("pack-"):  # recovery puts it back in .agents/packs, where it lived
+        _list_in_pack(root)
+    if kind.endswith("refresh"):
         _publish(github, V2)
         specs, answers = ["s"], ("a",)
     elif kind == "addition":
@@ -1782,3 +1786,86 @@ def test_a_binary_file_is_left_for_review_even_where_the_scanner_looks(tmp_path:
     outcome = _run(root, github, ["s"], scanner=ReadsReferences())
 
     assert outcome.applied == [] and "binary, not shown" in outcome.undecided[0], outcome
+
+
+def _list_in_pack(root: Path, *, move: bool = True) -> None:
+    """Make `s` a pack skill (listed by pack `p`, in .agents/packs unless `move` is False) and
+    commit that."""
+    (root / ".agents/skill-packs.json").write_text(
+        json.dumps({"p": {"description": "P", "skills": ["s"]}}, indent=2) + "\n"
+    )
+    if move:
+        (root / ".agents/packs").mkdir()
+        _git(root, "mv", ".agents/skills/s", ".agents/packs/s")
+    sync_globals(root, home=root.parent / "home")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "pack")
+
+
+def test_a_pack_skill_is_upgraded_where_it_lives(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _list_in_pack(root)
+    _publish(github, V2)
+    prompt = ScriptedPrompt("a")
+
+    outcome = upgrade(root, ["s"], github=github, scanner=FakeScanner(), prompt=prompt)
+
+    assert outcome.applied == ["s"], outcome
+    shown = "".join(prompt.said)
+    assert "changed: s/SKILL.md (+1 -1)" in shown  # reviewed against the live pack copy
+    assert "deleted: s/notes.md (+0 -1)" in shown and "added: s/new.md (+1 -0)" in shown
+    assert (root / ".agents/packs/s/new.md").is_file()
+    assert not (root / ".agents/skills/s").exists()
+    assert check_integrity(root, skill_names(root)) == []
+
+
+def test_a_pack_skill_out_of_place_is_upgraded_and_removed_where_it_is(tmp_path: Path) -> None:
+    """Integrity reports where it belongs; an upgrade acts on the live files meanwhile."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _list_in_pack(root, move=False)
+    _publish(github, V2)
+    prompt = ScriptedPrompt("a")
+
+    assert upgrade(root, ["s"], github=github, scanner=FakeScanner(), prompt=prompt).applied
+    assert "changed: s/SKILL.md (+1 -1)" in "".join(prompt.said)
+    assert (root / ".agents/skills/s/new.md").is_file()
+    assert not (root / ".agents/packs/s").exists()
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "refresh")
+    _publish(github, {})
+
+    assert _run(root, github, ["s"], "r").removed == ["s"]
+    assert not (root / ".agents/skills/s").exists()
+
+
+def test_a_pack_skill_can_be_added_before_any_pack_skill_exists(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    packs = {"p": {"description": "P", "skills": ["t"]}}
+    (root / ".agents/skill-packs.json").write_text(json.dumps(packs, indent=2) + "\n")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "list t")
+    _publish(github, {**V1, "skills/t/SKILL.md": _skill("t")})
+
+    outcome = _run(root, github, ["o/r@t"], "a")
+
+    assert outcome.added == ["t"], outcome
+    assert (root / ".agents/packs/t/SKILL.md").is_file()
+
+
+def test_a_pack_skill_is_staged_with_the_ignore_rules_of_its_folder(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _list_in_pack(root)
+    with (root / ".gitignore").open("a") as handle:
+        handle.write("/.agents/packs/**/*.log\n")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "ignore logs")
+    _publish(github, {**V2, "skills/s/run.log": b"x\n"})
+
+    outcome = _run(root, github, ["s"], "a")
+
+    assert outcome.applied == [], outcome
+    assert any(".gitignore would hide run.log" in refusal for refusal in outcome.refused)

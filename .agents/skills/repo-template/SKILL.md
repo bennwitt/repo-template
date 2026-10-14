@@ -80,8 +80,10 @@ where another system owns the Git hooks or the lockfile.
 Domain skills (LangChain, Gradio, knowledge graphs, TypeScript) load only in repositories that
 list their pack; `~/.agents/skill-packs.json` defines the packs. Add one when the repository uses
 that framework: `repo-template update <repo> --pack <name>` records it under `skill_packs` in
-`.repo-template.json` and links its skills into the repository's `.claude/skills/`, which Git
-ignores. To remove a pack, delete it from `skill_packs` and run `update`.
+`.repo-template.json` and links its skills into the repository's `.claude/skills/` (Claude Code)
+and `.agents/skills/` (Codex), where Git ignores them. To remove a pack, delete it from
+`skill_packs` and run `update`. Read what `update` preserves: a link it can't own is reported,
+not replaced.
 
 ## New repositories
 

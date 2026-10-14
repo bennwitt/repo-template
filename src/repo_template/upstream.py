@@ -38,8 +38,10 @@ from repo_template.catalog import (
     LICENSES_DIR,
     LOCK_NAME,
     OVERRIDES_NAME,
+    PACKS_DIR,
     PACKS_NAME,
     SHA,
+    SKILLS_DIR,
     SOURCES_NAME,
     STAGE_PREFIX,
     blob_sha,
@@ -49,6 +51,7 @@ from repo_template.catalog import (
     own_license,
     read_skill,
     runs_on_load,
+    skill_folder,
     upstream_skill_md,
     upstream_url,
 )
@@ -728,10 +731,28 @@ def _files(folder: Path | None, only: set[str] | None = None) -> dict[str, Path]
     return found if only is None else {key: path for key, path in found.items() if key in only}
 
 
+def _home(root: Path, name: str) -> str:
+    """The folder a skill is in: where it lives, so a refresh or removal acts on the live files
+    (integrity reports one that is out of place), else where it belongs: .agents/packs when a
+    pack lists it, .agents/skills otherwise."""
+    live = skill_folder(root, name)
+    if (live / "SKILL.md").is_file():
+        return PACKS_DIR if live.parent == root / PACKS_DIR else SKILLS_DIR
+    path = root / PACKS_NAME
+    try:
+        packs = json.loads(path.read_text()) if path.is_file() else {}
+    except json.JSONDecodeError:
+        packs = {}
+    listed = any(
+        isinstance(pack, dict) and name in pack.get("skills", []) for pack in packs.values()
+    )
+    return PACKS_DIR if listed else SKILLS_DIR
+
+
 def _tracked(root: Path, name: str) -> set[str]:
     """The files Git tracks in a skill: the live side of a review, not the caches its scripts
     leave there."""
-    prefix = f".agents/skills/{name}/"
+    prefix = f"{_home(root, name)}/{name}/"
     listing = _git(root, "ls-files", "-z", "--", prefix)
     return {os.fsdecode(path)[len(prefix) :] for path in listing.split(b"\0") if path}
 
@@ -878,7 +899,8 @@ class Transaction:
 
     def __init__(self, root: Path, stage_dir: Path, name: str, licenses: Sequence[Path] = ()):
         self.root, self.stage_dir, self.name = root, stage_dir, name
-        self.target = root / ".agents/skills" / name
+        self.folder = _home(root, name)
+        self.target = root / self.folder / name
         for path in licenses:
             if path.exists():
                 raise ValueError(f"{name}: {path} already exists; not overwriting it")
@@ -890,6 +912,7 @@ class Transaction:
             )
         journal = {
             "name": name,
+            "folder": self.folder,
             "had_skill": self.target.exists(),
             "records": saved,
             "licenses": [str(path.relative_to(root)) for path in licenses],
@@ -902,6 +925,7 @@ class Transaction:
             os.rename(self.target, self.stage_dir / PREVIOUS)
             _step("moved-out")
         if incoming is not None:
+            self.target.parent.mkdir(parents=True, exist_ok=True)
             os.rename(incoming, self.target)
             _step("moved-in")
 
@@ -920,7 +944,10 @@ def rollback(root: Path, stage_dir: Path) -> bool:
     name = journal.get("name")
     if journal.get("done") or not isinstance(name, str) or not NAME.fullmatch(name):
         return False
-    target = root / ".agents/skills" / name
+    folder = (
+        journal.get("folder") if journal.get("folder") in {SKILLS_DIR, PACKS_DIR} else SKILLS_DIR
+    )
+    target = root / str(folder) / name
     previous = stage_dir / PREVIOUS
     if previous.is_dir():  # the live folder was moved aside: whatever is at target is new
         if target.exists():
@@ -956,9 +983,10 @@ def _journal(stage_dir: Path) -> dict[str, Any]:
 def recover(root: Path, result: Result) -> None:
     """Undo what an interrupted upgrade left half done, then drop its staging folders."""
     for stage_dir in sorted(root.glob(f"{STAGE_PREFIX}*")):
+        journal = _journal(stage_dir)
         if rollback(root, stage_dir):
-            result.updated.append(f"{root / '.agents/skills' / _journal(stage_dir)['name']} "
-                                  f"(rolled back an interrupted upgrade)")  # fmt: skip
+            where = f"{journal.get('folder', SKILLS_DIR)}/{journal['name']}"
+            result.updated.append(f"{root / where} (rolled back an interrupted upgrade)")
         shutil.rmtree(stage_dir)
 
 
@@ -1264,14 +1292,15 @@ def _targets(
 
 def _ignored(root: Path, name: str, paths: Sequence[str]) -> list[str]:
     """The staged paths this repository's Git would ignore (and so never track or hash)."""
-    listing = "\0".join(f".agents/skills/{name}/{path}" for path in paths).encode()
+    home = _home(root, name)
+    listing = "\0".join(f"{home}/{name}/{path}" for path in paths).encode()
     done = subprocess.run(
         ["git", "-C", str(root), "check-ignore", "--no-index", "--stdin", "-z"],
         input=listing,
         capture_output=True,
         check=False,
     )
-    prefix = f".agents/skills/{name}/"
+    prefix = f"{home}/{name}/"
     return [os.fsdecode(path)[len(prefix) :] for path in done.stdout.split(b"\0") if path]
 
 
@@ -1545,7 +1574,7 @@ def _upgrade_one(
     staged = _prepare(root, github, upstream, target, stage_dir, scanner, records)
     assert staged.path is not None
     over = _over_allowance(staged.scan, record.get("allowFindings", {}))
-    current = root / ".agents/skills" / target.name
+    current = root / _home(root, target.name) / target.name
     new_text = read_skill(staged.path / "SKILL.md")
     replaced: dict[str, str] = {}
     notes: list[str] = []
@@ -1631,7 +1660,7 @@ def _upgrade_one(
     (outcome.added if target.adding else outcome.applied).append(target.name)
     try:
         moved = [str(path.relative_to(root)) for path in (license_.files if license_ else {})]
-        _intend_to_add(root, [f".agents/skills/{target.name}", *moved])
+        _intend_to_add(root, [f"{_home(root, target.name)}/{target.name}", *moved])
     except ValueError as exc:
         outcome.result.errors.append(f"{target.name}: applied, but `git add -N` failed: {exc}")
 
