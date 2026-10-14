@@ -13,9 +13,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import urllib.parse
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
@@ -23,7 +24,21 @@ MCP_SERVERS_NAME = "mcp-servers.json"
 SERVER_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")  # a TOML bare key and a Claude name too
 ENV_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
 TOOL_NAME = re.compile(r"[A-Za-z0-9_.-]+")
-SECRET_NAME = re.compile(r"TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_?KEY|PRIVATE", re.I)
+SECRET_NAME = re.compile(
+    r"TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_?KEY|PRIVATE|AUTH|BEARER|SESSION|COOKIE"
+    r"|(?:^|_)PAT(?:_|$)",
+    re.I,
+)
+SECRET_FLAG = re.compile(
+    r"^--?[\w-]*(token|secret|passw|credential|api[-_]?key|private[-_]?key|auth|bearer|cookie)",
+    re.I,
+)
+SECRET_VALUE = re.compile(r"^(hf_|sk-|ghp_|gho_|github_pat_|xox[abpr]-|AKIA|AIza|glpat-)")
+FLAG = re.compile(r"--[a-z0-9][a-z0-9-]*")
+UV_PINNED = re.compile(r"[A-Za-z0-9._-]+(?:\[[A-Za-z0-9,._-]+\])?")  # a package, extras allowed
+PACK_KEYS = {"description", "skills", "mcp"}
+REF_KEYS = {"server", "args"}
+REGISTRY = {"npx": "npm", "uvx": "pypi"}
 CACHE = "{cache}"  # in args: the machine's repo-template cache folder
 FORBIDDEN_ARGS = {"--dangerously-disable-elicitation", "--allow-unrestricted-file-access"}
 SERVER_KEYS = {
@@ -96,13 +111,51 @@ def _pin(path: Path, name: str, raw: Any) -> Pin | None:
         if not isinstance(raw.get(key), str) or not raw[key]:
             raise _fail(path, name, f"'pin.{key}' is required")
     try:
-        datetime.fromisoformat(raw["publishedAt"].replace("Z", "+00:00"))
+        published = datetime.fromisoformat(raw["publishedAt"].replace("Z", "+00:00"))
     except ValueError:
         raise _fail(path, name, "'pin.publishedAt' is an ISO-8601 time") from None
+    if published.tzinfo is None:
+        raise _fail(path, name, "'pin.publishedAt' needs a time zone (end it in Z)")
     exception = raw.get("pinException")
     if exception is not None and (not isinstance(exception, str) or not exception.strip()):
         raise _fail(path, name, "'pin.pinException' needs a reason")
     return Pin(raw["registry"], raw["package"], raw["version"], raw["publishedAt"], exception)
+
+
+def _secret_arg(value: str) -> bool:
+    return bool(SECRET_FLAG.match(value) or SECRET_VALUE.match(value))
+
+
+def _check_arg(path: Path, where: str, value: str) -> None:
+    """Refuse an argument that is a placeholder, a secret, or one that widens access."""
+    if not _printable(value) or "${" in value:
+        raise _fail(path, where, f"{value!r}: no placeholders or control characters")
+    if value in FORBIDDEN_ARGS or value.split("=", 1)[0] in FORBIDDEN_ARGS:
+        raise _fail(path, where, f"{value} is never allowed")
+    if _secret_arg(value):
+        raise _fail(path, where, f"{value!r}: servers are keyless; no secrets in args")
+
+
+def runs_pin(command: str, args: Sequence[str], pin: Pin) -> bool:
+    """Whether the args run exactly the pinned package: for npx its first positional argument
+    is package@version (no --package, which would run another); for uvx, `--from
+    package==version <tool>` or `package==version` / `package@version` first, so no uv option
+    (--with, --index, --exclude-newer) comes before it."""
+    if command == "npx":
+        if any(arg in {"-p", "--package"} or arg.startswith("--package=") for arg in args):
+            return False
+        first = next((arg for arg in args if not arg.startswith("-")), None)
+        return first == f"{pin.package}@{pin.version}"
+    if command == "uvx":
+        if not UV_PINNED.fullmatch(pin.package):
+            return False
+        if list(args[:2]) == ["--from", f"{pin.package}=={pin.version}"]:
+            return len(args) > 2 and not args[2].startswith("-")
+        return list(args[:1]) in (
+            [f"{pin.package}=={pin.version}"],
+            [f"{pin.package}@{pin.version}"],
+        )
+    return False
 
 
 def _server(path: Path, name: str, raw: Any) -> Server:
@@ -129,28 +182,36 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         not isinstance(command, str) or not re.fullmatch(r"[\w.-]+", command)
     ):
         raise _fail(path, name, "'command' is a program name")
-    if url is not None and (not isinstance(url, str) or not url.startswith("https://")):
-        raise _fail(path, name, "'url' is an https:// address")
+    if url is not None:
+        parts = urllib.parse.urlsplit(url) if isinstance(url, str) else None
+        if parts is None or parts.scheme != "https" or not parts.hostname:
+            raise _fail(path, name, "'url' is an https:// address")
+        if "@" in parts.netloc or parts.query or parts.fragment:
+            raise _fail(path, name, "'url' carries no credentials, query or fragment")
+    if command is not None and command not in REGISTRY:
+        raise _fail(path, name, f"'command' is {' or '.join(sorted(REGISTRY))}, running a pin")
     for value in [*(args or []), url or "", command or ""]:
-        if not _printable(value) or "${" in value:
-            raise _fail(path, name, f"{value!r}: no placeholders or control characters")
-        if value in FORBIDDEN_ARGS:
-            raise _fail(path, name, f"{value} is never allowed")
+        _check_arg(path, name, value)
     env = raw.get("env", {})
     if not isinstance(env, dict):
         raise _fail(path, name, "'env' maps names to default values")
     for key, value in env.items():
         if not ENV_NAME.fullmatch(key) or not isinstance(value, str) or not _printable(value):
             raise _fail(path, name, f"env {key!r}: an upper-case name and a printable default")
-        if "${" in value or SECRET_NAME.search(key):
+        if "$" in value or "}" in value or SECRET_NAME.search(key) or SECRET_VALUE.match(value):
             raise _fail(path, name, f"env {key!r}: servers are keyless; no secrets or placeholders")
     if url is not None and env:
         raise _fail(path, name, "a url server has no 'env'")
     pin = _pin(path, name, raw.get("pin"))
-    if command in {"npx", "uvx"} and pin is None:
-        raise _fail(path, name, f"a {command} server needs a 'pin'")
-    if command == "npx" and f"{pin.package}@{pin.version}" not in args:  # type: ignore[union-attr]
-        raise _fail(path, name, "the npx args must run the pinned package@version")
+    if command is not None:
+        if pin is None:
+            raise _fail(path, name, f"a {command} server needs a 'pin'")
+        if pin.registry != REGISTRY[command]:
+            raise _fail(path, name, f"a {command} server's pin is on {REGISTRY[command]}")
+        if not runs_pin(command, args, pin):
+            raise _fail(path, name, f"the {command} args must run the pinned package first")
+    elif pin is not None:
+        raise _fail(path, name, "a url server has no 'pin'")
     if any("azmcp" in arg for arg in args) and "--read-only" not in args:
         raise _fail(path, name, "an Azure MCP server runs --read-only")
     deny = raw.get("deny", [])
@@ -221,8 +282,13 @@ def pack_servers(
     raw = json.loads(path.read_text())
     found: dict[str, list[tuple[str, dict[str, tuple[str, ...]]]]] = {}
     for pack, definition in raw.items() if isinstance(raw, dict) else []:
+        if isinstance(definition, dict) and set(definition) - PACK_KEYS:
+            unknown = sorted(set(definition) - PACK_KEYS)
+            raise ValueError(f"{path}: pack {pack!r}: unknown keys {unknown}")
         refs = definition.get("mcp", []) if isinstance(definition, dict) else []
         for ref in refs if isinstance(refs, list) else [refs]:
+            if isinstance(ref, dict) and set(ref) - REF_KEYS:
+                raise ValueError(f"{path}: pack {pack!r}: an MCP ref takes {sorted(REF_KEYS)}")
             name: Any = (
                 ref
                 if isinstance(ref, str)
@@ -238,10 +304,13 @@ def pack_servers(
             if servers[name].scope != "pack":
                 raise ValueError(f"{path}: pack {pack!r} uses {name!r}, a global server")
             if not isinstance(args, dict) or not all(
-                isinstance(flag, str) and flag.startswith("--") and _strings(values)
+                isinstance(flag, str) and FLAG.fullmatch(flag) and _strings(values)
                 for flag, values in args.items()
             ):
                 raise ValueError(f"{path}: pack {pack!r}: 'args' maps --flags to lists of values")
+            for flag, values in args.items():
+                for value in [flag, *values]:
+                    _check_arg(path, f"pack {pack!r}", value)
             found.setdefault(pack, []).append((name, {flag: tuple(v) for flag, v in args.items()}))
     return found
 
@@ -286,7 +355,7 @@ def _args(server: Server, cache: str) -> list[str]:
 
 def _cutoff(pin: Pin) -> str:
     """The end of the day the pin was published (UTC): what a cooldown lets in alongside it."""
-    published = datetime.fromisoformat(pin.published_at.replace("Z", "+00:00"))
+    published = datetime.fromisoformat(pin.published_at.replace("Z", "+00:00")).astimezone(UTC)
     day = (published + timedelta(days=1)).date()
     return f"{day.isoformat()}T00:00:00Z"
 

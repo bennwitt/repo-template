@@ -21,6 +21,7 @@ import subprocess
 from collections.abc import Callable, Iterable
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +53,7 @@ README_START = (
 )
 README_END = "<!-- <<< repo-template catalog -->"
 DESCRIPTION_LIMIT = 350  # for descriptions this repository writes: overrides and local skills
+PIN_COOLDOWN = timedelta(days=7)  # how old a package release must be before it is pinned
 SHA = re.compile(r"[0-9a-f]{40}")
 STAGE_PREFIX = ".repo-template-upgrade-"  # a `globals --upgrade` staging folder
 LICENSE_FILE = re.compile(r"(licen[cs]e|notice|copying)([.-].*)?", re.I)
@@ -651,6 +653,21 @@ def _check_mcp(root: Path, problems: _Problems) -> None:
         )
     except json.JSONDecodeError:
         return  # the settings merge reports it
+    now = datetime.now(UTC)
+    for name, server in sorted(servers.items()):
+        pin = server.pin
+        if pin is None:
+            continue
+        published = datetime.fromisoformat(pin.published_at.replace("Z", "+00:00"))
+        if published > now:
+            problems.add(None, f"MCP server {name}: its pin's publishedAt is in the future")
+        elif now - published < PIN_COOLDOWN and not pin.exception:
+            problems.add(
+                None,
+                f"MCP server {name}: {pin.package}@{pin.version} is less than "
+                f"{PIN_COOLDOWN.days} days old; pin an older release, or give the pin a "
+                f"pinException saying why",
+            )
     denied = set(portable.get("permissions", {}).get("deny", []))
     for rule in sorted(deny_rules(servers) - denied):
         problems.add(

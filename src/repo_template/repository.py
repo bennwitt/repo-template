@@ -6,11 +6,20 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repo_template.mcp import for_packs, load_mcp_servers, pack_servers
-from repo_template.mcp_project import McpPlan, apply_project_mcp, plan_project_mcp, recorded_mcp
+from repo_template.mcp import Server, for_packs, load_mcp_servers, pack_servers
+from repo_template.mcp_project import (
+    McpPlan,
+    apply_codex_mcp,
+    apply_project_mcp,
+    kept_mcp,
+    plan_codex_mcp,
+    plan_project_mcp,
+    recorded_mcp,
+)
 from repo_template.model import Result
 from repo_template.runner import SUBPROCESS, Completed, Runner, SubprocessRunner
 from repo_template.scaffold import new_project, read_manifest, skill_packs, update_project
@@ -80,29 +89,51 @@ def _require_known_packs(packs: Sequence[str], agents_dir: Path) -> None:
         )
 
 
-def _mcp_plan(
+@dataclass
+class _Mcp:
+    """The pack MCP servers a repository's packs use, and how to plan them."""
+
+    servers: dict[str, Server]
+    owned: set[str]
+    removals: bool
+    cache: str
+
+
+def _mcp(
     root: Path, packs: Sequence[str], agents_dir: Path, manifest: dict[str, Any]
-) -> McpPlan | None:
-    """The pack MCP servers' plan; None for a repository with no packs and no recorded servers,
-    which needs no MCP catalog (CI has no ~/.agents)."""
-    recorded = recorded_mcp(manifest)
-    if not packs and not recorded:
+) -> _Mcp | None:
+    """None for a repository with no packs and no MCP records, which needs no MCP catalog (CI
+    has no ~/.agents)."""
+    if not packs and not recorded_mcp(manifest) and not kept_mcp(manifest):
         return None
     servers = load_mcp_servers(agents_dir)
     definitions = load_skill_packs(agents_dir)
     known = [pack for pack in packs if pack in definitions]
-    wanted = for_packs(known, servers, pack_servers(agents_dir, servers))
     owned = manifest.get("project_owned", [])
-    return plan_project_mcp(
-        root,
-        wanted,
-        recorded,
-        owned={item for item in owned if isinstance(item, str)}
-        if isinstance(owned, list)
-        else set(),
+    return _Mcp(
+        for_packs(known, servers, pack_servers(agents_dir, servers)),
+        {item for item in owned if isinstance(item, str)} if isinstance(owned, list) else set(),
         removals=len(known) == len(packs),
         cache=str(Path.home() / ".cache/repo-template"),
     )
+
+
+def _plan_claude(root: Path, mcp: _Mcp | None, manifest: dict[str, Any]) -> McpPlan | None:
+    if mcp is None:
+        return None
+    return plan_project_mcp(root, mcp.servers, manifest, owned=mcp.owned, removals=mcp.removals)
+
+
+def _sync_codex(root: Path, mcp: _Mcp | None, result: Result, *, check: bool) -> None:
+    """After the baseline: its .gitignore decides whether the Codex file may be written."""
+    if mcp is None:
+        return
+    # in check mode the .gitignore isn't written yet; the baseline's ignores .codex/
+    ignored = True if check and ".gitignore" in result.created + result.updated else None
+    plan = plan_codex_mcp(
+        root, mcp.servers, owned=mcp.owned, removals=mcp.removals, cache=mcp.cache, ignored=ignored
+    )
+    apply_codex_mcp(root, plan, result, check=check)
 
 
 def create_repository(
@@ -119,17 +150,19 @@ def create_repository(
 ) -> Result:
     """Render the baseline into an empty directory, then initialize Git and the lockfile."""
     _require_known_packs(packs, agents_dir)
-    plan = _mcp_plan(target.resolve(), list(packs), agents_dir, {})
+    mcp = _mcp(target.resolve(), list(packs), agents_dir, {})
+    plan = _plan_claude(target.resolve(), mcp, {})
     result = new_project(
         target,
         name=name,
         description=description,
         python_version=python_version,
         packs=packs,
-        mcp_servers=plan.record if plan else None,
+        mcp=plan.manifest if plan else None,
     )
     if plan:
         apply_project_mcp(result.root, plan, result, check=False)
+    _sync_codex(result.root, mcp, result, check=False)
     sync_project_packs(result.root, packs, result, check=False, agents_dir=agents_dir)
     if git:
         if not runner.which("git"):
@@ -143,6 +176,12 @@ def create_repository(
     if lock:
         _reconcile_lock(result.root, result, runner, check=False)
     return result
+
+
+def _merge(first: Result, result: Result) -> None:
+    """Put `first`'s lines ahead of `result`'s, as if one step had made them all."""
+    for name in ("created", "updated", "unchanged", "preserved", "removed", "errors", "notes"):
+        getattr(result, name)[:0] = getattr(first, name)
 
 
 def update_repository(
@@ -160,13 +199,16 @@ def update_repository(
     `packs` adds skill packs to the repository's manifest; every listed pack is then linked.
     """
     _require_known_packs(packs, agents_dir)
+    manifest = read_manifest(root)
     wanted = sorted({*skill_packs(root.resolve()), *packs})
-    plan = _mcp_plan(root.resolve(), wanted, agents_dir, read_manifest(root))
-    result = update_project(
-        root, check=check, add_packs=packs, mcp_servers=plan.record if plan else None
-    )
-    if plan:
-        apply_project_mcp(result.root, plan, result, check=check)
+    mcp = _mcp(root.resolve(), wanted, agents_dir, manifest)
+    plan = _plan_claude(root.resolve(), mcp, manifest)
+    first = Result(root.resolve())
+    if plan:  # .mcp.json first: the manifest written next records only what was written
+        apply_project_mcp(root.resolve(), plan, first, check=check)
+    result = update_project(root, check=check, add_packs=packs, mcp=plan.manifest if plan else None)
+    _merge(first, result)
+    _sync_codex(result.root, mcp, result, check=check)
     sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
     if hooks:
         _reconcile_hooks(result.root, result, runner, check=check)

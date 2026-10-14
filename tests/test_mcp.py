@@ -78,6 +78,55 @@ def test_the_shipped_catalog_is_valid_and_every_deny_reaches_both_clients() -> N
 
 
 @pytest.mark.parametrize(
+    ("server", "message"),
+    [
+        ({**URL, "url": "http://docs.example.com/mcp"}, "https://"),
+        ({**URL, "url": "https://user:pw@docs.example.com/mcp"}, "no credentials"),
+        ({**URL, "url": "https://docs.example.com/mcp?key=x"}, "no credentials, query"),
+        ({**URL, "env": {"X": "1"}}, "a url server has no 'env'"),
+        ({**URL, "pin": NPX["pin"]}, "a url server has no 'pin'"),
+        (
+            {**NPX, "command": "uvx", "args": ["--with", "evil", "--from", "x==1", "x"],
+             "pin": {**NPX["pin"], "registry": "pypi", "package": "x", "version": "1"}},
+            "must run the pinned package first",
+        ),
+        (
+            {**NPX, "command": "uvx", "args": ["--from", "x==1"],
+             "pin": {**NPX["pin"], "registry": "pypi", "package": "x", "version": "1"}},
+            "must run the pinned package first",
+        ),
+        (
+            {**NPX, "command": "uvx", "args": ["x@latest"],
+             "pin": {**NPX["pin"], "registry": "pypi", "package": "x", "version": "1"}},
+            "must run the pinned package first",
+        ),
+    ],
+)  # fmt: skip
+def test_the_catalog_refuses_urls_and_uvx_runs_it_cant_vouch_for(
+    tmp_path: Path, server: dict[str, Any], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        load_mcp_servers(_agents(tmp_path, {"x": server}))
+
+
+@pytest.mark.parametrize(
+    "args", [["--from", "msmcp-azure==3.0.0", "azmcp", "server", "start"], ["x==1"], ["x@1"]]
+)
+def test_uvx_runs_its_pin_in_any_of_the_forms_uv_takes(tmp_path: Path, args: list[str]) -> None:
+    package, version = ("msmcp-azure", "3.0.0") if args[0] == "--from" else ("x", "1")
+    if "azmcp" in args:
+        args = [*args, "--read-only"]
+    server = {
+        **NPX,
+        "command": "uvx",
+        "args": args,
+        "pin": {**NPX["pin"], "registry": "pypi", "package": package, "version": version},
+    }
+
+    assert load_mcp_servers(_agents(tmp_path, {"x": server}))["x"].args == tuple(args)
+
+
+@pytest.mark.parametrize(
     ("change", "message"),
     [
         ({"comand": "npx"}, "unknown keys"),
@@ -85,8 +134,22 @@ def test_the_shipped_catalog_is_valid_and_every_deny_reaches_both_clients() -> N
         ({"env": {"GH_TOKEN": "x"}}, "keyless"),
         ({"env": {"X": "${HOME}"}}, "no secrets or placeholders"),
         ({"args": ["-y", "@x/mcp@1.0.0", "${X}"]}, "no placeholders"),
-        ({"args": ["-y", "@x/mcp@2.0.0"]}, "must run the pinned package@version"),
+        ({"args": ["-y", "@x/mcp@2.0.0"]}, "must run the pinned package first"),
+        ({"args": ["-y", "other@1", "@x/mcp@1.0.0"]}, "must run the pinned package first"),
+        ({"args": ["-y", "-p", "@x/mcp@1.0.0", "other"]}, "must run the pinned package first"),
         ({"pin": None}, "needs a 'pin'"),
+        ({"command": "bash", "args": ["-c", "x"]}, "'command' is npx or uvx"),
+        ({"pin": {**NPX["pin"], "registry": "pypi"}}, "pin is on npm"),
+        ({"pin": {**NPX["pin"], "publishedAt": "2026-09-01T10:00:00"}}, "needs a time zone"),
+        ({"pin": {**NPX["pin"], "publishedAt": "yesterday"}}, "ISO-8601"),
+        ({"pin": {**NPX["pin"], "extra": 1}}, "'pin' takes"),
+        ({"codex": {"sandbox": "off"}}, "'codex' takes"),
+        ({"clients": ["cursor"]}, "claude and/or codex"),
+        ({"args": ["-y", "@x/mcp@1.0.0", "--api-key", "x"]}, "no secrets in args"),
+        ({"args": ["-y", "@x/mcp@1.0.0", "hf_abcdefghijklmnop"]}, "no secrets in args"),
+        ({"env": {"GITHUB_PAT": "x"}}, "keyless"),
+        ({"env": {"X_AUTH": "x"}}, "keyless"),
+        ({"env": {"X": "a}b"}}, "no secrets or placeholders"),
         ({"args": ["-y", "@x/mcp@1.0.0", "azmcp"]}, "--read-only"),
         ({"args": ["-y", "@x/mcp@1.0.0", "--dangerously-disable-elicitation"]}, "never allowed"),
         ({"deny": ["a" * 60]}, "longer than 64"),
@@ -201,12 +264,18 @@ class FakeClaude:
         normalize: Callable[[dict[str, Any]], dict[str, Any]] = lambda entry: entry,
         fail: set[tuple[str, str]] | None = None,
         on_path: bool = True,
+        present: bool = True,
+        lands: bool = True,
     ) -> None:
         self.path, self.data, self.normalize = path, dict(servers or {}), normalize
         self.fail, self.on_path, self.calls = fail or set(), on_path, []
+        self.present, self.lands = present, lands  # the file exists; an add reaches it
 
     def available(self) -> bool:
         return self.on_path
+
+    def exists(self) -> bool:
+        return self.present
 
     def servers(self) -> dict[str, Any]:
         return deepcopy(self.data)
@@ -216,6 +285,11 @@ class FakeClaude:
         if ("add", name) in self.fail:  # fails once, like a network error
             self.fail.discard(("add", name))
             return Completed(1, "", "boom")
+        if ("add-twice", name) in self.fail:
+            self.fail = {("add", name)}
+            return Completed(1, "", "boom")
+        if not self.lands:  # written to another file
+            return Completed(0)
         if name in self.data:
             return Completed(
                 1, "", f"MCP server {name} already exists" if name in self.data else "boom"
@@ -239,9 +313,7 @@ def _claude(
     tmp_path: Path, claude: FakeClaude, servers: Mapping[str, Any], *, check: bool = False
 ) -> Result:
     result = Result(tmp_path)
-    sync_claude_mcp(
-        servers, claude, tmp_path / "home", result, check=check, cache=CACHE, managed=servers
-    )
+    sync_claude_mcp(servers, claude, tmp_path / "home", result, check=check, cache=CACHE)
     return result
 
 
@@ -266,11 +338,11 @@ def test_the_claude_config_is_backed_up_before_its_first_change(tmp_path: Path) 
     home = tmp_path / "home"
 
     sync_claude_mcp(
-        servers, claude, home, Result(tmp_path), check=False, cache=CACHE, managed=servers,
+        servers, claude, home, Result(tmp_path), check=False, cache=CACHE,
         stamp="s1",
     )  # fmt: skip
     sync_claude_mcp(
-        servers, claude, home, Result(tmp_path), check=False, cache=CACHE, managed=servers,
+        servers, claude, home, Result(tmp_path), check=False, cache=CACHE,
         stamp="s2",
     )  # fmt: skip
 
@@ -367,20 +439,31 @@ def test_claude_normalizing_an_entry_differently_causes_no_churn(tmp_path: Path)
     assert not again.needs_attention and claude.calls == calls
 
 
-def test_no_claude_on_path_is_a_note_and_a_duplicate_gets_its_removal_command(
-    tmp_path: Path,
-) -> None:
-    servers = _servers(tmp_path)
+@pytest.mark.parametrize("check", [True, False])
+def test_no_claude_on_path_is_a_note_in_check_and_update_alike(tmp_path: Path, check: bool) -> None:
+    claude = FakeClaude(tmp_path / ".claude.json", on_path=False)
+
+    result = _claude(tmp_path, claude, _servers(tmp_path), check=check)
+
+    assert result.notes == ["Claude Code's user-scope MCP servers: skipped (no `claude` on PATH)"]
+    assert not result.needs_attention and claude.calls == []
+
+
+def test_a_duplicate_of_a_server_this_client_gets_has_its_removal_command(tmp_path: Path) -> None:
     claude = FakeClaude(
         tmp_path / ".claude.json",
-        {"old-x": {"type": "stdio", "command": "npx", "args": ["@x/mcp@0.9.0"]}},
-        on_path=False,
+        {
+            "old-x": {"type": "stdio", "command": "npx", "args": ["@x/mcp@0.9.0"]},
+            "my-docs": {"type": "http", "url": URL["url"]},  # a pack server's: not reported
+        },
     )
 
-    result = _claude(tmp_path, claude, servers)
+    result = _claude(tmp_path, claude, _servers(tmp_path))
 
-    assert any("no `claude` on PATH" in note for note in result.notes)
-    assert any("`claude mcp remove old-x --scope user`" in note for note in result.notes)
+    assert result.notes == [
+        f"{claude.path} mcpServers.old-x runs the x server repo-template installs; remove it "
+        f"with `claude mcp remove old-x --scope user`"
+    ]
     assert "old-x" in claude.data
 
 
@@ -401,7 +484,7 @@ def _codex(tmp_path: Path, servers: Mapping[str, Any], *, check: bool = False) -
     result = Result(tmp_path)
     sync_codex_mcp(
         servers, tmp_path / "home/.codex/config.toml", tmp_path / "home", result,
-        check=check, stamp="s", cache=CACHE, managed=servers,
+        check=check, stamp="s", cache=CACHE,
     )  # fmt: skip
     return result
 
@@ -443,24 +526,48 @@ def test_codex_rewriting_the_file_doesnt_lose_ownership(tmp_path: Path) -> None:
     assert tomllib.loads(path.read_text())["mcp_servers"]["x"]["disabled_tools"] == ["other"]
 
 
-def test_a_codex_edit_that_would_touch_more_is_refused(tmp_path: Path) -> None:
-    """A server written inline can't be edited as a table: nothing is written."""
-    path = _config(tmp_path, 'mcp_servers = { x = { command = "old" } }\n')
-    claim = {
-        "version": 1,
-        "path": str(path),
-        "owned": {"x": {"stored": digest({"command": "old"}), "rendered": "r"}},
-        "kept": {},
-        "removed": {},
-    }
-    state = tmp_path / "home/.repo-template/globals-state.json"
-    state.parent.mkdir(parents=True)
-    state.write_text(json.dumps({"codex_mcp": claim}))
+def _inline(value: Mapping[str, Any]) -> str:
+    parts = (
+        f"{key} = {_inline(item) if isinstance(item, dict) else json.dumps(item)}"
+        for key, item in value.items()
+    )
+    return "{ " + ", ".join(parts) + " }"
 
-    result = _codex(tmp_path, _servers(tmp_path))
 
-    assert any("couldn't edit it safely" in error for error in result.errors), result
-    assert path.read_text() == 'mcp_servers = { x = { command = "old" } }\n'
+@pytest.mark.parametrize("form", ["[mcp_servers]\nx = {}\n", "mcp_servers.x = {}\n"])
+def test_a_server_not_written_as_its_own_table_is_never_taken_over(
+    tmp_path: Path, form: str
+) -> None:
+    """remove_tables can rewrite only [mcp_servers.<name>]: an inline table or dotted keys with
+    the same value isn't adopted, so later writes can't collide with it."""
+    servers = _servers(tmp_path)
+    value = codex_value(servers["x"], CACHE)
+    path = _config(tmp_path, form.format(_inline(value)))
+    other = load_mcp_servers(_agents(tmp_path / "y", {"y": {**URL, "scope": "global"}}))
+
+    first = _codex(tmp_path, {**servers, **other})
+    second = _codex(tmp_path, {**_servers(tmp_path / "b", deny=["other"]), **other})
+
+    assert first.errors == [] and first.created == [f"{path} mcp_servers.y"]
+    assert second.errors == []
+    assert second.preserved == [f"{path} mcp_servers.x (configured by hand; kept)"]
+    assert tomllib.loads(path.read_text())["mcp_servers"]["x"] == value
+
+
+def test_a_quoted_table_name_is_rewritten_like_any_table(tmp_path: Path) -> None:
+    servers = _servers(tmp_path)
+    path = _config(
+        tmp_path,
+        codex_toml("x", codex_value(servers["x"], CACHE))
+        .replace("[mcp_servers.x]", "[mcp_servers.'x']")
+        .replace("[mcp_servers.x.env]", '[mcp_servers."x".env]'),
+    )
+
+    _codex(tmp_path, servers)
+    bumped = _codex(tmp_path, _servers(tmp_path / "b", deny=["other"]))
+
+    assert bumped.errors == [] and bumped.updated == [f"{path} mcp_servers.x"]
+    assert tomllib.loads(path.read_text())["mcp_servers"]["x"]["disabled_tools"] == ["other"]
 
 
 def test_codex_invalid_toml_and_a_missing_codex_home(tmp_path: Path) -> None:
@@ -615,18 +722,18 @@ def test_project_owned_files_are_left_alone(tmp_path: Path) -> None:
 def test_a_codex_file_git_would_commit_isnt_written(tmp_path: Path) -> None:
     """It holds this machine's paths: only an ignored .codex/config.toml is written. (The
     python-uv baseline always ignores .codex/; a packs-only repository may not.)"""
-    from repo_template.mcp_project import apply_project_mcp, plan_project_mcp
+    from repo_template.mcp_project import apply_codex_mcp, plan_codex_mcp
 
     root = tmp_path / "plain"
     root.mkdir()
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "config", "core.excludesFile", os.devnull], check=True)
     servers = load_mcp_servers(_agents(tmp_path / "standards", {"docs": URL}))
-    plan = plan_project_mcp(root, servers, {}, owned=set(), removals=True, cache=CACHE)
+    plan = plan_codex_mcp(root, servers, owned=set(), removals=True, cache=CACHE)
     planned, result = Result(root), Result(root)
 
-    apply_project_mcp(root, plan, planned, check=True)
-    apply_project_mcp(root, plan, result, check=False)
+    apply_codex_mcp(root, plan, planned, check=True)
+    apply_codex_mcp(root, plan, result, check=False)
 
     expected = (
         ".codex/config.toml (Git doesn't ignore it here; not written, since it would hold this "
@@ -634,4 +741,364 @@ def test_a_codex_file_git_would_commit_isnt_written(tmp_path: Path) -> None:
     )
     assert planned.preserved == result.preserved == [expected]
     assert not (root / ".codex/config.toml").exists()
-    assert (root / ".mcp.json").is_file()  # the committed file is fine to write
+
+
+# Review findings for the global servers.
+
+
+def test_a_replace_whose_restore_fails_too_is_added_again_next_time(tmp_path: Path) -> None:
+    claude = FakeClaude(tmp_path / ".claude.json")
+    _claude(tmp_path, claude, _servers(tmp_path))
+    claude.fail = {("add-twice", "x")}
+    bumped = load_mcp_servers(
+        _agents(
+            tmp_path / "c",
+            {
+                "x": {
+                    **NPX,
+                    "args": ["-y", "@x/mcp@1.0.1"],
+                    "pin": {**NPX["pin"], "version": "1.0.1"},
+                }
+            },
+        )
+    )
+
+    failed = _claude(tmp_path, claude, bumped)
+    assert len(failed.errors) == 2 and "x" not in claude.data
+    again = _claude(tmp_path, claude, bumped)
+
+    assert again.created == [f"{claude.path} mcpServers.x"], again
+    assert claude.data["x"] == claude_entry(bumped["x"], CACHE)
+
+
+def test_an_add_that_lands_in_another_file_is_an_error_not_owned(tmp_path: Path) -> None:
+    claude = FakeClaude(tmp_path / ".claude.json", lands=False)
+
+    result = _claude(tmp_path, claude, _servers(tmp_path))
+    claude.lands = True
+    again = _claude(tmp_path, claude, _servers(tmp_path))
+
+    assert result.errors == [
+        f"{claude.path} mcpServers.x: `claude mcp add-json` didn't write it to {claude.path}"
+    ]
+    assert result.created == [] and again.created == [f"{claude.path} mcpServers.x"]
+
+
+def test_claude_uses_the_legacy_config_file_when_there_is_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from repo_template.mcp_globals import claude_config
+
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
+    assert claude_config(tmp_path) == tmp_path / ".claude.json"
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude/.config.json").write_text("{}")
+    assert claude_config(tmp_path) == tmp_path / ".claude/.config.json"
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "elsewhere"))
+    assert claude_config(tmp_path) == tmp_path / "elsewhere/.claude.json"
+
+
+def test_claude_servers_are_skipped_when_claude_reads_other_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The deny rules go to ~/.claude/settings.json; Claude Code with CLAUDE_CONFIG_DIR set
+    elsewhere wouldn't read them, so it gets no servers either."""
+    from repo_template.standards import _sync_global_mcp
+
+    home = tmp_path / "home"
+    (home / ".codex").mkdir(parents=True)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "claude"))
+    claude = FakeClaude(tmp_path / "claude/.claude.json")
+    result = Result(tmp_path)
+
+    _sync_global_mcp(
+        _agents(tmp_path / "catalog", {"x": NPX}), home.resolve(), result, check=False,
+        stamp="s", claude=claude,
+    )  # fmt: skip
+
+    assert claude.calls == [] and any("CLAUDE_CONFIG_DIR is set" in n for n in result.notes)
+    assert "x" in tomllib.loads((home / ".codex/config.toml").read_text())["mcp_servers"]
+
+
+def test_an_unreadable_state_file_is_an_error_and_leaves_the_servers(tmp_path: Path) -> None:
+    from repo_template.standards import _sync_global_mcp
+
+    home = tmp_path / "home"
+    (home / ".repo-template").mkdir(parents=True)
+    (home / ".repo-template/globals-state.json").write_text("{nope")
+    claude = FakeClaude(tmp_path / ".claude.json")
+    result = Result(tmp_path)
+
+    _sync_global_mcp(
+        _agents(tmp_path / "catalog", {"x": NPX}), home, result, check=False, stamp="s",
+        claude=claude,
+    )  # fmt: skip
+
+    assert len(result.errors) == 1 and "delete it to reset" in result.errors[0]
+    assert claude.calls == []
+
+
+def test_a_missing_config_file_is_a_fresh_start(tmp_path: Path) -> None:
+    """Deleting ~/.claude.json or ~/.codex/config.toml resets them; it isn't removing servers."""
+    claude = FakeClaude(tmp_path / ".claude.json")
+    servers = _servers(tmp_path)
+    _claude(tmp_path, claude, servers)
+    claude.data, claude.present = {}, False
+    assert _claude(tmp_path, claude, servers).created == [f"{claude.path} mcpServers.x"]
+
+    path = _config(tmp_path)
+    _codex(tmp_path, servers)
+    path.unlink()
+    assert _codex(tmp_path, servers).created == [f"{path} mcp_servers.x"]
+
+
+def test_a_server_edited_by_hand_and_then_removed_stays_removed(tmp_path: Path) -> None:
+    claude = FakeClaude(tmp_path / ".claude.json")
+    servers = _servers(tmp_path)
+    _claude(tmp_path, claude, servers)
+    claude.data["x"] = {"type": "stdio", "command": "mine"}
+    assert _claude(tmp_path, claude, servers).preserved  # kept, once
+    del claude.data["x"]
+
+    result = _claude(tmp_path, claude, servers)
+
+    assert "x" not in claude.data and result.created == []
+
+
+@pytest.mark.parametrize("emptied", ["catalog", "file"])
+def test_the_last_codex_server_can_be_removed(tmp_path: Path, emptied: str) -> None:
+    """With no other mcp_servers, removing ours leaves no empty table and no marker block."""
+    from repo_template.standards import _sync_global_mcp
+
+    path = _config(tmp_path, 'model = "o3"\n')
+    servers = _servers(tmp_path)
+    _codex(tmp_path, servers)
+    result = Result(tmp_path)
+
+    if emptied == "catalog":
+        result = _codex(tmp_path, {})
+    else:
+        _sync_global_mcp(
+            _agents(tmp_path / "empty", {}), tmp_path / "home", result, check=False, stamp="t",
+            claude=None,
+        )  # fmt: skip
+
+    assert result.errors == [] and result.removed == [f"{path} mcp_servers.x"]
+    assert path.read_text() == 'model = "o3"\n'
+
+
+def test_codex_writes_through_a_symlinked_config(tmp_path: Path) -> None:
+    dotfiles = tmp_path / "dotfiles/codex.toml"
+    dotfiles.parent.mkdir()
+    dotfiles.write_text('model = "o3"\n')
+    path = tmp_path / "home/.codex/config.toml"
+    path.parent.mkdir(parents=True)
+    path.symlink_to(dotfiles)
+
+    _codex(tmp_path, _servers(tmp_path))
+
+    assert path.is_symlink() and "x" in tomllib.loads(dotfiles.read_text())["mcp_servers"]
+
+
+def test_comments_after_the_block_and_before_foreign_tables_are_kept(tmp_path: Path) -> None:
+    servers = _servers(tmp_path)
+    path = _config(tmp_path)
+    _codex(tmp_path, servers)
+    text = path.read_text() + '\n# my notes\n\n# about this one\n[profiles.fast]\nmodel = "o3"\n'
+    path.write_text(text)
+
+    _codex(tmp_path, _servers(tmp_path / "b", deny=["other"]))
+
+    after = path.read_text()
+    assert "# my notes\n" in after and "# about this one\n[profiles.fast]" in after
+
+
+def test_comments_after_the_block_at_the_end_of_the_file_are_kept(tmp_path: Path) -> None:
+    path = _config(tmp_path)
+    _codex(tmp_path, _servers(tmp_path))
+    path.write_text(path.read_text() + "# keep me\n")
+
+    _codex(tmp_path, _servers(tmp_path / "b", deny=["other"]))
+
+    assert "# keep me\n" in path.read_text()
+
+
+# Review findings for pack servers and the catalog.
+
+
+def test_an_edited_entry_is_reported_once_then_kept_quietly(tmp_path: Path) -> None:
+    root, catalog = _repository(tmp_path)
+    _update(root, catalog, packs=["lc"])
+    project = json.loads((root / ".mcp.json").read_text())
+    project["mcpServers"]["docs"]["url"] = "https://mine.example.com/mcp"
+    (root / ".mcp.json").write_text(json.dumps(project))
+
+    first = _update(root, catalog)
+    second = _update(root, catalog)
+
+    assert first.preserved == [".mcp.json mcpServers.docs (edited in this repository; kept)"]
+    assert second.preserved == [] and not _update(root, catalog, check=True).needs_attention
+    assert read_manifest(root)["mcp_kept"] == {"docs": digest(project["mcpServers"]["docs"])}
+
+
+def test_an_entry_deleted_in_the_repository_stays_deleted(tmp_path: Path) -> None:
+    root, catalog = _repository(tmp_path)
+    _update(root, catalog, packs=["lc"])
+    (root / ".mcp.json").write_text(
+        '{"mcpServers": {"team": {"type": "http", "url": "https://t"}}}'
+    )
+
+    first = _update(root, catalog)
+    second = _update(root, catalog)
+
+    assert first.preserved == [".mcp.json mcpServers.docs (deleted in this repository; kept)"]
+    assert second.preserved == [] and "docs" not in json.loads((root / ".mcp.json").read_text())
+    manifest = json.loads((root / ".repo-template.json").read_text())
+    del manifest["mcp_kept"]  # how to have repo-template manage it again
+    (root / ".repo-template.json").write_text(json.dumps(manifest))
+    assert ".mcp.json mcpServers.docs" in _update(root, catalog).created
+
+
+def test_adopting_a_repository_writes_its_codex_file_in_one_pass(tmp_path: Path) -> None:
+    """The baseline .gitignore that ignores .codex/ is written in the same update."""
+    _, catalog = _repository(tmp_path)
+    root = tmp_path / "fresh"
+    root.mkdir()
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(["git", "-C", str(root), "config", "core.excludesFile", os.devnull], check=True)
+
+    planned = _update(root, catalog, packs=["lc"], check=True)
+    applied = _update(root, catalog, packs=["lc"])
+
+    assert ".codex/config.toml (pack MCP servers)" in planned.created
+    assert ".codex/config.toml (pack MCP servers)" in applied.created
+    assert not _update(root, catalog, check=True).needs_attention
+
+
+def test_a_failed_mcp_json_write_records_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from repo_template import mcp_project
+
+    root, catalog = _repository(tmp_path)
+
+    def fail(*args: Any, **kwargs: Any) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(mcp_project, "write_file", fail)
+    with pytest.raises(OSError, match="disk full"):
+        _update(root, catalog, packs=["lc"])
+    assert "mcp_servers" not in read_manifest(root)
+    monkeypatch.undo()
+
+    _update(root, catalog, packs=["lc"])
+    assert not _update(root, catalog, check=True).needs_attention
+
+
+def test_a_codex_folder_outside_the_repository_is_left_alone(tmp_path: Path) -> None:
+    root, catalog = _repository(tmp_path)
+    outside = tmp_path / "home/.codex"
+    outside.mkdir(parents=True)
+    (outside / "config.toml").write_text('model = "o3"\n')
+    (root / ".codex").symlink_to(outside, target_is_directory=True)
+
+    result = _update(root, catalog, packs=["lc"])
+
+    assert ".codex (not a folder in this repository; left alone)" in result.preserved
+    assert (outside / "config.toml").read_text() == 'model = "o3"\n'
+
+
+def test_an_undefined_pack_freezes_its_servers(tmp_path: Path) -> None:
+    """While a listed pack isn't defined (renamed, or not pulled yet), its servers' args can't
+    be known: nothing is changed or removed, in either file."""
+    root, catalog = _repository(tmp_path)
+    _update(root, catalog, packs=["lc"])
+    before = ((root / ".mcp.json").read_text(), (root / ".codex/config.toml").read_text())
+    manifest = json.loads((root / ".repo-template.json").read_text())
+    manifest["skill_packs"] = ["gone", "lc"]
+    (root / ".repo-template.json").write_text(json.dumps(manifest))
+    servers = json.loads((catalog / "mcp-servers.json").read_text())
+    servers["servers"]["docs"]["url"] = "https://moved.example.com/mcp"
+    (catalog / "mcp-servers.json").write_text(json.dumps(servers))
+
+    result = _update(root, catalog)
+
+    assert any("'gone'" in error for error in result.errors)
+    assert ((root / ".mcp.json").read_text(), (root / ".codex/config.toml").read_text()) == before
+
+
+@pytest.mark.parametrize(
+    ("ref", "message"),
+    [
+        ({"server": "docs", "args": {"--header": ["${GITHUB_TOKEN}"]}}, "no placeholders"),
+        ({"server": "docs", "args": {"--api-key": ["x"]}}, "no secrets in args"),
+        ({"server": "docs", "args": {"--x": ["--dangerously-disable-elicitation"]}}, "never"),
+        ({"server": "docs", "args": {"-x": ["y"]}}, "maps --flags"),
+        ({"server": "docs", "argz": {}}, "an MCP ref takes"),
+    ],
+)
+def test_pack_args_are_checked_like_server_args(
+    tmp_path: Path, ref: dict[str, Any], message: str
+) -> None:
+    agents = _agents(tmp_path, {"docs": URL}, {"p": {"skills": [], "mcp": [ref]}})
+
+    with pytest.raises(ValueError, match=message):
+        pack_servers(agents, load_mcp_servers(agents))
+
+
+def test_a_pack_with_an_unknown_key_is_refused(tmp_path: Path) -> None:
+    agents = _agents(tmp_path, {"docs": URL}, {"p": {"skills": [], "mcp_servers": ["docs"]}})
+
+    with pytest.raises(ValueError, match="unknown keys"):
+        pack_servers(agents, load_mcp_servers(agents))
+
+
+def test_the_cutoff_is_the_next_utc_midnight_whatever_the_offset(tmp_path: Path) -> None:
+    pin = {**NPX["pin"], "publishedAt": "2026-09-01T20:00:00-05:00"}  # 01:00 UTC on the 2nd
+    server = load_mcp_servers(_agents(tmp_path, {"x": {**NPX, "pin": pin}}))["x"]
+
+    assert claude_entry(server, CACHE)["env"]["npm_config_before"] == "2026-09-03T00:00:00Z"
+
+
+@pytest.mark.parametrize(
+    ("change", "problem"),
+    [
+        ({"publishedAt": "2099-01-01T00:00:00Z"}, "publishedAt is in the future"),
+        ({"publishedAt": "{recent}"}, "is less than 7 days old"),
+        ({"publishedAt": "{recent}", "pinException": "fixes the crash on Node 20"}, None),
+    ],
+)
+def test_the_catalog_check_holds_pins_to_the_cooldown(
+    tmp_path: Path, change: dict[str, str], problem: str | None
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from repo_template.catalog import _check_mcp, _Problems
+
+    recent = (datetime.now(UTC) - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    pin = {**NPX["pin"], **{k: v.replace("{recent}", recent) for k, v in change.items()}}
+    root = tmp_path
+    _agents(root, {"x": {**NPX, "pin": pin}})
+    settings = {"portable": {"permissions": {"deny": ["mcp__*__run_unsafe"]}}, "defaults": {}}
+    (root / ".agents/claude-settings.json").write_text(json.dumps(settings))
+    problems = _Problems()
+
+    _check_mcp(root, problems)
+
+    found = [error for error in problems.errors if error.startswith("MCP server x")]
+    assert len(found) == (problem is not None) and all(problem in error for error in found)
+
+
+def test_the_catalog_check_wants_each_deny_in_the_portable_settings(tmp_path: Path) -> None:
+    from repo_template.catalog import _check_mcp, _Problems
+
+    _agents(tmp_path, {"x": NPX})
+    (tmp_path / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}')
+    problems = _Problems()
+
+    _check_mcp(tmp_path, problems)
+
+    assert any(
+        error.startswith("mcp__*__run_unsafe: an MCP server denies") for error in problems.errors
+    )

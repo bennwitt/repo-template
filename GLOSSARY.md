@@ -75,6 +75,10 @@ _Avoid_: skill bundle, plugin
 `.agents/mcp-servers.json`: each MCP server once, with what it runs, its pin, its denied tools
 and why. A global server is installed on every machine; a pack server comes with a pack.
 
+**Kept entry**:
+An MCP entry repo-template would manage but leaves alone, because it was changed or removed by
+hand: reported once, then recorded (in `globals-state.json`, or a repository's `mcp_kept`).
+
 **Skill sources**:
 `.agents/skill-sources.json`: each source repository's license, copyright and pinned license
 texts, the upstream commit of each vendored skill, the local skills and what they derive from,

@@ -508,34 +508,45 @@ def _link(
 def _sync_global_mcp(
     agents: Path, home: Path, result: Result, *, check: bool, stamp: str, claude: ClaudeMcp | None
 ) -> None:
-    """The global MCP servers, in Claude Code's user scope and ~/.codex/config.toml."""
+    """The global MCP servers, in Claude Code's user scope and ~/.codex/config.toml. With no
+    servers in the catalog, the ones installed before are removed."""
     try:
         servers = load_mcp_servers(agents)
     except ValueError as exc:
         result.errors.append(str(exc))
         return
-    if not servers:
-        return
     real = home == Path.home().expanduser().resolve()
-    if claude is None and real:
-        claude = ClaudeCli(home)
+    configured = os.environ.get("CLAUDE_CONFIG_DIR")
+    if real and configured and Path(configured).expanduser().resolve() != home / ".claude":
+        # the portable settings, and so the deny rules, go to ~/.claude/settings.json
+        result.notes.append(
+            "Claude Code's user-scope MCP servers: skipped (CLAUDE_CONFIG_DIR is set, so Claude "
+            "Code doesn't read ~/.claude/settings.json, where their deny rules go)"
+        )
+        claude = None
+        skip_claude = True
+    else:
+        skip_claude = False
+        if claude is None and real:
+            claude = ClaudeCli(home)
     cache = str(home / ".cache/repo-template")
     chosen = {name: s for name, s in servers.items() if s.scope == "global"}
     for_claude = {name: s for name, s in chosen.items() if "claude" in s.clients}
     for_codex = {name: s for name, s in chosen.items() if "codex" in s.clients}
-    sync_claude_mcp(
-        for_claude, claude, home, result, check=check, cache=cache, managed=servers, stamp=stamp
-    )
-    sync_codex_mcp(
-        for_codex,
-        codex_config(home, real),
-        home,
-        result,
-        check=check,
-        stamp=stamp,
-        cache=cache,
-        managed=servers,
-    )
+    try:
+        if not skip_claude:
+            sync_claude_mcp(for_claude, claude, home, result, check=check, cache=cache, stamp=stamp)
+        sync_codex_mcp(
+            for_codex,
+            codex_config(home, real),
+            home,
+            result,
+            check=check,
+            stamp=stamp,
+            cache=cache,
+        )
+    except ValueError as exc:  # an unreadable globals-state.json
+        result.errors.append(f"{exc}; delete it to reset (MCP servers were left alone)")
 
 
 def _merge_global_gitignore(existing: str) -> str:

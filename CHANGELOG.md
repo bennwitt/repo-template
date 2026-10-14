@@ -7,10 +7,13 @@
   (`claude mcp add-json`) and `~/.codex/config.toml`; a pack's servers go into the repository's
   `.mcp.json` and an ignored `.codex/config.toml`. Claude Code gets `${NAME:-default}`, Codex
   literal values. Entries are owned by name and digest (in `globals-state.json` and the manifest's
-  new `mcp_servers`): an entry changed by hand is kept, one removed on the machine stays removed.
-  A denied tool is denied in both clients. Global: `playwright` (0.0.83, isolated, headless),
-  `huggingface`, and `microsoft-learn` for Codex; the `langchain` pack gets the LangChain docs
-  and reference servers, `gradio` its docs server.
+  new `mcp_servers` and `mcp_kept`): an entry changed by hand is kept and reported once, and one
+  removed stays removed. A denied tool is denied in both clients. The catalog accepts only `npx`
+  and `uvx` commands that run their pin first, pins at least 7 days old (or with a
+  `pinException`), and nothing that looks like a secret; pack args are checked the same way.
+  Global: `playwright` (0.0.83, isolated, headless), `huggingface`, and `microsoft-learn` for
+  Codex; the `langchain` pack gets the LangChain docs and reference servers, `gradio` its docs
+  server.
 - The `playwright` plugin is off in the portable settings (the pinned server replaces it), and
   `mcp__*__submit_feedback` is denied.
 

@@ -31,6 +31,9 @@ def package_name(project_name: str) -> str:
     return normalized
 
 
+MCP_KEYS = ("mcp_servers", "mcp_kept")  # the pack MCP records: what was written, what was kept
+
+
 def _read_manifest(root: Path) -> dict[str, Any]:
     path = root / MANIFEST_NAME
     if not path.exists():
@@ -241,7 +244,7 @@ def _build_manifest(
     packs: Sequence[str] = (),
     owned: Sequence[str] = (),
     previous: dict[str, Any] | None = None,
-    mcp_servers: Mapping[str, str] | None = None,
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
@@ -274,8 +277,9 @@ def _build_manifest(
         manifest["skill_packs"] = sorted(set(packs))
     if owned:
         manifest["project_owned"] = sorted(set(owned))
-    if mcp_servers:
-        manifest["mcp_servers"] = dict(sorted(mcp_servers.items()))
+    for key in MCP_KEYS:
+        if mcp and mcp.get(key):
+            manifest[key] = dict(sorted(mcp[key].items()))
     return manifest
 
 
@@ -335,7 +339,7 @@ def new_project(
     description: str,
     python_version: str,
     packs: Sequence[str] = (),
-    mcp_servers: Mapping[str, str] | None = None,
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> Result:
     target = target.resolve()
     if target.exists() and any(target.iterdir()):
@@ -347,7 +351,7 @@ def new_project(
     result = Result(target)
     for spec in specs:
         _apply_file(target, spec, {}, result, check=False, baseline={})
-    _write_manifest(target, _build_manifest(target, context, specs, packs, mcp_servers=mcp_servers))
+    _write_manifest(target, _build_manifest(target, context, specs, packs, mcp=mcp))
     result.created.append(MANIFEST_NAME)
     return result
 
@@ -368,9 +372,10 @@ def update_project(
     *,
     check: bool = False,
     add_packs: Sequence[str] = (),
-    mcp_servers: Mapping[str, str] | None = None,
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> Result:
-    """`mcp_servers` is the pack MCP record to keep; None carries the manifest's forward."""
+    """`mcp` holds the pack MCP records to keep (mcp_servers, mcp_kept); None carries the
+    manifest's forward."""
     root = root.resolve()
     if not root.is_dir():
         raise ValueError(f"repository directory does not exist: {root}")
@@ -384,10 +389,9 @@ def update_project(
         _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
     packs = [*skill_packs(root), *add_packs]
     owned = sorted(_project_owned(manifest))
-    if mcp_servers is None:
-        recorded = manifest.get("mcp_servers")
-        mcp_servers = recorded if isinstance(recorded, dict) else {}
-    proposed = _build_manifest(root, context, specs, packs, owned, manifest, mcp_servers)
+    if mcp is None:
+        mcp = {key: manifest[key] for key in MCP_KEYS if isinstance(manifest.get(key), dict)}
+    proposed = _build_manifest(root, context, specs, packs, owned, manifest, mcp)
     if proposed == manifest:
         result.unchanged.append(MANIFEST_NAME)
         return result

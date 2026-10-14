@@ -423,9 +423,20 @@ when some pack lists it, and integrity says which `git mv` to run when that chan
 ### MCP servers: global and per pack
 
 `.agents/mcp-servers.json` defines each MCP server once: what it runs (a pinned `npx`/`uvx`
-package or a URL), for which clients, which of its tools are denied, and why it's here. Every
-server is keyless and read-only. A **global** server is installed on every machine by
-`globals`; a **pack** server comes with a pack (`"mcp": [...]` in `.agents/skill-packs.json`).
+package or a URL), for which clients, which of its tools are denied, and why it's here. A
+**global** server is installed on every machine by `globals`; a **pack** server comes with a
+pack (`"mcp": [...]` in `.agents/skill-packs.json`, optionally with extra `--flag` values).
+
+The catalog refuses what it can't vouch for:
+
+- a command other than `npx` or `uvx`, and args that don't run the pinned package first
+  (`npx -y package@version`, `uvx --from package==version <tool>`): no `--package`, `--with`
+  or `--index` that would run something else;
+- a pin less than 7 days old without a `pinException` giving the reason (`globals --check`
+  checks this; `--upstream` says when the exception can go);
+- anything that looks like a secret: env names like `*_TOKEN`, `*_PAT` or `*AUTH*`, secret-like
+  flags or values in args (pack args included), and credentials or a query in a URL. Servers
+  are keyless and read-only.
 
 | Where | Claude Code | Codex |
 | --- | --- | --- |
@@ -441,11 +452,20 @@ server is keyless and read-only. A **global** server is installed on every machi
 - repo-template owns each entry by name and by a digest of what it wrote, recorded in
   `~/.repo-template/globals-state.json` for global servers and under `mcp_servers` in a
   repository's `.repo-template.json` for pack servers. An entry changed by hand is kept and
-  reported once, one removed on the machine stays removed, and one no longer in the catalog (or
-  no pack uses) is removed only if it is unchanged. `--check` reads the configs and runs nothing.
-- An entry repo-template doesn't own that runs a server it manages (the same URL or package)
-  gets a note with the command that removes it.
-- `.mcp.json` and `.codex/config.toml` can be taken over by listing them in `project_owned`.
+  reported once, one removed stays removed, and one no longer in the catalog (or that no pack
+  uses) is removed only if it is unchanged. In a repository the kept and removed entries are
+  recorded under `mcp_kept`; delete a name there to have repo-template manage it again. A
+  config file that is gone (a new machine, a reset) starts fresh. `--check` reads the configs
+  and runs nothing.
+- In Codex's file, only a `[mcp_servers.<name>]` table is taken over; the same server written
+  as an inline table or dotted keys is left as it is. A symlinked `~/.codex/config.toml` is
+  written through. With `CLAUDE_CONFIG_DIR` set elsewhere, Claude Code's servers are skipped:
+  it wouldn't read the deny rules in `~/.claude/settings.json`.
+- An entry repo-template doesn't own that runs a server this client gets from it globally (the
+  same URL or package) gets a note with the command that removes it.
+- `.mcp.json` and `.codex/config.toml` can be taken over by listing them in `project_owned`. A
+  `.codex` that is a link out of the repository is left alone, and while a listed pack isn't
+  defined (renamed, or not pulled yet) neither file changes.
 
 The `playwright` server replaces the `playwright` plugin, which the portable settings now turn
 off: the plugin runs `@playwright/mcp@latest` with a persistent profile.
@@ -550,8 +570,9 @@ itself.
 | `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
 <!-- <<< repo-template catalog -->
 
-Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
-the portable settings in `.agents/claude-settings.json` rather than vendored here.
+Claude Code plugins (skill-creator, GitHub, hookify, and others) are enabled through the
+portable settings in `.agents/claude-settings.json` rather than vendored here; the `playwright`
+plugin is off, replaced by the pinned `playwright` MCP server.
 
 ### Skill receipts
 
