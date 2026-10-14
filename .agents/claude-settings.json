@@ -1,0 +1,130 @@
+{
+  "portable": {
+    "enabledPlugins": {
+      "atlassian@claude-plugins-official": true,
+      "azure@claude-plugins-official": true,
+      "chrome-devtools-mcp@claude-plugins-official": true,
+      "claude-code-setup@claude-plugins-official": true,
+      "github@claude-plugins-official": true,
+      "greptile@claude-plugins-official": true,
+      "hookify@claude-plugins-official": true,
+      "mcp-apps@claude-plugins-official": false,
+      "mcp-server-dev@claude-plugins-official": false,
+      "microsoft-docs@claude-plugins-official": true,
+      "playwright@claude-plugins-official": true,
+      "pyright-lsp@claude-plugins-official": true,
+      "remember@claude-plugins-official": true,
+      "skill-creator@claude-plugins-official": true,
+      "sourcegraph@claude-plugins-official": false,
+      "typescript-lsp@claude-plugins-official": true
+    },
+    "env": {
+      "AZURE_MCP_COLLECT_TELEMETRY": "false",
+      "AZURE_DEV_COLLECT_TELEMETRY": "no"
+    },
+    "permissions": {
+      "deny": [
+        "Read(./**/.env)",
+        "Read(./**/.env.*)",
+        "Read(./secrets/**)",
+        "Read(./**/*.pem)",
+        "Read(./**/*.key)",
+        "mcp__*__browser_run_code_unsafe"
+      ],
+      "ask": [
+        "Bash(docker *system prune*)",
+        "Bash(docker *image prune*)",
+        "Bash(docker *container prune*)",
+        "Bash(docker *volume prune*)",
+        "Bash(docker *volume rm *)",
+        "Bash(docker *network prune*)",
+        "Bash(docker *builder prune*)",
+        "Bash(docker *buildx prune*)",
+        "Bash(docker *rmi *)",
+        "Bash(docker *image rm *)",
+        "Bash(docker compose *down*-v*)",
+        "Bash(docker compose *rm *-v*)"
+      ]
+    },
+    "hooks": {
+      "PostToolUse": [
+        {
+          "matcher": "Skill",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$HOME/.agents/hooks/skill_receipt.py\" 2>/dev/null || true"
+            }
+          ]
+        }
+      ],
+      "UserPromptExpansion": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$HOME/.agents/hooks/skill_receipt.py\" 2>/dev/null || true"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "defaults": {
+    "model": "opus[1m]",
+    "effortLevel": "xhigh",
+    "theme": "auto",
+    "agentPushNotifEnabled": true
+  },
+  "linked": {
+    "enabledPlugins": {
+      "skill-creator@claude-plugins-official": true,
+      "playwright@claude-plugins-official": true,
+      "github@claude-plugins-official": true,
+      "claude-code-setup@claude-plugins-official": true,
+      "pyright-lsp@claude-plugins-official": true,
+      "chrome-devtools-mcp@claude-plugins-official": true,
+      "atlassian@claude-plugins-official": true,
+      "hookify@claude-plugins-official": true,
+      "remember@claude-plugins-official": true,
+      "greptile@claude-plugins-official": true,
+      "mcp-server-dev@claude-plugins-official": true,
+      "microsoft-docs@claude-plugins-official": true,
+      "sourcegraph@claude-plugins-official": true,
+      "azure@claude-plugins-official": true,
+      "mcp-apps@claude-plugins-official": true
+    },
+    "permissions": {
+      "deny": [
+        "Read(./.env)",
+        "Read(./.env.*)",
+        "Read(./secrets/**)",
+        "Read(./**/*.pem)",
+        "Read(./**/*.key)"
+      ]
+    },
+    "hooks": {
+      "PostToolUse": [
+        {
+          "matcher": "Skill",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$HOME/.agents/hooks/skill_receipt.py\" 2>/dev/null || true"
+            }
+          ]
+        }
+      ],
+      "UserPromptExpansion": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$HOME/.agents/hooks/skill_receipt.py\" 2>/dev/null || true"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

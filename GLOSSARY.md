@@ -46,6 +46,16 @@ _Avoid_: exception, waiver
 A skill, hook, or setting that is safe to version and use on every machine.
 _Avoid_: dotfile
 
+**Portable settings**:
+The `portable` part of `.agents/claude-settings.json`: plugin switches, environment variables,
+marketplaces, permission rules and hooks (each inside its event and matcher) that `globals`
+merges into every machine's `~/.claude/settings.json`, keeping entries changed on that machine.
+_Avoid_: shared settings, settings link
+
+**Machine default**:
+A setting in the `defaults` part of `.agents/claude-settings.json` (model, effort, theme,
+notifications): written once, when a machine doesn't have it, then left to that machine.
+
 **Machine state**:
 Credentials, sessions, caches, and local preferences that must stay on one machine.
 _Avoid_: local config

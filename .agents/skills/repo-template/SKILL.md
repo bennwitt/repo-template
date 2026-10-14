@@ -23,8 +23,10 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
      run can exit 1 with `!` lines too: fix the error first.
      - `x` lines: a missing tool (git, uv), a failed `uv lock`, or `skill pack '<name>' is listed
        in .repo-template.json but not defined`. For that last one, `git pull` the standards
-       repository behind `~/.agents`, or remove the pack from `skill_packs` if it was renamed or
-       dropped.
+       repository behind `~/.agents` and run `repo-template globals`, or remove the pack from
+       `skill_packs` if it was renamed or dropped. A machine still on a version before 0.4.2
+       (`~/.claude/settings.json` is a link) follows the README's "Upgrading a machine from a
+       linked settings file" instead of a plain pull.
      - A `repo-template: error:` line means the command couldn't run at all: `--pack` named an
        unknown pack, the manifest doesn't parse, or the manifest was written by a newer version
        (`git pull` the standards repository).
@@ -57,6 +59,12 @@ If `repo-template` isn't on `PATH`, install it from the standards repository beh
      `domain-modeling` skill describes. Then repoint every reference: `git grep -n CONTEXT.md`.
    - **`(not a link …)`**: a real folder sits where a skill link belongs. Ask the user before
      moving it.
+   - **`~/.claude/settings.json … (changed on this machine; kept)`** or **`(removed on this
+     machine)`** (from `globals`): a portable setting differs on this machine. It is reported once.
+     Ask the user whether to keep the local choice (nothing to do) or take the standard's value
+     (set the entry to the value in `.agents/claude-settings.json`, or re-add the rule).
+   - **`~/.claude/settings.json (a link to …, which repo-template didn't create …)`**: the user
+     manages that file elsewhere (dotfiles). Leave it unless they ask.
 
    Rerun `repo-template update <repo>`; this step is done when it exits 0. An exit 1 goes back to
    step 2's exit-1 handling.
