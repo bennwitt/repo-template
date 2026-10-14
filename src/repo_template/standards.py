@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import tomllib
 from collections.abc import Callable, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from repo_template.catalog import (
@@ -28,6 +28,14 @@ from repo_template.catalog import (
     skill_folder,
     sync_documents,
 )
+from repo_template.mcp import load_mcp_servers, usable
+from repo_template.mcp_globals import (
+    ClaudeCli,
+    ClaudeMcp,
+    codex_config,
+    sync_claude_mcp,
+    sync_codex_mcp,
+)
 from repo_template.model import Result
 from repo_template.policies import merge_marked_block
 from repo_template.settings import SOURCE_NAME, sync_claude_settings
@@ -35,7 +43,7 @@ from repo_template.skillfile import field_lines
 
 GITIGNORE_START = "# >>> repo-template personal AI directories"
 GITIGNORE_END = "# <<< repo-template personal AI directories"
-GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/"
+GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/\n**/.playwright-cli/\n**/.playwright-mcp/"
 
 
 SKILL_MIRROR_TARGET = Path("../../.agents/skills")
@@ -348,7 +356,7 @@ def _sync_mirror(standards_root: Path, names: list[str], result: Result, *, chec
     _prune_links(mirror, owned, set(names), result, check=check)
 
 
-def _git_ignores(root: Path) -> Callable[[list[Path]], set[Path]]:
+def git_ignores(root: Path) -> Callable[[list[Path]], set[Path]]:
     """Which of the given paths under root Git would ignore. Without a .git folder (or Git)
     there is nothing to commit them to, so all of them."""
 
@@ -447,7 +455,7 @@ def sync_project_packs(
             check=check,
             stop=root,
             base=root,
-            ignored=_git_ignores(root),
+            ignored=git_ignores(root),
         )
         if not undefined:
             _prune_links(target_dir, owned, set(wanted), result, check=check, base=root)
@@ -497,6 +505,50 @@ def _link(
     destination.symlink_to(source, target_is_directory=source.is_dir())
 
 
+def _sync_global_mcp(
+    agents: Path, home: Path, result: Result, *, check: bool, stamp: str, claude: ClaudeMcp | None
+) -> None:
+    """The global MCP servers, in Claude Code's user scope and ~/.codex/config.toml. With no
+    servers in the catalog, the ones installed before are removed."""
+    try:
+        servers = usable(load_mcp_servers(agents), datetime.now(UTC), result.errors)
+    except ValueError as exc:
+        result.errors.append(str(exc))
+        return
+    real = home == Path.home().expanduser().resolve()
+    configured = os.environ.get("CLAUDE_CONFIG_DIR")
+    if real and configured and Path(configured).expanduser().resolve() != home / ".claude":
+        # the portable settings, and so the deny rules, go to ~/.claude/settings.json
+        result.notes.append(
+            "Claude Code's user-scope MCP servers: skipped (CLAUDE_CONFIG_DIR is set, so Claude "
+            "Code doesn't read ~/.claude/settings.json, where their deny rules go)"
+        )
+        claude = None
+        skip_claude = True
+    else:
+        skip_claude = False
+        if claude is None and real:
+            claude = ClaudeCli(home)
+    cache = str(home / ".cache/repo-template")
+    chosen = {name: s for name, s in servers.items() if s.scope == "global"}
+    for_claude = {name: s for name, s in chosen.items() if "claude" in s.clients}
+    for_codex = {name: s for name, s in chosen.items() if "codex" in s.clients}
+    try:
+        if not skip_claude:
+            sync_claude_mcp(for_claude, claude, home, result, check=check, cache=cache, stamp=stamp)
+        sync_codex_mcp(
+            for_codex,
+            codex_config(home, real),
+            home,
+            result,
+            check=check,
+            stamp=stamp,
+            cache=cache,
+        )
+    except ValueError as exc:  # an unreadable globals-state.json
+        result.errors.append(f"{exc}; delete it to reset (MCP servers were left alone)")
+
+
 def _merge_global_gitignore(existing: str) -> str:
     return merge_marked_block(existing, GITIGNORE_CONTENT, GITIGNORE_START, GITIGNORE_END)
 
@@ -519,7 +571,10 @@ def sync_globals(
     *,
     home: Path | None = None,
     check: bool = False,
+    claude: ClaudeMcp | None = None,
 ) -> Result:
+    """`claude` is Claude Code's user-scope MCP config; by default the `claude` CLI, and only
+    for this machine's own home (a test's home gets none unless it passes a fake)."""
     standards_root = find_standards_root(standards_root)
     home = (home or Path.home()).expanduser().resolve()
     result = Result(standards_root)
@@ -528,6 +583,7 @@ def sync_globals(
     agents = standards_root / ".agents"
     _link(agents, home / ".agents", result, home=home, stamp=stamp, check=check)
     sync_claude_settings(standards_root, home, result, check=check, stamp=stamp)
+    _sync_global_mcp(agents, home, result, check=check, stamp=stamp, claude=claude)
 
     rewritten = apply_skill_overrides(standards_root, result, check=check)
     skill_root = standards_root / ".agents/skills"

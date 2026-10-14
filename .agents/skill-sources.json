@@ -1,11 +1,40 @@
 {
   "sources": {
+    "anthropics/skills": {
+      "license": "See each skill",
+      "copyright": "Anthropic, PBC (each skill's own license file)",
+      "discover": "none"
+    },
     "astral-sh/claude-code-plugins": {
       "license": "MIT OR Apache-2.0",
       "copyright": "Copyright (c) 2025 Astral Software Inc.",
       "licenseFiles": {
         "LICENSE-MIT": "014835144877ea9c926d027ece3e1a26290cf481",
         "LICENSE-APACHE": "47fd5b871ae0c1b3158ce6c41aca0f592731cb50"
+      },
+      "discover": "none"
+    },
+    "currents-dev/playwright-best-practices-skill": {
+      "license": "MIT",
+      "copyright": "Copyright © 2026 Currents Software Inc.",
+      "licenseFiles": {
+        "LICENSE.md": "0312fd7de9487ced54515687d0026fc146aba947"
+      },
+      "discover": "none"
+    },
+    "docker/skills": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright 2026 Docker, Inc.",
+      "licenseFiles": {
+        "LICENSE": "34f4d2496fa7340441d0b70900bcae0646a0a643"
+      },
+      "discover": "none"
+    },
+    "fastapi/fastapi": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2018 Sebastián Ramírez",
+      "licenseFiles": {
+        "LICENSE": "3e92463e6bd522a2a21e5f0a80d8089d6c4be20d"
       },
       "discover": "none"
     },
@@ -33,6 +62,14 @@
       },
       "discover": "none"
     },
+    "huggingface/skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
+    },
     "langchain-ai/langchain-skills": {
       "license": "MIT",
       "copyright": "Copyright (c) LangChain, Inc.",
@@ -49,11 +86,52 @@
       },
       "discover": "all"
     },
+    "microsoft/azure-skills": {
+      "license": "MIT",
+      "copyright": "Copyright 2025 (c) Microsoft Corporation.",
+      "licenseFiles": {
+        "LICENSE": "356b112bcc4f07e03b6e57569eedf9d79978d2d5"
+      },
+      "discover": "none"
+    },
+    "microsoft/playwright": {
+      "license": "Apache-2.0",
+      "copyright": "Portions Copyright (c) Microsoft Corporation.",
+      "licenseFiles": {
+        "LICENSE": "df112373eb2e23e459bf93ec412be1764dc5a38b",
+        "NOTICE": "814ec1696f7ad36c1b524fb6adeef14b4b367fec"
+      },
+      "discover": "none"
+    },
+    "microsoft/playwright-cli": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) Microsoft Corporation.",
+      "licenseFiles": {
+        "LICENSE": "cefe596afef12e19a8e5e923f1a04c7da3188760"
+      },
+      "discover": "none"
+    },
+    "microsoft/skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) Microsoft Corporation.",
+      "licenseFiles": {
+        "LICENSE": "79656060de00aa4659ad2c276d5be8830664d544"
+      },
+      "discover": "none"
+    },
     "trailofbits/skills": {
       "license": "CC-BY-SA-4.0",
       "copyright": "Not stated upstream; the README says \"Made by Trail of Bits\"",
       "licenseFiles": {
         "LICENSE": "3b7b82d0da2db857eda1a798dbd908ea136f07b5"
+      },
+      "discover": "none"
+    },
+    "vercel-labs/agent-skills": {
+      "license": "MIT",
+      "copyright": "Not stated upstream (there is no license file; its README.md says 'License: MIT')",
+      "licenseFiles": {
+        "README.md": "04a1a5a46a22cfd430e2877b7c145e34fc2653ab"
       },
       "discover": "none"
     },
@@ -64,9 +142,34 @@
         "LICENSE": "eabe3008f6c0275929faa8b07d406e82717648cc"
       },
       "discover": "none"
+    },
+    "vllm-project/vllm": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
+    },
+    "vllm-project/vllm-skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "5e6620780bdc6b10758bc814e621981705080bbe"
+      },
+      "discover": "none"
     }
   },
   "local": {
+    "compose-gpu-serving": {
+      "license": "MIT"
+    },
+    "fastapi-services": {
+      "license": "MIT"
+    },
+    "foundry-langchain": {
+      "license": "MIT"
+    },
     "knowledge-graph-extraction": {
       "license": "MIT",
       "derivedFrom": {
@@ -80,22 +183,124 @@
         "commit": "ef99c70e2e6d5e4f5e227ee6745df32bcac72fdc"
       }
     },
+    "local-model-serving": {
+      "license": "MIT"
+    },
+    "mcp-servers": {
+      "license": "MIT"
+    },
+    "muse-glimmer": {
+      "license": "MIT"
+    },
+    "opencv-python": {
+      "license": "MIT"
+    },
+    "openwebui": {
+      "license": "MIT"
+    },
     "repo-template": {
       "license": "MIT"
+    },
+    "sam3": {
+      "license": "MIT"
+    },
+    "shadcn": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "shadcn-ui/ui",
+        "path": "skills/shadcn",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2023 shadcn",
+        "licenseFiles": {
+          "LICENSE.md": "fad4d887a681dd49233e5ed01ee2c7a1513089a0"
+        },
+        "commit": "d51870f66fd13cc975d82ecbb9eace3cff066878"
+      }
+    },
+    "web-interface-guidelines": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "vercel-labs/web-interface-guidelines",
+        "path": "command.md",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Vercel Labs",
+        "licenseFiles": {
+          "LICENSE": "b3575a3c1358eac4b9ee36a4c851872d81417760"
+        },
+        "commit": "434b7f91364665f2f733b310ec54809bf8f37937"
+      }
     }
   },
   "skills": {
+    "appinsights-instrumentation": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "2bb1307f9a0f22a26c6efbd8c795caf353be9d72",
+      "license": "MIT",
+      "copyright": "Copyright 2025 (c) Microsoft Corporation."
+    },
     "ask-matt": {
-      "commit": "e484a8095543718ced436b9b49a8160ed4554000",
-      "tree": "8ab83b2d681b3a343b869e0840535ecf832a17b5"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "d6a0d9bf3cdc78cbfcbd6466ac5fd3deffb52877"
+    },
+    "azure-ai": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "34c27c0761f1a2f730d45ddc1f395c6036723754"
+    },
+    "azure-ai-projects-ts": {
+      "commit": "fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb",
+      "tree": "f1d68f1c635903c22d4bfc6d85349a0405e2f175"
+    },
+    "azure-deploy": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "782b021717e199423ed37720a6ba5436b2951aa7"
+    },
+    "azure-diagnostics": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "4aa38be032e790f55c2b76a5968c04403145261e"
+    },
+    "azure-identity-py": {
+      "commit": "fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb",
+      "tree": "024a029bb7accc557287d8a118404e7dea88cbca",
+      "allowFindings": {
+        "reason": "placeholders in SDK examples (<cert-password>, <password>), not secrets",
+        "counts": {
+          "high": 1
+        }
+      }
+    },
+    "azure-identity-ts": {
+      "commit": "fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb",
+      "tree": "b275cc7fb988e6502965015d0d091605332f87c1",
+      "allowFindings": {
+        "reason": "placeholders in SDK examples (<cert-password>, <password>), not secrets",
+        "counts": {
+          "high": 2
+        }
+      }
+    },
+    "azure-prepare": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "4003cdc806c09cc3bd422d27505a02a1b57625b8"
+    },
+    "azure-resource-lookup": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "ba9b018e96ff88bd68d6bfd120eac1f281e4248e"
+    },
+    "azure-storage": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "4c077fa32d77e27b1c1b105d532af6945bb7604f"
+    },
+    "azure-validate": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "23c61eed8d0009d712d71904e21e3c4e0df4d6d0"
     },
     "claude-handoff": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "6845c30e62e1c0c2c0fbdea8307379197f0b4dc4"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "57d198aca08eddccb113632d52c6c13f1f3066ac"
     },
     "code-review": {
-      "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
-      "tree": "d8e341cee7980127dddda05159bedf25dc853615"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "fee7bb5fdddc069d58cbea09b2c36b5a859eac05"
     },
     "codebase-design": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -122,8 +327,20 @@
       "tree": "d62ee11c19684fb7751c6fd629a9ed061bb98c82"
     },
     "diagnosing-bugs": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "de4236cf34757c4e9ea7afe78d46c023213ff254"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "5fdd6cc53385395441910b026c72d71768e993d4"
+    },
+    "docker-build-strategies": {
+      "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
+      "tree": "550661626e962557558052ae594b0e16cb076df4"
+    },
+    "docker-compose-patterns": {
+      "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
+      "tree": "d602abc2459830dbc66a8aae7c91d80820584f25"
+    },
+    "docker-destructive-guardrails": {
+      "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
+      "tree": "7a2acb5897ea48a3ff3299783574819e61fd24f7"
     },
     "domain-modeling": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -133,13 +350,28 @@
       "commit": "9feb8147562f0f186b081b343e5ccaf53e9e7a18",
       "tree": "179ffaf610a29cc8cd9b257ae923d6ebecd1e372"
     },
+    "entra-app-registration": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "051071c18ecb38347076f857819987e3ec37685e"
+    },
     "eval-engineering": {
       "commit": "fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7",
       "tree": "171e0b69b291d65553bdcb89f59f085e22770e09"
     },
+    "fastapi": {
+      "commit": "f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007",
+      "tree": "34ece4801c3efb15889c30835d58511da031796f",
+      "ref": "0.143.0"
+    },
     "find-skills": {
       "commit": "773fb2c7bbf16781670a3520affc4abd0c6151ae",
       "tree": "76a98a285cb0434f3d39e1a873823556330e398b"
+    },
+    "frontend-design": {
+      "commit": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+      "tree": "d79e2a5bb4df4a386c2adcdd9ab8709bba28c3f6",
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE.txt is the Apache License 2.0 text, without a copyright line)"
     },
     "git-guardrails-claude-code": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -162,20 +394,28 @@
       "tree": "eedaf2562c83155115e9c649fa3ecaac2e10e81d"
     },
     "grilling": {
-      "commit": "85f83d3fde1d3a90d5c9a657f6998c79a6c37308",
-      "tree": "f0732035b8b1b60ae39454e4191caef32fa91903"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "28aceb4c9567b985cb47f7db88cf23c9f33af8b8"
     },
     "handoff": {
-      "commit": "d28dfdc39beadc3142a33359b5cfa4765dcbd0bc",
-      "tree": "2242e8f05424b8c2ae94194a90d97b88d16108ec"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "ce24892bd2d4b9e7fd5ac9b95c03175e18bef388"
     },
     "hf-gradio": {
       "commit": "3cae4986c69fc851a4b18c340f7cbeb9dcdee410",
       "tree": "cf152b8708e94e97902eb340d24e17fc2a746694"
     },
+    "hf-mem": {
+      "commit": "c3ff942be3e07116b475253f0a8fc4f54682c1a8",
+      "tree": "a36ea7843be90b3d3b8a78fdb8ac23950a98a451"
+    },
+    "huggingface-local-models": {
+      "commit": "c3ff942be3e07116b475253f0a8fc4f54682c1a8",
+      "tree": "89782df299cf7514502688a9f5f174a875e9927d"
+    },
     "implement": {
-      "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
-      "tree": "f07d230f645fc9ac390cf13a450bbff12ad791a3"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "4804b466ab26c9b9d8d42917547db133d1f20a9f"
     },
     "implement-spec": {
       "commit": "c612defa9e5cf9372262d0279eb124993ba77b71",
@@ -233,21 +473,39 @@
       "commit": "514d17f139972d4513c4c01c799881a381567159",
       "tree": "10a80b9bdb2e3065e930a16626d6ea2578935b19"
     },
-    "langsmith-online-eval-engineering": {
-      "commit": "6732f69c053c6e09e630970f557ae5b46e598a83",
-      "tree": "3cb006a828f54ab33e56ecfb839a5242aad1f863"
-    },
     "loop-me": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "a0dfdc3562686d920900973b50289b36e2f7eafe"
     },
     "managed-deep-agents": {
-      "commit": "bd7c43d921418b468d38bf0b59788ea54ed103f4",
-      "tree": "a52aba9d263c5f0506c93c187f44e2117adcafa2"
+      "commit": "16a992f09ab3ccfb642dd4f08d350d833d1990bf",
+      "tree": "b688ea60bf2601fad78a7b24ead62ac78408e8e1"
+    },
+    "microsoft-foundry": {
+      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
+      "tree": "fee43e7b6a76ea59d4e5831ffbf3b40a1e8caeb3"
     },
     "migrate-to-shoehorn": {
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
       "tree": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23"
+    },
+    "model-recipes": {
+      "commit": "bb1438a93f8873c30176d93267d0647f8e4c7b83",
+      "tree": "76900a2f39c39db1d5095ecffe51760124a07c56"
+    },
+    "playwright-best-practices": {
+      "commit": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
+      "tree": "b4620eb2cfc6b58173cda800b7c7578190dfd632"
+    },
+    "playwright-cli": {
+      "commit": "b85c7a736bb473bf55b584e54a09ffa698d6d871",
+      "tree": "6b746b43751be277378e0ee04fe0db69f24da045",
+      "ref": "v0.1.22"
+    },
+    "playwright-trace": {
+      "commit": "606ecd8b34bac100db32561b6278ffd76e5eb3cd",
+      "tree": "a1d5f43906b95c995da460dac32ccf1996223388",
+      "ref": "v1.64.0"
     },
     "pr": {
       "commit": "e484a8095543718ced436b9b49a8160ed4554000",
@@ -262,13 +520,13 @@
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "e41d92e171f074a2b6887d8f6faca4a15c83d1ca"
     },
+    "python-mcp-server-generator": {
+      "commit": "f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8",
+      "tree": "8b926108ed1a63b3f21b0c600718323cce27b99f"
+    },
     "research": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "0a6796c5667e95ed2301ba7381c123b4acb2ae1a"
-    },
-    "resolving-merge-conflicts": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "77f0d7de3143abbf03e55a63522d30bff31ae908"
     },
     "retro": {
       "commit": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f",
@@ -279,8 +537,8 @@
       "tree": "46e64350889df1af25113df450999101f48fd744"
     },
     "setup-matt-pocock-skills": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "b1568cde855a189b16e5d7dd8a0fa4c3f156bc2e"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "aafaabf96fa3945d8a4069317a7a6d36b7169670"
     },
     "setup-ts-deep-modules": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -309,12 +567,12 @@
       }
     },
     "tdd": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "bf1bf5ffcd63aa8abce830f2955a853c121fb463"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "667dbdd00c09d0e2189e082986e6a4d61a67c2a6"
     },
     "teach": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "2ab11f2f51f3c29771edb5d4258d807a49462491"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "3fd617b610e59acbb99644de1ef37e394ff53cd1"
     },
     "to-questionnaire": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -325,8 +583,8 @@
       "tree": "136b9651747cfccbfbb7c50a6b0dfb757e7547d2"
     },
     "to-tickets": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "b32c94e5a51c24ee9c41fcb7fe9ea9fff9af6369"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "2dee20ad722a31c04ededf9f2d83842473573045"
     },
     "triage": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -336,17 +594,29 @@
       "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",
       "tree": "bca0368b210d4b3ce04b4895829afe0dbc6949a8"
     },
+    "vercel-composition-patterns": {
+      "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",
+      "tree": "bf90d0a4b83ea054653350f9c67f6de235d3a368"
+    },
+    "vercel-react-best-practices": {
+      "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",
+      "tree": "343db72180d05814949fef7d46be96b5c6ee86b3"
+    },
+    "vllm-bench-serve": {
+      "commit": "c99623410c1531148ff9b39fe1dcb27efbf4bf23",
+      "tree": "501330d7c1209a1fda10fd9e6cab51e629e3a2bc"
+    },
     "wait-what": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
       "tree": "c8b050e6b8c711be1a9008ceacb2126914f0763e"
     },
     "wayfinder": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "8ec0462658381bd1606d3f9db14ffc67df6a2a43"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "32b0ce970b1394ede47116e1d3e07f9ccc87591f"
     },
     "wizard": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "0a163daf092c6f361158ca9627e81f2cb5230574"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "e396d3ba97c723a78ffd350fb14a3c409137b306"
     },
     "writing-beats": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -372,6 +642,7 @@
       "setup-pre-commit": "Husky/npm hooks; conflicts with this baseline's pre-commit hook"
     },
     "langchain-ai/langchain-skills": {
+      "langgraph-decision-models": "routes through LangSmith Gateway or the TypeSafe API; LangSmith is out of scope here",
       "swarm": "runs only inside the Deep Agents runtime (quickjs swarm_task tool)"
     }
   }

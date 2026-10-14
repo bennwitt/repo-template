@@ -1,9 +1,11 @@
 name: Catalog drift
 
-# Weekly, compare every vendored skill and license text with its upstream repository. Read-only:
-# the report goes to this log; upgrading is a reviewed, local `repo-template globals --upgrade`.
-# Exit 1 means updates are available and 2 means one needs review (removed, moved, or a
-# license changed), so the run fails and notifies.
+# Weekly, compare every vendored skill and license text with its upstream repository, and each
+# MCP server's pin with npm or PyPI. Read-only: the report goes to this log; upgrading a skill is
+# a reviewed, local `repo-template globals --upgrade`, and re-pinning is an edit to
+# .agents/mcp-servers.json. Exit 1 means updates are available (a skill, or a pin with a release
+# past its 7-day cooldown); 2 means one needs review (removed, moved, a license changed, a pin
+# yanked or mis-recorded); 3 means GitHub, npm or PyPI couldn't be reached. Each fails the run.
 
 on:
   schedule:

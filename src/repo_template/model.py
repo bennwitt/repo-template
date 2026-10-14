@@ -69,6 +69,7 @@ class Result:
     removed: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     conflicts: list[Conflict] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # information only: no action needed
 
     @property
     def needs_attention(self) -> bool:

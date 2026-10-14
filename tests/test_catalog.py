@@ -56,6 +56,22 @@ def test_descriptions_this_repository_writes_fit_the_budget() -> None:
         assert len(description) <= DESCRIPTION_LIMIT, f"{name}: {len(description)} characters"
 
 
+CODEX_BUDGET = 40_000  # characters of skill list Codex 0.160.1 shows before it truncates
+
+
+def test_the_global_skills_leave_codex_room() -> None:
+    """Codex lists every skill a model may invoke (not `disable-model-invocation` ones), name and
+    description, and truncates them all past its budget. Global skills take at most half, so
+    its own skills, plugins and a repository's packs fit too."""
+    total = 0
+    for name in SKILLS:
+        folder = skill_folder(ROOT, name)
+        fields = read_fields((folder / "SKILL.md").read_text())
+        if folder.parent.name == "skills" and fields.get("disable-model-invocation") != "true":
+            total += len(name) + len(fields.get("description", ""))
+    assert total <= CODEX_BUDGET // 2, f"{total} characters"
+
+
 @pytest.mark.parametrize("name", sorted(p.name for p in (ROOT / ".agents").glob("*.json")))
 def test_every_catalog_data_file_is_committed(name: str) -> None:
     """`/.agents/*` is ignored with re-includes; a new data file must be re-included too."""

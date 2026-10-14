@@ -1,0 +1,3 @@
+interface:
+  display_name: "SAM 3 segmentation"
+  short_description: "Segment and track objects with Meta SAM 3 and 3.1"

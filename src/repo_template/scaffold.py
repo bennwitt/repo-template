@@ -4,7 +4,7 @@ import json
 import os
 import re
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,10 @@ def package_name(project_name: str) -> str:
     if normalized and normalized[0].isdigit():
         normalized = "project_" + normalized
     return normalized
+
+
+MCP_KEYS = ("mcp_servers", "mcp_kept")  # the pack MCP records: what was written, what was kept
+PACKS_ONLY = "packs-only"  # the profile of a repository that takes only skill packs
 
 
 def _read_manifest(root: Path) -> dict[str, Any]:
@@ -241,6 +245,7 @@ def _build_manifest(
     packs: Sequence[str] = (),
     owned: Sequence[str] = (),
     previous: dict[str, Any] | None = None,
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
@@ -273,6 +278,9 @@ def _build_manifest(
         manifest["skill_packs"] = sorted(set(packs))
     if owned:
         manifest["project_owned"] = sorted(set(owned))
+    for key in MCP_KEYS:
+        if mcp and mcp.get(key):
+            manifest[key] = dict(sorted(mcp[key].items()))
     return manifest
 
 
@@ -332,6 +340,7 @@ def new_project(
     description: str,
     python_version: str,
     packs: Sequence[str] = (),
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> Result:
     target = target.resolve()
     if target.exists() and any(target.iterdir()):
@@ -343,7 +352,7 @@ def new_project(
     result = Result(target)
     for spec in specs:
         _apply_file(target, spec, {}, result, check=False, baseline={})
-    _write_manifest(target, _build_manifest(target, context, specs, packs))
+    _write_manifest(target, _build_manifest(target, context, specs, packs, mcp=mcp))
     result.created.append(MANIFEST_NAME)
     return result
 
@@ -354,21 +363,14 @@ def _uses_package_layout(root: Path, context: ProjectContext) -> bool:
     return not src.is_dir() or (src / context.package_name).is_dir()
 
 
-def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] = ()) -> Result:
-    root = root.resolve()
-    if not root.is_dir():
-        raise ValueError(f"repository directory does not exist: {root}")
-    manifest = _read_manifest(root)
-    _refuse_downgrade(root, manifest)
-    context = _context_from_manifest(root, manifest)
-    specs = project_files(context, package=_uses_package_layout(root, context))
-    baseline = {spec.relative_path: spec for spec in specs}
-    result = Result(root)
-    for spec in specs:
-        _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
-    packs = [*skill_packs(root), *add_packs]
-    owned = sorted(_project_owned(manifest))
-    proposed = _build_manifest(root, context, specs, packs, owned, manifest)
+def read_manifest(root: Path) -> dict[str, Any]:
+    """The repository's .repo-template.json, or {} when it has none."""
+    return _read_manifest(root.resolve())
+
+
+def _finish_manifest(
+    root: Path, manifest: dict[str, Any], proposed: dict[str, Any], result: Result, *, check: bool
+) -> Result:
     if proposed == manifest:
         result.unchanged.append(MANIFEST_NAME)
         return result
@@ -378,3 +380,99 @@ def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] 
     if not check:
         _write_manifest(root, proposed)
     return result
+
+
+def _carried(
+    manifest: dict[str, Any], mcp: Mapping[str, Mapping[str, str]] | None
+) -> Mapping[str, Mapping[str, str]]:
+    """The pack MCP records to write: `mcp`, or the manifest's carried forward."""
+    if mcp is not None:
+        return mcp
+    return {key: manifest[key] for key in MCP_KEYS if isinstance(manifest.get(key), dict)}
+
+
+PROFILES = ("python-uv", PACKS_ONLY)
+
+
+def preflight(root: Path, *, packs_only: bool, add_packs: Sequence[str]) -> dict[str, Any]:
+    """Every reason `update` (or `check`) can't run, checked before anything is written; the
+    manifest, read once. A packs-only manifest makes the run packs-only."""
+    root = root.resolve()
+    if not root.is_dir():
+        raise ValueError(f"repository directory does not exist: {root}")
+    manifest = _read_manifest(root)
+    profile = manifest.get("profile")
+    if manifest and profile not in PROFILES:
+        raise ValueError(
+            f"{root / MANIFEST_NAME} isn't a repo-template manifest (no known profile); "
+            f"repo-template won't overwrite it, so move it aside first"
+        )
+    if packs_only and profile == "python-uv":
+        raise ValueError(
+            f"{root / MANIFEST_NAME} has the Python/uv baseline; update it without --packs-only"
+        )
+    if packs_only and not manifest and not add_packs:
+        raise ValueError(
+            "--packs-only adopts a repository for its skill packs; name one with --pack"
+        )
+    _refuse_downgrade(root, manifest)
+    return manifest
+
+
+def update_packs_only(
+    root: Path,
+    *,
+    check: bool = False,
+    add_packs: Sequence[str] = (),
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
+) -> Result:
+    """A repository that takes only skill packs, and their MCP servers, from repo-template: its
+    manifest records those and nothing else, and no baseline file is written."""
+    root = root.resolve()
+    manifest = preflight(root, packs_only=True, add_packs=add_packs)
+    proposed: dict[str, Any] = {
+        "schema": 1,
+        "template_version": __version__,
+        "profile": PACKS_ONLY,
+    }
+    packs = sorted({*skill_packs(root), *add_packs})
+    if packs:
+        proposed["skill_packs"] = packs
+    owned = sorted(_project_owned(manifest))
+    if owned:
+        proposed["project_owned"] = owned
+    records = _carried(manifest, mcp)
+    for key in MCP_KEYS:
+        if records.get(key):
+            proposed[key] = dict(sorted(records[key].items()))
+    return _finish_manifest(root, manifest, proposed, Result(root), check=check)
+
+
+def update_project(
+    root: Path,
+    *,
+    check: bool = False,
+    add_packs: Sequence[str] = (),
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
+) -> Result:
+    """`mcp` holds the pack MCP records to keep (mcp_servers, mcp_kept); None carries the
+    manifest's forward."""
+    root = root.resolve()
+    manifest = preflight(root, packs_only=False, add_packs=add_packs)
+    if manifest.get("profile") == PACKS_ONLY:
+        raise ValueError(
+            f"{root / MANIFEST_NAME} takes only skill packs; to take the Python/uv baseline, "
+            f"delete it and run update"
+        )
+    context = _context_from_manifest(root, manifest)
+    specs = project_files(context, package=_uses_package_layout(root, context))
+    baseline = {spec.relative_path: spec for spec in specs}
+    result = Result(root)
+    for spec in specs:
+        _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
+    packs = [*skill_packs(root), *add_packs]
+    owned = sorted(_project_owned(manifest))
+    proposed = _build_manifest(
+        root, context, specs, packs, owned, manifest, _carried(manifest, mcp)
+    )
+    return _finish_manifest(root, manifest, proposed, result, check=check)

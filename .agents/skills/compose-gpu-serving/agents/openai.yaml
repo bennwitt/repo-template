@@ -1,0 +1,3 @@
+interface:
+  display_name: "Compose GPU serving"
+  short_description: "Run GPU model servers with Docker Compose"

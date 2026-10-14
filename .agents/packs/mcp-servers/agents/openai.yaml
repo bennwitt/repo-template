@@ -1,0 +1,3 @@
+interface:
+  display_name: "MCP servers"
+  short_description: "Write and test Python MCP servers"

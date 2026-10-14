@@ -548,7 +548,7 @@ wheels = [
 
 [[package]]
 name = "repo-template"
-version = "0.4.3"
+version = "0.5.2"
 source = { editable = "." }
 
 [package.dev-dependencies]

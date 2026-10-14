@@ -3,9 +3,12 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
+from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
+from repo_template.pins import HttpRegistry, check_pins
 from repo_template.repository import SUBPROCESS, create_repository, update_repository
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import manifest_version, normalize_project_name
@@ -71,6 +74,12 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="list files that differ from the baseline instead of asking about each one",
     )
+    update.add_argument(
+        "--packs-only",
+        action="store_true",
+        help="adopt a repository for its skill packs (and their MCP servers) alone: no baseline "
+        "files, hook path or lockfile; recorded, so later runs need no flag",
+    )
 
     check = subparsers.add_parser(
         "check", help="report what update would change, without writing anything"
@@ -85,6 +94,18 @@ def _parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--no-hooks", action="store_true", help="ignore the Git hook path")
     check.add_argument("--no-lock", action="store_true", help="ignore uv.lock")
+    check.add_argument(
+        "--pack",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="plan as if this skill pack were added (as update --pack would)",
+    )
+    check.add_argument(
+        "--packs-only",
+        action="store_true",
+        help="plan a packs-only adoption (as update --packs-only would)",
+    )
 
     globals_parser = subparsers.add_parser(
         "globals", help="connect global Codex and Claude configuration to this standards repo"
@@ -143,6 +164,10 @@ def _print_result(result: Result, *, check: bool = False, preserved: bool = True
         print(f"Preserved for manual review ({len(result.preserved)}):")
         for path in result.preserved:
             print(f"  ! {path}")
+    if result.notes:
+        print(f"Notes ({len(result.notes)}):")
+        for note in result.notes:
+            print(f"  · {note}")
     if result.errors:
         print(f"Errors ({len(result.errors)}):", file=sys.stderr)
         for error in result.errors:
@@ -175,7 +200,9 @@ def _interactive(args: argparse.Namespace) -> bool:
 
 def _update(args: argparse.Namespace) -> int:
     hooks, lock = not args.no_hooks, not args.no_lock
-    result = update_repository(args.path, hooks=hooks, lock=lock, packs=args.pack)
+    result = update_repository(
+        args.path, hooks=hooks, lock=lock, packs=args.pack, packs_only=args.packs_only
+    )
     if result.conflicts and _interactive(args):
         _print_result(result, preserved=False)
         print()
@@ -210,7 +237,12 @@ def _check(args: argparse.Namespace) -> int:
     paths = args.paths or [Path.cwd()]
     if len(paths) == 1:
         result = update_repository(
-            paths[0], check=True, hooks=not args.no_hooks, lock=not args.no_lock
+            paths[0],
+            check=True,
+            hooks=not args.no_hooks,
+            lock=not args.no_lock,
+            packs=args.pack,
+            packs_only=args.packs_only,
         )
         _print_result(result, check=True)
         return 1 if result.needs_attention else 0
@@ -218,7 +250,12 @@ def _check(args: argparse.Namespace) -> int:
     for path in paths:
         try:
             result = update_repository(
-                path, check=True, hooks=not args.no_hooks, lock=not args.no_lock
+                path,
+                check=True,
+                hooks=not args.no_hooks,
+                lock=not args.no_lock,
+                packs=args.pack,
+                packs_only=args.packs_only,
             )
         except (OSError, ValueError) as exc:
             print(f"{path}: error")
@@ -250,6 +287,9 @@ def _summary(result: Result) -> str:
 def _upstream(root: Path) -> int:
     try:
         report = upstream_report(root, GhApi())
+        if (root / ".agents" / MCP_SERVERS_NAME).is_file():
+            servers = load_mcp_servers(root / ".agents")
+            check_pins(servers, HttpRegistry(), datetime.now(UTC), report)
     except NetworkError as exc:
         print(f"repo-template: error: {exc}", file=sys.stderr)
         return 3
@@ -264,9 +304,10 @@ def _upstream(root: Path) -> int:
             for line in lines:
                 print(f"  {clean(line)}")
     if report.exit_code == 0:
-        print(f"All {len(report.current)} vendored skills are current.")
-    elif report.changed:
-        print("Run `repo-template globals --upgrade` to review and apply them.")
+        pins = f" and {len(report.pins)} MCP pins" if report.pins else ""
+        print(f"All {len(report.current)} vendored skills{pins} are current.")
+    elif len(report.changed) > report.pin_changes:
+        print("Run `repo-template globals --upgrade` to review and apply the skills.")
     return report.exit_code
 
 

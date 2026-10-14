@@ -1,0 +1,3 @@
+interface:
+  display_name: "OpenCV Python"
+  short_description: "Use cv2 safely: one wheel, colour order, video and servers"

@@ -48,7 +48,9 @@ class FakeGitHub:
         self.blobs: dict[str, bytes] = {}
         self.trees: dict[str, list[Entry]] = {}
         self.commits: dict[tuple[str, str], tuple[str, str]] = {}
-        self.licenses: dict[str, str] = {}
+        self.licenses: dict[str, str] = {}  # what GitHub detects at any ref
+        self.licenses_at: dict[tuple[str, str], str] = {}  # at one commit, where it differs
+        self.license_refs: list[tuple[str, str]] = []
         self.releases: dict[str, str] = {}
         self.tags: set[tuple[str, str]] = set()
         self.tampered: set[str] = set()
@@ -123,8 +125,9 @@ class FakeGitHub:
         self._call()
         return self.blobs[sha] + (b"tampered" if sha in self.tampered else b"")
 
-    def license(self, source: str) -> str | None:
-        return self.licenses.get(source)
+    def license(self, source: str, ref: str) -> str | None:
+        self.license_refs.append((source, ref))
+        return self.licenses_at.get((source, ref), self.licenses.get(source))
 
     def latest_release(self, source: str) -> str | None:
         return self.releases.get(source)
@@ -546,6 +549,41 @@ def test_adding_a_skill_from_a_new_source_records_its_license(tmp_path: Path) ->
     assert check_integrity(root, skill_names(root)) == []
 
 
+@pytest.mark.parametrize(("stated", "added"), [("Apache-2.0", True), ("MIT", False)])
+def test_a_new_sources_skill_may_state_the_license_github_detects(
+    tmp_path: Path, stated: str, added: bool
+) -> None:
+    """docker/skills states `license: Apache-2.0` in each SKILL.md, as its repository is."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    text = _skill("new-skill").replace(b"---\nBody", f"license: {stated}\n---\nBody".encode())
+    github.publish("x/y", {"LICENSE": b"Apache License\n", "new-skill/SKILL.md": text})
+    github.licenses["x/y"] = "Apache-2.0"
+
+    outcome = _run(root, github, ["x/y@new-skill"], "a")
+
+    assert (outcome.added == ["new-skill"]) is added, outcome
+    assert added or "carries its own license (license: MIT)" in outcome.refused[0]
+    if added:
+        assert check_integrity(root, skill_names(root)) == []
+
+
+def test_a_new_sources_license_is_the_one_at_the_vendored_commit(tmp_path: Path) -> None:
+    """A skill from an old tag states the license the repository had then; GitHub's answer for
+    the default branch doesn't count for it, and isn't what the record says."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    text = _skill("new-skill").replace(b"---\nBody", b"license: MIT\n---\nBody")
+    commit = github.publish("x/y", {"LICENSE": b"Apache License\n", "new-skill/SKILL.md": text})
+    github.licenses["x/y"] = "MIT"  # today's default branch
+    github.licenses_at[("x/y", commit)] = "Apache-2.0"  # the vendored commit
+
+    outcome = _run(root, github, ["x/y@new-skill"], "a")
+
+    assert outcome.added == [] and "carries its own license (license: MIT)" in outcome.refused[0]
+    assert ("x/y", commit) in github.license_refs
+
+
 def test_an_unidentified_license_refuses_the_addition(tmp_path: Path) -> None:
     github = FakeGitHub()
     root = _catalog(tmp_path, github, V1)
@@ -706,6 +744,7 @@ def _publish(github: FakeGitHub, files: Files, ref: str = "HEAD", source: str = 
         ({"skills/s/a\x1bb.md": b"x"}, "unsafe path"),
         ({"skills/s/.gitattributes": b"* -diff\n"}, "would change how Git sees it"),
         ({"skills/s/scripts/.gitignore": b"*\n"}, "would change how Git sees it"),
+        ({"skills/s/.gitignore ": b" \n"}, "would change how Git sees it"),
         ({"skills/s/Notes.md": b"a", "skills/s/notes.md": b"b"}, "one file on a case-insensitive"),
         ({"skills/s/.DS_Store": b"x"}, ".gitignore would hide .DS_Store"),
     ],
@@ -1800,6 +1839,31 @@ def _list_in_pack(root: Path, *, move: bool = True) -> None:
     sync_globals(root, home=root.parent / "home")
     _git(root, "add", "-A")
     _git(root, "commit", "-qm", "pack")
+
+
+def test_only_a_truly_empty_git_file_is_let_through(tmp_path: Path) -> None:
+    """The exemption keys on the blob SHA GitHub lists for the entry, which the staged bytes
+    are then verified against, not on a size."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _publish(github, {**V2, "skills/s/.gitattributes": b"* -diff\n"})
+
+    outcome = _run(root, github, ["s"], "a")
+
+    assert outcome.applied == [] and "would change how Git sees it" in outcome.refused[0]
+
+
+def test_an_empty_gitignore_in_a_skill_is_harmless(tmp_path: Path) -> None:
+    """microsoft-foundry ships an empty .gitignore: it has no rules, so it changes nothing."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _publish(github, {**V2, "skills/s/.gitignore": b""})
+
+    outcome = _run(root, github, ["s"], "a")
+
+    assert outcome.applied == ["s"], outcome
+    assert (root / ".agents/skills/s/.gitignore").read_bytes() == b""
+    assert check_integrity(root, skill_names(root)) == []
 
 
 def test_a_pack_skill_is_upgraded_where_it_lives(tmp_path: Path) -> None:

@@ -1,4 +1,101 @@
 {
+  "agent-evals": {
+    "description": "Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration)",
+    "skills": [
+      "eval-engineering"
+    ]
+  },
+  "azure": {
+    "description": "Azure: prepare, validate and deploy with azd, diagnostics, resource lookup, Storage, App Insights, Entra app registration and azure-identity.",
+    "skills": [
+      "appinsights-instrumentation",
+      "azure-deploy",
+      "azure-diagnostics",
+      "azure-identity-py",
+      "azure-identity-ts",
+      "azure-prepare",
+      "azure-resource-lookup",
+      "azure-storage",
+      "azure-validate",
+      "entra-app-registration"
+    ],
+    "mcp": [
+      {
+        "server": "azure",
+        "args": {
+          "--namespace": [
+            "acr",
+            "aks",
+            "applens",
+            "applicationinsights",
+            "appservice",
+            "arm",
+            "bicepschema",
+            "containerapps",
+            "deploy",
+            "get_azure_bestpractices",
+            "group",
+            "monitor",
+            "pricing",
+            "quota",
+            "resourcehealth",
+            "role",
+            "storage",
+            "subscription"
+          ]
+        }
+      }
+    ]
+  },
+  "fastapi": {
+    "description": "FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph.",
+    "skills": [
+      "fastapi-services"
+    ]
+  },
+  "foundry": {
+    "description": "Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools.",
+    "skills": [
+      "azure-ai",
+      "azure-ai-projects-ts",
+      "foundry-langchain",
+      "microsoft-foundry"
+    ],
+    "mcp": [
+      {
+        "server": "azure",
+        "args": {
+          "--namespace": [
+            "foundry",
+            "foundryextensions",
+            "get_azure_bestpractices",
+            "group",
+            "monitor",
+            "role",
+            "search",
+            "subscription"
+          ]
+        }
+      }
+    ]
+  },
+  "gradio": {
+    "description": "Building Gradio apps and calling Gradio apps through their API",
+    "skills": [
+      "frontend-design",
+      "gradio",
+      "hf-gradio"
+    ],
+    "mcp": [
+      "gradio-docs"
+    ]
+  },
+  "knowledge-graph": {
+    "description": "Extracting knowledge graphs from text",
+    "skills": [
+      "knowledge-graph-extraction"
+    ]
+  },
   "langchain": {
     "description": "LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills)",
     "skills": [
@@ -20,27 +117,61 @@
       "langgraph-persistence",
       "langgraph-python-quickstart",
       "langgraph-typescript-quickstart",
-      "langsmith-online-eval-engineering",
       "managed-deep-agents"
+    ],
+    "mcp": [
+      "docs-langchain",
+      "reference-langchain"
     ]
   },
-  "agent-evals": {
-    "description": "Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration)",
+  "local-inference": {
+    "description": "Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer.",
     "skills": [
-      "eval-engineering"
+      "hf-mem",
+      "huggingface-local-models",
+      "local-model-serving",
+      "model-recipes",
+      "muse-glimmer",
+      "vllm-bench-serve"
     ]
   },
-  "gradio": {
-    "description": "Building Gradio apps and calling Gradio apps through their API",
+  "mcp": {
+    "description": "Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations.",
     "skills": [
-      "gradio",
-      "hf-gradio"
+      "mcp-servers",
+      "python-mcp-server-generator"
+    ],
+    "mcp": [
+      "fastmcp-docs"
     ]
   },
-  "knowledge-graph": {
-    "description": "Extracting knowledge graphs from text",
+  "openwebui": {
+    "description": "Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment.",
     "skills": [
-      "knowledge-graph-extraction"
+      "frontend-design",
+      "openwebui"
+    ]
+  },
+  "playwright": {
+    "description": "Playwright end-to-end tests: best practices and reading traces.",
+    "skills": [
+      "playwright-best-practices",
+      "playwright-trace"
+    ]
+  },
+  "react": {
+    "description": "React and shadcn/ui front ends, including LangGraph useStream chat UIs.",
+    "skills": [
+      "frontend-design",
+      "shadcn",
+      "vercel-composition-patterns",
+      "vercel-react-best-practices",
+      "web-interface-guidelines"
+    ],
+    "mcp": [
+      "shadcn",
+      "docs-langchain",
+      "reference-langchain"
     ]
   },
   "typescript": {
@@ -48,6 +179,13 @@
     "skills": [
       "migrate-to-shoehorn",
       "setup-ts-deep-modules"
+    ]
+  },
+  "vision": {
+    "description": "Computer vision in Python: OpenCV, and Meta SAM 3 segmentation.",
+    "skills": [
+      "opencv-python",
+      "sam3"
     ]
   }
 }

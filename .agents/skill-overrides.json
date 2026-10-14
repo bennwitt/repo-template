@@ -1,4 +1,114 @@
 {
+  "azure-deploy": {
+    "why": "Upstream is ~840 characters; keep the precondition (a prepared, validated project) and the hand-off to azure-prepare.",
+    "frontmatter": {
+      "description": "Deploy an already-prepared Azure project (it has .azure/deployment-plan.md, validated by azure-validate): azd up or deploy, terraform apply, az deployment, with error recovery. Use for \"deploy\", \"azd up\", \"ship it\" or \"go live\". To create and deploy a new app, use azure-prepare first."
+    },
+    "upstream": "187e0206cdff0e0af4324761a0eca8aed2fc5ab6",
+    "base": {
+      "description": "description: \"Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/deployment-plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application — use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/deployment-plan.md from azure-prepare and validated status from azure-validate. WHEN: \\\"run azd up\\\", \\\"run azd deploy\\\", \\\"execute deployment\\\", \\\"push to production\\\", \\\"push to cloud\\\", \\\"go live\\\", \\\"ship it\\\", \\\"bicep deploy\\\", \\\"terraform apply\\\", \\\"publish to Azure\\\", \\\"launch on Azure\\\". DO NOT USE WHEN: \\\"create and deploy\\\", \\\"build and deploy\\\", \\\"create a new app\\\", \\\"set up infrastructure\\\", \\\"create and deploy to Azure using Terraform\\\" — use azure-prepare for these.\"\n"
+    }
+  },
+  "azure-diagnostics": {
+    "why": "Upstream is ~940 characters listing every symptom; keep the services and the kinds of failure.",
+    "frontmatter": {
+      "description": "Troubleshoot Azure apps in production with AppLens, Azure Monitor and KQL, and resource health: App Service, Container Apps, Functions, AKS, VMs, Event Hubs and Service Bus (high CPU, 503s, crash loops, failed deploys, missing telemetry, connection failures). Use when debugging an Azure issue or finding a root cause."
+    },
+    "upstream": "be90cc1ca9af253befc15b0993c43f7184c8535b",
+    "base": {
+      "description": "description: \"Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, container app 503 or target port mismatch, troubleshoot functions, function telemetry missing or stopped after a config/connection-string change, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, lock renewal during long-running processing, service bus dead letter.\"\n"
+    }
+  },
+  "azure-prepare": {
+    "why": "Upstream is ~720 characters of trigger lists; keep the azd scope and the prepare → validate → deploy routing.",
+    "frontmatter": {
+      "description": "Prepare an Azure Developer CLI (azd) project: azure.yaml, Bicep or Terraform infrastructure, Dockerfiles and .azure/deployment-plan.md. Use when the user wants azd, the project has an azure.yaml, or asks to create and deploy a new app to Azure (azure-validate and azure-deploy follow). Not for deploys without azd."
+    },
+    "upstream": "8128dff4fbb21f774271640fb46882a4496c438e",
+    "base": {
+      "description": "description: \"Prepare azd-based Azure projects for deployment: generates azure.yaml, infrastructure (Bicep/Terraform), and Dockerfiles for the Azure Developer CLI (azd) workflow. USE ONLY when the user explicitly wants to use azd as the deployment tool, or the project already has an azure.yaml file. DO NOT USE FOR: non-azd deployments, Python App Service code-only deploys (use python-appservice-deploy), or cross-cloud migration (use azure-cloud-migrate). WHEN: prepare app for azd, create azure.yaml, set up azd infrastructure, modernize app for Azure with azd, deploy with azd, function app, timer trigger, service bus trigger, event-driven function, managed identity, generate Bicep, generate Terraform, create and deploy to Azure.\"\n"
+    }
+  },
+  "azure-resource-lookup": {
+    "why": "Shorter, same triggers.",
+    "frontmatter": {
+      "description": "List and find Azure resources across subscriptions and resource groups with Azure Resource Graph: inventories, counts by type, tags, orphaned or unattached resources. Use for \"list my web apps\", \"what resources do I have\" and similar lookups; not for changing resources (azure-deploy) or cost analysis."
+    },
+    "upstream": "896c1114e1e6f2b07550037056ed1467ef3e558b",
+    "base": {
+      "description": "description: \"List, find, and show Azure resources across subscriptions or resource groups. Handles prompts like \\\"list the websites in my subscription\\\", \\\"list my web apps\\\", \\\"show my app services\\\", \\\"list virtual machines\\\", \\\"list my VMs\\\", \\\"show storage accounts\\\", \\\"find container apps\\\", and \\\"what resources do I have\\\". USE FOR: list websites, list web apps, list app services, show websites in subscription, resource inventory, find resources by tag, tag analysis, orphaned resource discovery (not for cost analysis), unattached disks, count resources by type, cross-subscription lookup, and Azure Resource Graph queries. DO NOT USE FOR: deploying/changing resources (use azure-deploy), cost optimization (use cost-optimization from the optional azure-cost plugin), or non-Azure clouds.\"\n"
+    }
+  },
+  "azure-storage": {
+    "why": "Shorter, same triggers.",
+    "frontmatter": {
+      "description": "Azure Storage: Blob, File Shares, Queue, Table and Data Lake, access tiers (hot, cool, cold, archive), lifecycle management and SDK use. Use when working with storage accounts, uploading or downloading blobs, or choosing a tier; not for SQL, Cosmos DB, or Event Hubs and Service Bus messaging."
+    },
+    "upstream": "09ab9126fcb8418d1fe34db1937ec51ee03eda60",
+    "base": {
+      "description": "description: \"Azure Storage Services including Blob Storage, File Shares, Queue Storage, Table Storage, and Data Lake. Answers questions about storage access tiers (hot, cool, cold, archive), when to use each tier, and tier comparison. Provides object storage, SMB file shares, async messaging, NoSQL key-value, and big data analytics. Includes lifecycle management. USE FOR: blob storage, file shares, queue storage, table storage, data lake, upload files, download blobs, storage accounts, access tiers, storage tiers, hot cool cold archive, storage tier comparison, when to use storage tiers, lifecycle management, Azure Storage concepts. DO NOT USE FOR: SQL databases, Cosmos DB (use azure-prepare), messaging with Event Hubs or Service Bus (use azure-messaging).\"\n"
+    }
+  },
+  "azure-validate": {
+    "why": "Shorter, same triggers and order.",
+    "frontmatter": {
+      "description": "Check an Azure project before it deploys: azure.yaml, Bicep or Terraform, what-if, RBAC role assignments, managed identity permissions and prerequisites. Use when asked to validate, preflight or check readiness to deploy, or to troubleshoot deployment errors, after azure-prepare and before azure-deploy."
+    },
+    "upstream": "a90886aac989fc59fe8e28155d5d7c66369a669f",
+    "base": {
+      "description": "description: \"Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment.\"\n"
+    }
+  },
+  "docker-build-strategies": {
+    "why": "Shorter, same triggers.",
+    "frontmatter": {
+      "description": "Dockerfiles: multi-stage builds, layer caching and cache mounts, .dockerignore, non-root users and smaller images. Use when writing, reviewing or optimizing a Dockerfile, or when an image is too large or a build too slow."
+    },
+    "upstream": "31892527582a736c05d0be76f1be93d3dc470aef",
+    "base": {
+      "description": "description: Use this skill when writing, reviewing, or optimizing Dockerfiles, even if the user just says their image is too large, their build is slow, or they need to harden a container for production. Covers multi-stage builds, layer caching, .dockerignore, non-root users, and image size optimization.\n"
+    }
+  },
+  "docker-compose-patterns": {
+    "why": "Upstream adds 'even if the user just says…' trigger lists; keep the triggers, shorter.",
+    "frontmatter": {
+      "description": "Docker Compose files (compose.yaml and overrides): service definitions, health checks and depends_on ordering, volumes, networks, environment variables and development overrides. Use when creating, changing or debugging a Compose setup, wiring services together or adding a database to a stack."
+    },
+    "upstream": "f6b9c40fe3d94c41ebcf319ef15a1a189ebf2e22",
+    "base": {
+      "description": "description: Use this skill when creating, modifying, or debugging Docker Compose configurations, even if the user just says they need to wire services together, add a database to their stack, or set up a local development environment with multiple containers. Covers service definitions, health checks, dependency ordering, volumes, networks, environment variables, and development overrides.\n"
+    }
+  },
+  "docker-destructive-guardrails": {
+    "why": "Upstream is ~1,000 characters listing every command; keep the rule and the trigger.",
+    "frontmatter": {
+      "description": "Before running or recommending a Docker command that deletes or irreversibly resets state (rm -f, prune, rmi, volume rm, network rm, builder prune, compose down -v), or on a request to clean up, wipe, reset or start fresh: say exactly what will be lost and get explicit confirmation first."
+    },
+    "upstream": "1586243aa99713b85a35e1e2e4a8a0d8f0b37eda",
+    "base": {
+      "description": "description: Use this skill before running, or recommending, any Docker command that deletes, wipes, resets, or otherwise irreversibly changes state — even if the user just says to \"clean up\", \"clear the cache\", \"start fresh\", \"wipe everything\", \"nuke it\", \"reset\", \"force remove\", or \"tear down\" Docker resources. Covers generic Docker CLI destructive operations not owned by a more specific skill — `docker rm`, `docker rm -f`, `docker container prune`, `docker kill`, `docker system prune`, `docker rmi`/`docker image rm`, `docker image prune -a`, `docker network rm`, `docker network prune`, `docker builder prune`, `docker buildx rm`, `docker context rm`, and standalone (non-Compose) `docker volume rm`/`docker volume prune`. Also indexes destructive commands owned by other Docker skills (Compose, sandbox, Desktop). Core rule — state exactly what will be lost and get explicit confirmation first, except narrow, low-friction Tier 1 container cleanup.\n"
+    }
+  },
+  "entra-app-registration": {
+    "why": "Shorter, same triggers.",
+    "frontmatter": {
+      "description": "Microsoft Entra ID app registrations, OAuth 2.0 and MSAL: registering an app, redirect URIs, API permissions, service principals, and sign-in for SPAs, APIs and console apps. Use when setting up Entra authentication; not for Key Vault secrets or general Azure security."
+    },
+    "upstream": "f7f472ade6f8ce489f3efae8bb8533dd0be6b3f0",
+    "base": {
+      "description": "description: \"Guides Microsoft Entra ID app registration, OAuth 2.0 authentication, and MSAL integration. USE FOR: create app registration, register Azure AD app, configure OAuth, set up authentication, add API permissions, generate service principal, MSAL example, console app auth, Entra ID setup, Azure AD authentication. DO NOT USE FOR: Key Vault secrets (use azure-keyvault-expiration-audit), general Azure resource security guidance.\"\n"
+    }
+  },
+  "fastapi": {
+    "why": "Upstream triggers on any Pydantic model; scope it to FastAPI code, and say which features need which release.",
+    "frontmatter": {
+      "description": "FastAPI best practices: path operations, Annotated dependencies, response models, routers, streaming and Server-Sent Events, serving frontend apps, OpenTelemetry. Use when writing or reviewing FastAPI code. Check the installed version first: SSE needs 0.135+, frontend() 0.138+, native OpenTelemetry 0.142+."
+    },
+    "upstream": "cd15ec9b62547824da01fe8590a6407412bbe188",
+    "base": {
+      "description": "description: FastAPI best practices and conventions. Use when working with FastAPI APIs, Pydantic models, dependencies, streaming responses including Server-Sent Events (SSE), and serving frontend apps. Keeps FastAPI code clean and up to date with the latest features and patterns.\n"
+    }
+  },
   "find-skills": {
     "why": "Upstream triggers on any \"how do I do X\" question; fire only on explicit requests for a skill.",
     "frontmatter": {
@@ -59,6 +169,28 @@
       "description": "description: \"INVOKE THIS SKILL when building ANY retrieval-augmented generation (RAG) system. Covers document loaders, RecursiveCharacterTextSplitter, embeddings (OpenAI), and vector stores (Chroma, FAISS, Pinecone).\"\n"
     }
   },
+  "microsoft-foundry": {
+    "why": "Upstream is ~1,000 characters of triggers that also catch general RBAC, quota and deploy work, and on load it installs an azd extension, edits AGENTS.md and starts billable evaluation jobs: run it only when asked (/microsoft-foundry), with a narrower description.",
+    "frontmatter": {
+      "description": "Microsoft Foundry end to end: prompt and hosted agents (azd ai agent), invoking and evaluating them, agent insights and monitoring, prompt optimization, model deployment and fine-tuning, Foundry projects, RBAC and quota. Use for any Foundry agent or model task; general Azure deploys go to azure-prepare and azure-deploy.",
+      "disable-model-invocation": true
+    },
+    "upstream": "12ca5ad6f6296e04163cbfed55c9ea37dd6d4009",
+    "base": {
+      "description": "description: \"Build, deploy, evaluate, optimize, fine-tune, and manage Microsoft Foundry agents, models, and resources end to end. USE FOR: foundry, azd ai agent, azd provision/deploy, hosted agent scaffold/develop/run/deploy/troubleshoot, prompt agent create, create agent, update agent, add tool to agent, invoke agent, agent.yaml, agent insights, pull agent insights, evaluate agent, batch eval, continuous eval, continuous monitoring, agent CI/CD, optimize prompt, improve prompt, prompt optimizer, optimize agent instructions, Agent Optimizer scaffold, dataset curation from traces, deploy model, model fine-tuning (SFT/DPO/RFT), Foundry project, RBAC, role assignment, permissions, quota, capacity, region, deployment failure, AI Services, create Foundry resource, knowledge index, customize deployment, onboard, availability, training-data, grader, distillation, large file upload. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare).\"\n",
+      "disable-model-invocation": null
+    }
+  },
+  "playwright-best-practices": {
+    "why": "Upstream lists every topic (about 1,100 characters) and loads on every turn in a repository with the pack; keep the triggers.",
+    "frontmatter": {
+      "description": "Playwright test best practices: locators, assertions and waiting, fixtures and page objects, authentication, network mocking, flaky tests, CI and sharding, and API, accessibility, visual, component and Electron testing. Use when writing, reviewing or debugging Playwright tests or their configuration."
+    },
+    "upstream": "0da736253c343081ab8c0cb9802729a707c23196",
+    "base": {
+      "description": "description: Use when writing Playwright tests, fixing flaky tests, debugging failures, implementing Page Object Model, configuring CI/CD, optimizing performance, mocking APIs, handling authentication or OAuth, testing accessibility (axe-core), file uploads/downloads, date/time mocking, WebSockets, geolocation, permissions, multi-tab/popup flows, mobile/responsive layouts, touch gestures, GraphQL, error handling, offline mode, multi-user collaboration, third-party services (payments, email verification), console error monitoring, global setup/teardown, test annotations (skip, fixme, slow), test tags (@smoke, @fast, @critical, filtering with --grep), project dependencies, security testing (XSS, CSRF, auth), performance budgets (Web Vitals, Lighthouse), iframes, component testing, canvas/WebGL, service workers/PWA, test coverage, i18n/localization, Electron apps, or browser extension testing. Covers E2E, component, API, visual, accessibility, security, Electron, and extension testing.\n"
+    }
+  },
   "property-based-testing": {
     "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the long list of cases.",
     "frontmatter": {
@@ -67,6 +199,26 @@
     "upstream": "1cc39d8d8cba5955bf9c8d7c9a2aef348722a55e",
     "base": {
       "description": "description: \"Writes, reviews, and debugs property-based tests — Hypothesis, fast-check, proptest, jqwik, rapid, and Echidna or Medusa for Solidity invariants. Use whenever tests should cover a whole input domain instead of a hand-picked list of examples: encode/decode and serialize/deserialize pairs, parsers, canonicalizers and normalizers, validators, numeric and Decimal types, comparators and sort order, data structures, and smart-contract state invariants. Also use when adding cases to an existing @given, fast-check, or proptest suite, when judging whether existing property tests assert anything real, and when a generator has shrunk a counterexample and you need to tell a wrong property from a genuine bug. Not for coverage-guided binary fuzzing (libFuzzer, AFL), mutation-testing campaigns, static analysis, benchmarking, or end-to-end UI tests.\"\n"
+    }
+  },
+  "python-mcp-server-generator": {
+    "why": "Upstream always starts with uv init; in a repository that already has a uv project (and a src/ and tests/ layout), the server belongs in it.",
+    "frontmatter": {
+      "description": "Create an MCP server in Python with the official SDK v2 (MCPServer): typed tools, in-memory tests, client configuration. In an existing uv project, add it there and keep its src/ and tests/ layout (skip uv init). Use for a new Python MCP server, or to expose functions, an API or a database as MCP tools; not for clients."
+    },
+    "upstream": "2af91072828c27eec9f758262be17745982f7a3e",
+    "base": {
+      "description": "description: 'Use this skill when the user wants to create a new Model Context Protocol (MCP) server in Python. Also use it to expose Python functions, an API, or a database to AI clients as MCP tools. The skill makes a uv project with the MCP Python SDK v2 (MCPServer), typed tools, in-memory tests, and client configuration. Do not use it for an MCP client or for a server in another language.'\n"
+    }
+  },
+  "vercel-react-best-practices": {
+    "why": "Upstream triggers on any React or performance task, but many rules are Next.js-only and need React 19.2+; its compiled AGENTS.md drops or swaps code in five sections, while the rule files are right.",
+    "frontmatter": {
+      "description": "React and Next.js performance rules from Vercel: rendering, re-renders, data fetching, bundle size, server components. Use when writing or reviewing React or Next.js code for performance. Targets Next.js App Router and React 19.2+; read the rules/ files for a topic, not the compiled AGENTS.md."
+    },
+    "upstream": "237988de4a66dd8a71d30a2c24ebe1a86b58d04e",
+    "base": {
+      "description": "description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.\n"
     }
   }
 }

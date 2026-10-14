@@ -24,6 +24,14 @@ packages = ["__PACKAGE_NAME__"]
 """
 
 
+BUILD_SYSTEM = """
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+"""  # src/<package>/ is installed into the environment, so its tests can import it
+
+
 def project_files(context: ProjectContext, *, package: bool = True) -> list[TemplateFile]:
     """Return the complete, rendered Python/uv baseline.
 
@@ -55,11 +63,7 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         readme = "README.md"
         requires-python = ">=__PYTHON_VERSION__"
         dependencies = []
-
-        [build-system]
-        requires = ["uv_build>=0.12.17,<0.13.0"]
-        build-backend = "uv_build"
-
+        __BUILD_SYSTEM__
         [dependency-groups]
         dev = [
             "mypy>=1.18",
@@ -79,7 +83,7 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         [tool.ruff.lint]
         select = ["E", "F", "I", "B", "UP", "SIM"]
         """
-        )
+        ).replace("__BUILD_SYSTEM__\n", BUILD_SYSTEM if package else "")
         + (MYPY_TABLE if package else ""),
         policy="toml_merge",
     )
@@ -239,6 +243,17 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         .claude/
         .codex/
         CLAUDE.local.md
+
+        # Tool state: browser sessions, saved logins and test reports, cloud environment
+        # settings, Foundry datasets
+        .playwright-cli/
+        .playwright-mcp/
+        .auth/
+        test-results/
+        playwright-report/
+        blob-report/
+        .azure/
+        .foundry/
 
         # Editors and operating systems
         .idea/
@@ -487,13 +502,23 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         #!/usr/bin/env sh
         set -eu
 
-        secret_pattern='BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}'
-        secret_pattern="${secret_pattern}|sk-proj-[A-Za-z0-9_-]{40,}|sk-[A-Za-z0-9]{32,}"
-        if git diff --cached --binary | grep -Eq "$secret_pattern"; then
+        secret_pattern='BEGIN ([A-Z0-9]+ )*PRIVATE KEY|(AKIA|ASIA)[0-9A-Z]{16}'
+        secret_pattern="${secret_pattern}|sk-(proj|svcacct|admin|ant)-[A-Za-z0-9_-]{40,}"
+        secret_pattern="${secret_pattern}|sk-[A-Za-z0-9]{32,}|hf_[A-Za-z0-9]{30,}"
+        secret_pattern="${secret_pattern}|LLM[|][0-9]{6,}[|][A-Za-z0-9_-]{16,}"
+        # Only the lines being added (removing a key doesn't stop the commit), marked '>' so a
+        # line starting with '++' isn't taken for a file header, whatever the user's diff
+        # settings (colour, external diff tools, textconv), and in any encoding (LC_ALL=C -a).
+        added=$(git diff --cached --binary -U0 --no-color --no-ext-diff --no-textconv \
+          --output-indicator-new='>' | LC_ALL=C grep -a '^>' || true)
+        if printf '%s\n' "$added" | LC_ALL=C grep -aEq "$secret_pattern"; then
           echo "Possible secret in staged changes; commit stopped." >&2
           exit 1
         fi
 
+        # Git points hooks at this commit's index (and, in a worktree, its repository); tests
+        # that run git in a temporary folder would write there, so the checks run without them
+        unset $(git rev-parse --local-env-vars)
         uv lock --check
         uv run ruff check .
         uv run ruff format --check .

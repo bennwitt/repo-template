@@ -9,9 +9,13 @@ AI-development configuration across machines. Domain terms are defined in `GLOSS
 
 ## Boundaries
 
-The CLI creates and updates Python/uv repository scaffolding and installs global symlinks. It does
+The CLI creates and updates Python/uv repository scaffolding (or, with `--packs-only`, only a
+repository's skill packs and their MCP servers) and installs global symlinks. It does
 not create GitHub repositories, commit or push, copy secrets, or overwrite conflicting
-project-owned files. Only `globals --upstream` (read-only) and `globals --upgrade` use the network;
+project-owned files. `globals` also installs the global MCP servers, through
+`claude mcp add-json --scope user` and into `~/.codex/config.toml`, and `update` writes a
+repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`). Only
+`globals --upstream` (read-only: GitHub, npm and PyPI) and `globals --upgrade` use the network;
 `--upgrade` records the files it vendors (skills and license copies) with `git add -N` and
 leaves committing to you.
 
@@ -44,3 +48,7 @@ leaves committing to you.
   merged into `~/.claude/settings.json` without overwriting entries changed on the machine.
 - Generated repositories never commit `.agents`, `.claude`, `.codex`, `.env`, or private keys.
 - Hooks in the portable settings always exit 0, so they can never block a session.
+- MCP servers are keyless and read-only, defined once in `.agents/mcp-servers.json`, and each
+  denied tool is denied in both clients. repo-template never writes approval settings
+  (`enableAllProjectMcpServers`, `enabledMcpjsonServers`) or Codex `[projects]`, trust,
+  sandbox or approval settings, and an MCP entry changed by hand is kept.

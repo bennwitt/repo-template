@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import difflib
+import http.client
 import json
 import os
 import re
@@ -126,8 +127,9 @@ class GitHub(Protocol):
 
     def blob(self, source: str, sha: str) -> bytes: ...
 
-    def license(self, source: str) -> str | None:
-        """The SPDX id GitHub detects for the repository's license; None if it has none."""
+    def license(self, source: str, ref: str) -> str | None:
+        """The SPDX id GitHub detects for the repository's license at a ref (the commit being
+        vendored, not the default branch); None if it has none."""
         ...
 
     def latest_release(self, source: str) -> str | None:
@@ -170,7 +172,7 @@ class GhApi:
         except urllib.error.HTTPError as exc:
             error = NotFound if exc.code == 404 else NetworkError
             raise error(f"GET {path}: HTTP {exc.code}") from None
-        except (urllib.error.URLError, TimeoutError) as exc:
+        except (OSError, http.client.HTTPException, ValueError) as exc:  # resets, bad JSON
             raise NetworkError(f"GET {path}: {clean(str(exc))}") from None
 
     def commit(self, source: str, ref: str) -> tuple[str, str]:
@@ -197,9 +199,9 @@ class GhApi:
             raise NetworkError(f"blob {sha} of {source} didn't come back base64-encoded")
         return base64.b64decode(data["content"])
 
-    def license(self, source: str) -> str | None:
+    def license(self, source: str, ref: str) -> str | None:
         try:
-            data = self._get(f"repos/{source}/license")
+            data = self._get(f"repos/{source}/license?ref={urllib.parse.quote(ref, safe='')}")
         except NotFound:
             return None
         spdx = (data.get("license") or {}).get("spdx_id")
@@ -353,6 +355,8 @@ class Report:
     review: list[str] = field(default_factory=list)  # removed, moved, licenses, stale records
     new: list[str] = field(default_factory=list)  # informational
     notes: list[str] = field(default_factory=list)
+    pins: list[str] = field(default_factory=list)  # MCP pins with nothing newer to offer
+    pin_changes: int = 0  # of the changed lines, how many are MCP pins (not for --upgrade)
 
     @property
     def exit_code(self) -> int:
@@ -624,6 +628,9 @@ def _safe_path(path: str) -> bool:
     )
 
 
+EMPTY_BLOB = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"  # the Git blob of an empty file
+
+
 def _git_file(path: str) -> bool:
     """A .gitignore, .gitattributes or .gitmodules, in any case and with the trailing dots or
     spaces that Windows ignores."""
@@ -674,7 +681,7 @@ def stage(github: GitHub, upstream: Snapshot, target: Target, into: Path) -> Sta
             )
         if not _safe_path(entry.path):
             raise ValueError(f"{target.name}: unsafe path {clean(entry.path)!r}")
-        if _git_file(entry.path):
+        if _git_file(entry.path) and entry.sha != EMPTY_BLOB:  # an empty one has no rules
             raise ValueError(f"{target.name}: {clean(entry.path)} would change how Git sees it")
         folded = unicodedata.normalize("NFC", entry.path).casefold()
         if folded in seen:
@@ -1108,7 +1115,7 @@ def _fetch_license(
 ) -> _License:
     """A new source: the SPDX license GitHub detects, each license or notice file at its root,
     pinned, and the copyright line it states. Refuses when GitHub can't name the license."""
-    detected = github.license(source)
+    detected = github.license(source, upstream.commit)
     if detected in {None, "NOASSERTION", "NONE", "OTHER"}:
         raise ValueError(f"{source}: GitHub can't name its license; record it in {SOURCES_NAME}")
     entries = upstream.github.tree(source, upstream.root, recursive=False)[0]
@@ -1337,9 +1344,12 @@ def _prepare(
             f"{target.name}: this repository's .gitignore would hide "
             f"{clean(', '.join(ignored[:5]))}, so they couldn't be tracked or checked"
         )
-    source_license = records.sources.get("sources", {}).get(target.source, {})
-    spdx = source_license.get("license", "") if isinstance(source_license, dict) else ""
-    own = own_license(staged.path, text, str(spdx))
+    source_license = records.sources.get("sources", {}).get(target.source)
+    if isinstance(source_license, dict):
+        spdx = str(source_license.get("license", ""))
+    else:  # a new source: what GitHub detects there is what the addition will record for it
+        spdx = github.license(target.source, upstream.commit) or ""
+    own = own_license(staged.path, text, spdx)
     if own and not records.sources.get("skills", {}).get(target.name, {}).get("license"):
         raise ValueError(
             f"{target.name}: carries its own license ({clean(', '.join(own))}); record it as "

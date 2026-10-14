@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "servers": {
+    "azure": {
+      "scope": "pack",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "msmcp-azure==3.0.0",
+        "azmcp",
+        "server",
+        "start",
+        "--read-only"
+      ],
+      "env": {
+        "AZURE_MCP_COLLECT_TELEMETRY": "false",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
+      },
+      "pin": {
+        "registry": "pypi",
+        "package": "msmcp-azure",
+        "version": "3.0.0",
+        "publishedAt": "2026-10-12T22:33:00Z",
+        "pinException": "The microsoft/azure-skills tools target the 3.0 contract (removed parameters are rejected), and 3.0 marks the MySQL and PostgreSQL query tools destructive, so --read-only hides them. Re-pin to a 3.0.x at least 7 days old when there is one (2026-10-19 or later)."
+      },
+      "codex": {
+        "startup_timeout_sec": 120,
+        "tool_timeout_sec": 120
+      },
+      "source": "https://github.com/microsoft/mcp/tree/main/servers/Azure.Mcp.Server",
+      "why": "Read-only Azure tools through az login; each pack picks its namespaces (no Key Vault). App Service settings, which can hold connection strings, are returned only after a consent prompt. The foundry and arm namespaces proxy Microsoft's hosted servers, so which of their tools count as read-only comes from those services at run time, and foundryextensions can call deployed models, which spends tokens. The first start downloads about 62 MB.",
+      "packArgs": [
+        "--namespace"
+      ]
+    },
+    "docs-langchain": {
+      "scope": "pack",
+      "url": "https://docs.langchain.com/mcp",
+      "deny": [
+        "submit_feedback"
+      ],
+      "source": "https://docs.langchain.com/use-these-docs",
+      "why": "Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers."
+    },
+    "fastmcp-docs": {
+      "scope": "pack",
+      "url": "https://gofastmcp.com/mcp",
+      "deny": [
+        "submit_feedback"
+      ],
+      "source": "https://gofastmcp.com",
+      "why": "Searches the FastMCP docs (two read-only tools); its feedback tool is denied."
+    },
+    "gradio-docs": {
+      "scope": "pack",
+      "url": "https://gradio-docs-mcp.hf.space/gradio_api/mcp/",
+      "source": "https://huggingface.co/spaces/gradio/docs-mcp",
+      "why": "Searches and loads the Gradio docs for the gradio pack."
+    },
+    "huggingface": {
+      "scope": "global",
+      "url": "https://huggingface.co/mcp",
+      "codex": {
+        "enabled_tools": [
+          "hub_repo_search",
+          "hub_repo_details",
+          "hf_fs"
+        ]
+      },
+      "source": "https://huggingface.co/settings/mcp",
+      "why": "Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only)."
+    },
+    "microsoft-learn": {
+      "scope": "global",
+      "clients": [
+        "codex"
+      ],
+      "url": "https://learn.microsoft.com/api/mcp",
+      "source": "https://learn.microsoft.com/training/support/mcp",
+      "why": "Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin."
+    },
+    "playwright": {
+      "scope": "global",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.83",
+        "--isolated",
+        "--headless",
+        "--no-webmcp",
+        "--output-dir",
+        "{cache}/playwright-mcp"
+      ],
+      "pin": {
+        "registry": "npm",
+        "package": "@playwright/mcp",
+        "version": "0.0.83",
+        "publishedAt": "2026-09-28T23:19:13Z"
+      },
+      "deny": [
+        "browser_run_code_unsafe"
+      ],
+      "codex": {
+        "startup_timeout_sec": 30
+      },
+      "source": "https://github.com/microsoft/playwright-mcp",
+      "why": "Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile."
+    },
+    "reference-langchain": {
+      "scope": "pack",
+      "url": "https://reference.langchain.com/mcp",
+      "source": "https://docs.langchain.com/use-these-docs",
+      "why": "Looks up LangChain API symbols and their signatures."
+    },
+    "shadcn": {
+      "scope": "pack",
+      "command": "npx",
+      "args": [
+        "-y",
+        "shadcn@4.21.3",
+        "mcp"
+      ],
+      "pin": {
+        "registry": "npm",
+        "package": "shadcn",
+        "version": "4.21.3",
+        "publishedAt": "2026-10-06T06:19:49Z"
+      },
+      "source": "https://ui.shadcn.com/docs/mcp",
+      "why": "Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself)."
+    }
+  }
+}

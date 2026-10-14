@@ -105,9 +105,9 @@ It never links `~/.claude` itself, so credentials, sessions, history, caches and
 
 - `portable`: owned by repo-template and kept current on every machine, entry by entry. Each
   plugin switch, environment variable (telemetry opt-outs) and marketplace, each permission rule
-  (deny reading `.env` and key files at any depth, ask before destructive Docker commands), and
-  each hook, identified by its event, matcher and command (the skill receipts, which always end
-  in `|| true`).
+  (deny reading `.env` and key files at any depth, ask before destructive Docker commands and
+  before `playwright-cli run-code`), and each hook, identified by its event, matcher and command
+  (the skill receipts, which always end in `|| true`).
 - `defaults`: model, effort level, theme, notifications (only machine preferences are accepted
   here). Each one is written once, when a machine doesn't have it, and never again: after that it
   belongs to the machine (`/model` and `/config` write it), even if you remove it.
@@ -206,6 +206,9 @@ playwright-cli install-browser chromium
 # Azure Developer CLI 1.35.0: download azd-linux-amd64.tar.gz from its GitHub release, check
 # its SHA-256 against the release's digest, put azd on PATH, then reuse the az sign-in:
 azd config set auth.useAzCliAuth true
+# the azure and foundry packs' MCP server: fetch its 62 MB wheel once, so the first session
+# doesn't time out waiting for it
+uvx --exclude-newer 2026-10-13T00:00:00Z --from msmcp-azure==3.0.0 azmcp --version
 ```
 
 - `typescript-language-server` 6 needs Node 22.22 or later; 5.3 is the newest that runs on Node
@@ -218,6 +221,10 @@ azd config set auth.useAzCliAuth true
   it (a fine-grained, read-only token is enough) in the environment Claude Code starts in, or
   the plugin fails to connect with "Authorization header is badly formatted". The token never
   goes in this repository.
+- The Azure skills run `az` and `azd`, and the MCP server signs in through `az login`
+  (`AZURE_TOKEN_CREDENTIALS=AzureCliCredential`); nothing stores an Azure key. The server is
+  read-only; deploys, deletes, role assignments, admin consent, credential resets, extension
+  installs and commands that print keys ask first (portable `permissions.ask`).
 
 ### Create a repository
 
@@ -293,6 +300,27 @@ what is already there:
 - every managed file that differs comes up for a decision, because there's no generation hash
   to prove it unedited.
 
+#### Packs only: a repository that isn't Python/uv
+
+A repository with other tooling (a TypeScript app, say) can take just the skill packs and their
+MCP servers:
+
+```bash
+repo-template update /path/to/web-app --packs-only --pack react
+```
+
+That writes a `.repo-template.json` whose `profile` is `packs-only`, the pack links, and the
+packs' MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`): no baseline file, hook path
+or lockfile. Later `update` and `check` follow the recorded profile, so the flag is needed only
+the first time, and `--pack` adds more. `check <repo> --packs-only --pack react` shows what it
+would do first. It is refused for a repository on the Python/uv baseline, and for a
+`.repo-template.json` another tool wrote, which it never overwrites; every refusal comes before
+anything is written. To move a packs-only repository onto the Python/uv baseline later, delete
+its `.repo-template.json` and run `update`.
+Links are made only where Git ignores them: on a machine where `globals` ran, its global excludes
+ignore `.agents/`, `.claude/` and `.codex/` in every repository; elsewhere the repository's own
+`.gitignore` needs them, and `update` reports each link it couldn't make.
+
 ### Exit codes
 
 | Command | `0` | `1` | `2` |
@@ -302,14 +330,15 @@ what is already there:
 | `check` | current (every path, when given several) | something would change, or an error was reported | n/a |
 | `globals` | applied cleanly | an error was reported (for example an override for a missing skill, or settings that aren't valid JSON) | something was preserved: a portable setting changed on this machine (reported once), a link at `~/.claude/settings.json` that repo-template didn't create, or a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
 | `globals --check` | current | a link or setting would change, or something is reported for review (once: a setting changed on this machine, a link repo-template didn't create) | n/a |
-| `globals --upstream` | every vendored skill is current | a skill changed upstream | something needs review: a skill removed or moved upstream, a license text changed, a recorded commit that doesn't hold the vendored folder |
+| `globals --upstream` | every vendored skill and MCP pin is current | a skill changed upstream, or an MCP pin has a newer release past its cooldown | something needs review: a skill removed or moved upstream, a license text changed, a recorded commit that doesn't hold the vendored folder, or an MCP pin that was yanked, is recorded with the wrong time, or is younger than the cooldown without a `pinException` (or no longer needs one) |
 | `globals --upgrade` (`130` if interrupted, after listing what it applied) | applied, or nothing to do | a skill was refused (it failed verification or the scan, or runs commands when it loads), or an error was reported | a skill was left as it is (skipped, kept though gone upstream, or with `--no-input` not named or not ready to apply unattended), or something was preserved while linking |
 
 Every command also exits `1` with a `repo-template: error: …` line when it can't run at all: an
 unknown pack, an unreadable manifest, a non-empty target for `new`, or a manifest from a newer
-version. `globals --upstream` and `--upgrade` exit `3` when GitHub can't be reached or refuses a
-request; a repository, ref or folder that is gone (404) is reported for that skill instead. Exit `2` otherwise means only "preserved for manual review" (and command-line usage
-errors, which print the usage). When a run has both errors and preserved files, errors win and
+version. `globals --upstream` and `--upgrade` exit `3` when GitHub (or, for `--upstream`, npm or
+PyPI) can't be reached or refuses a request; a repository, ref or folder that is gone (404) is
+reported for that skill instead. Exit `2` otherwise means only "preserved for manual review" (and
+command-line usage errors, which print the usage). When a run has both errors and preserved files, errors win and
 the exit is `1`: fix what failed, rerun, then decide the preserved files.
 
 With several paths, `check` prints one line per repository on stdout, such as
@@ -420,6 +449,62 @@ it can't tell which ones belonged to that pack.
 A skill can belong to several packs; it's linked once. A skill lives in `.agents/packs/` exactly
 when some pack lists it, and integrity says which `git mv` to run when that changes.
 
+### MCP servers: global and per pack
+
+`.agents/mcp-servers.json` defines each MCP server once: what it runs (a pinned `npx`/`uvx`
+package or a URL), for which clients, which of its tools are denied, and why it's here. A
+**global** server is installed on every machine by `globals`; a **pack** server comes with a
+pack (`"mcp": [...]` in `.agents/skill-packs.json`, optionally with extra `--flag` values).
+
+The catalog refuses what it can't vouch for:
+
+- a command other than `npx` or `uvx`, and args that don't run the pinned package first
+  (`npx -y package@version`, `uvx --from package==version <tool>`): no `--package`, `--with`
+  or `--index` that would run something else;
+- a pin less than 7 days old without a `pinException` giving the reason: `globals --check`
+  reports it, `globals` and `update` don't install that server, and `--upstream` says when an
+  exception can go;
+- a flag that widens access (`--dangerously-*`, `--insecure-*`, a `--transport` other than
+  stdio, a value after `--read-only`), and pack args other than the flags the server lists in
+  `packArgs` (so a pack can add `--namespace`, never undo `--read-only`);
+- a tenant, subscription or client ID (a GUID, `AZURE_SUBSCRIPTION_ID`, `--subscription`):
+  each machine has its own, through `az login` or its environment;
+- anything that looks like a secret: env names like `*_TOKEN`, `*_PAT` or `*AUTH*`, secret-like
+  flags or values in args (pack args included), and credentials or a query in a URL. Servers
+  are keyless and read-only.
+
+| Where | Claude Code | Codex |
+| --- | --- | --- |
+| global | user scope (`~/.claude.json`), through `claude mcp add-json --scope user` | `~/.codex/config.toml` |
+| pack | the repository's `.mcp.json` (committed; Claude Code asks before it starts one) | the repository's `.codex/config.toml` (ignored by Git; Codex reads it only in a project you trust) |
+
+- Each client gets its own rendering. Claude Code gets `${NAME:-default}` for each default, so
+  a machine can override it by exporting `NAME`; Codex expands nothing, so it gets the value.
+- A pinned `npx` server runs with `npm_config_before` set to its pin's date and an npm cache of
+  its own, so the 7-day cooldown covers its dependencies on a first install too.
+- A denied tool is denied in both clients: as `mcp__*__<tool>` in the portable settings (the
+  catalog check fails if one is missing) and as `disabled_tools` in Codex.
+- repo-template owns each entry by name and by a digest of what it wrote, recorded in
+  `~/.repo-template/globals-state.json` for global servers and under `mcp_servers` in a
+  repository's `.repo-template.json` for pack servers. An entry changed by hand is kept and
+  reported once, one removed stays removed, and one no longer in the catalog (or that no pack
+  uses) is removed only if it is unchanged. In a repository the kept and removed entries are
+  recorded under `mcp_kept`; delete a name there to have repo-template manage it again. A
+  config file that is gone (a new machine, a reset) starts fresh. `--check` reads the configs
+  and runs nothing.
+- In Codex's file, only a `[mcp_servers.<name>]` table is taken over; the same server written
+  as an inline table or dotted keys is left as it is. A symlinked `~/.codex/config.toml` is
+  written through. With `CLAUDE_CONFIG_DIR` set elsewhere, Claude Code's servers are skipped:
+  it wouldn't read the deny rules in `~/.claude/settings.json`.
+- An entry repo-template doesn't own that runs a server this client gets from it globally (the
+  same URL or package) gets a note with the command that removes it.
+- `.mcp.json` and `.codex/config.toml` can be taken over by listing them in `project_owned`. A
+  `.codex` that is a link out of the repository is left alone, and while a listed pack isn't
+  defined (renamed, or not pulled yet) neither file changes.
+
+The `playwright` server replaces the `playwright` plugin, which the portable settings now turn
+off: the plugin runs `@playwright/mcp@latest` with a persistent profile.
+
 ### Catalog: every skill, where it applies, and where it comes from
 
 Generated by `repo-template globals` from the lock, the packs and `.agents/skill-sources.json`
@@ -434,36 +519,67 @@ itself.
 | Pack | What it's for | Skills |
 | --- | --- | --- |
 | `agent-evals` | Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration) | `eval-engineering` |
-| `gradio` | Building Gradio apps and calling Gradio apps through their API | `gradio`, `hf-gradio` |
+| `azure` | Azure: prepare, validate and deploy with azd, diagnostics, resource lookup, Storage, App Insights, Entra app registration and azure-identity. | `appinsights-instrumentation`, `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`, `azure-resource-lookup`, `azure-storage`, `azure-validate`, `entra-app-registration` |
+| `fastapi` | FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph. | `fastapi-services` |
+| `foundry` | Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools. | `azure-ai`, `azure-ai-projects-ts`, `foundry-langchain`, `microsoft-foundry` |
+| `gradio` | Building Gradio apps and calling Gradio apps through their API | `frontend-design`, `gradio`, `hf-gradio` |
 | `knowledge-graph` | Extracting knowledge graphs from text | `knowledge-graph-extraction` |
-| `langchain` | LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills) | `deep-agents-core`, `deep-agents-memory`, `deep-agents-orchestration`, `deepagents-python-quickstart`, `deepagents-typescript-quickstart`, `ecosystem-primer`, `langchain-dependencies`, `langchain-fundamentals`, `langchain-middleware`, `langchain-python-quickstart`, `langchain-rag`, `langchain-typescript-quickstart`, `langgraph-cli`, `langgraph-fundamentals`, `langgraph-human-in-the-loop`, `langgraph-persistence`, `langgraph-python-quickstart`, `langgraph-typescript-quickstart`, `langsmith-online-eval-engineering`, `managed-deep-agents` |
+| `langchain` | LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills) | `deep-agents-core`, `deep-agents-memory`, `deep-agents-orchestration`, `deepagents-python-quickstart`, `deepagents-typescript-quickstart`, `ecosystem-primer`, `langchain-dependencies`, `langchain-fundamentals`, `langchain-middleware`, `langchain-python-quickstart`, `langchain-rag`, `langchain-typescript-quickstart`, `langgraph-cli`, `langgraph-fundamentals`, `langgraph-human-in-the-loop`, `langgraph-persistence`, `langgraph-python-quickstart`, `langgraph-typescript-quickstart`, `managed-deep-agents` |
+| `local-inference` | Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer. | `hf-mem`, `huggingface-local-models`, `local-model-serving`, `model-recipes`, `muse-glimmer`, `vllm-bench-serve` |
+| `mcp` | Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations. | `mcp-servers`, `python-mcp-server-generator` |
+| `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
+| `playwright` | Playwright end-to-end tests: best practices and reading traces. | `playwright-best-practices`, `playwright-trace` |
+| `react` | React and shadcn/ui front ends, including LangGraph useStream chat UIs. | `frontend-design`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
 | `typescript` | TypeScript repositories (deep-module boundaries, shoehorn test data) | `migrate-to-shoehorn`, `setup-ts-deep-modules` |
+| `vision` | Computer vision in Python: OpenCV, and Meta SAM 3 segmentation. | `opencv-python`, `sam3` |
 
 | Skill | Where | Source | License | Notes |
 | --- | --- | --- | --- | --- |
-| `ask-matt` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/ask-matt) | MIT | runs only as `/ask-matt` |
-| `claude-handoff` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/claude-handoff) | MIT | runs only as `/claude-handoff` |
-| `code-review` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/engineering/code-review) | MIT |  |
+| `appinsights-instrumentation` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/appinsights-instrumentation) | MIT |  |
+| `ask-matt` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/ask-matt) | MIT | runs only as `/ask-matt` |
+| `azure-ai` | pack `foundry` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-ai) | MIT |  |
+| `azure-ai-projects-ts` | pack `foundry` | [microsoft/skills](https://github.com/microsoft/skills/tree/fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb/.github/plugins/azure-sdk-typescript/skills/azure-ai-projects-ts) | MIT |  |
+| `azure-deploy` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-deploy) | MIT | description overridden |
+| `azure-diagnostics` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-diagnostics) | MIT | description overridden |
+| `azure-identity-py` | pack `azure` | [microsoft/skills](https://github.com/microsoft/skills/tree/fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb/.github/plugins/azure-sdk-python/skills/azure-identity-py) | MIT |  |
+| `azure-identity-ts` | pack `azure` | [microsoft/skills](https://github.com/microsoft/skills/tree/fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb/.github/plugins/azure-sdk-typescript/skills/azure-identity-ts) | MIT |  |
+| `azure-prepare` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-prepare) | MIT | description overridden |
+| `azure-resource-lookup` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-resource-lookup) | MIT | description overridden |
+| `azure-storage` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-storage) | MIT | description overridden |
+| `azure-validate` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-validate) | MIT | description overridden |
+| `claude-handoff` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/in-progress/claude-handoff) | MIT | runs only as `/claude-handoff` |
+| `code-review` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/code-review) | MIT |  |
 | `codebase-design` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/codebase-design) | MIT |  |
+| `compose-gpu-serving` | global | this repository | MIT |  |
 | `deep-agents-core` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/deep-agents-core) | MIT |  |
 | `deep-agents-memory` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/deep-agents-memory) | MIT |  |
 | `deep-agents-orchestration` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/deep-agents-orchestration) | MIT |  |
 | `deepagents-python-quickstart` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/deepagents-python-quickstart) | MIT |  |
 | `deepagents-typescript-quickstart` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/deepagents-typescript-quickstart) | MIT |  |
-| `diagnosing-bugs` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/diagnosing-bugs) | MIT |  |
+| `diagnosing-bugs` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/diagnosing-bugs) | MIT |  |
+| `docker-build-strategies` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-build-strategies) | Apache-2.0 | description overridden |
+| `docker-compose-patterns` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-compose-patterns) | Apache-2.0 | description overridden |
+| `docker-destructive-guardrails` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-destructive-guardrails) | Apache-2.0 | description overridden |
 | `domain-modeling` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/domain-modeling) | MIT |  |
 | `ecosystem-primer` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/9feb8147562f0f186b081b343e5ccaf53e9e7a18/config/skills/ecosystem-primer) | MIT |  |
+| `entra-app-registration` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/entra-app-registration) | MIT | description overridden |
 | `eval-engineering` | pack `agent-evals` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7/config/skills/eval-engineering) | MIT |  |
+| `fastapi` | global | [fastapi/fastapi](https://github.com/fastapi/fastapi/tree/f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007/fastapi/.agents/skills/fastapi) | MIT | description overridden |
+| `fastapi-services` | pack `fastapi` | this repository | MIT |  |
 | `find-skills` | global | [vercel-labs/skills](https://github.com/vercel-labs/skills/tree/773fb2c7bbf16781670a3520affc4abd0c6151ae/skills/find-skills) | MIT | description overridden |
+| `foundry-langchain` | pack `foundry` | this repository | MIT |  |
+| `frontend-design` | pack `gradio`, pack `openwebui`, pack `react` | [anthropics/skills](https://github.com/anthropics/skills/tree/dbd4588f9e1033efb41dad4bef2f7947c8993d44/skills/frontend-design) | Apache-2.0 |  |
 | `git-guardrails-claude-code` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) | MIT |  |
 | `github-actions-hardening` | global | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/df566343b3a685e821f8ebe8ea70a2a8eb8b857b/skills/github-actions-hardening) | MIT | description overridden |
 | `gradio` | pack `gradio` | [gradio-app/gradio](https://github.com/gradio-app/gradio/tree/b79748e4801ad9a73c6839a637a68dcad9a366b3/.agents/skills/gradio) | Apache-2.0 |  |
 | `grill-me` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/fcf0071560d32913c9d4f820e0d7ca467c881619/skills/productivity/grill-me) | MIT | runs only as `/grill-me` |
 | `grill-with-docs` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/447ca70872026d5b79d6073a546dac082117fed7/skills/engineering/grill-with-docs) | MIT | runs only as `/grill-with-docs` |
-| `grilling` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/85f83d3fde1d3a90d5c9a657f6998c79a6c37308/skills/productivity/grilling) | MIT |  |
-| `handoff` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d28dfdc39beadc3142a33359b5cfa4765dcbd0bc/skills/productivity/handoff) | MIT | runs only as `/handoff` |
+| `grilling` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/grilling) | MIT |  |
+| `handoff` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/handoff) | MIT | runs only as `/handoff` |
 | `hf-gradio` | pack `gradio` | [gradio-app/gradio](https://github.com/gradio-app/gradio/tree/3cae4986c69fc851a4b18c340f7cbeb9dcdee410/.agents/skills/hf-gradio) | Apache-2.0 |  |
-| `implement` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/engineering/implement) | MIT | runs only as `/implement` |
+| `hf-mem` | pack `local-inference` | [huggingface/skills](https://github.com/huggingface/skills/tree/c3ff942be3e07116b475253f0a8fc4f54682c1a8/skills/hf-mem) | Apache-2.0 |  |
+| `huggingface-local-models` | pack `local-inference` | [huggingface/skills](https://github.com/huggingface/skills/tree/c3ff942be3e07116b475253f0a8fc4f54682c1a8/skills/huggingface-local-models) | Apache-2.0 |  |
+| `implement` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/implement) | MIT | runs only as `/implement` |
 | `implement-spec` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/c612defa9e5cf9372262d0279eb124993ba77b71/skills/engineering/implement-spec) | MIT | runs only as `/implement-spec` |
 | `improve-codebase-architecture` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/improve-codebase-architecture) | MIT | runs only as `/improve-codebase-architecture` |
 | `knowledge-graph-extraction` | pack `knowledge-graph` | this repository | MIT | derived from [anthropics/claude-cookbooks](https://github.com/anthropics/claude-cookbooks/tree/ef99c70e2e6d5e4f5e227ee6745df32bcac72fdc/capabilities/knowledge_graph) |
@@ -479,40 +595,68 @@ itself.
 | `langgraph-persistence` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/488e510f880b8c4c6994fab37736faa7d1971d94/config/skills/langgraph-persistence) | MIT |  |
 | `langgraph-python-quickstart` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/langgraph-python-quickstart) | MIT |  |
 | `langgraph-typescript-quickstart` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/langgraph-typescript-quickstart) | MIT |  |
-| `langsmith-online-eval-engineering` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/6732f69c053c6e09e630970f557ae5b46e598a83/config/skills/langsmith-online-eval-engineering) | MIT |  |
+| `local-model-serving` | pack `local-inference` | this repository | MIT |  |
 | `loop-me` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/loop-me) | MIT | runs only as `/loop-me` |
-| `managed-deep-agents` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/bd7c43d921418b468d38bf0b59788ea54ed103f4/config/skills/managed-deep-agents) | MIT |  |
+| `managed-deep-agents` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/16a992f09ab3ccfb642dd4f08d350d833d1990bf/config/skills/managed-deep-agents) | MIT |  |
+| `mcp-servers` | pack `mcp` | this repository | MIT |  |
+| `microsoft-foundry` | pack `foundry` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/microsoft-foundry) | MIT | description, disable-model-invocation overridden; runs only as `/microsoft-foundry` |
 | `migrate-to-shoehorn` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/misc/migrate-to-shoehorn) | MIT |  |
+| `model-recipes` | pack `local-inference` | [vllm-project/vllm](https://github.com/vllm-project/vllm/tree/bb1438a93f8873c30176d93267d0647f8e4c7b83/.agents/skills/model-recipes) | Apache-2.0 |  |
+| `muse-glimmer` | pack `local-inference` | this repository | MIT |  |
+| `opencv-python` | pack `vision` | this repository | MIT |  |
+| `openwebui` | pack `openwebui` | this repository | MIT |  |
+| `playwright-best-practices` | pack `playwright` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices) | MIT | description overridden |
+| `playwright-cli` | global | [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli/tree/b85c7a736bb473bf55b584e54a09ffa698d6d871/skills/playwright-cli) | Apache-2.0 |  |
+| `playwright-trace` | pack `playwright` | [microsoft/playwright](https://github.com/microsoft/playwright/tree/606ecd8b34bac100db32561b6278ffd76e5eb3cd/packages/playwright-core/src/tools/skills/playwright-trace) | Apache-2.0 |  |
 | `pr` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/pr) | MIT |  |
 | `property-based-testing` | global | [trailofbits/skills](https://github.com/trailofbits/skills/tree/123037ec8aed26f0d86327cc39137ee5043e5deb/plugins/property-based-testing/skills/property-based-testing) | CC-BY-SA-4.0 | description overridden |
 | `prototype` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/prototype) | MIT |  |
+| `python-mcp-server-generator` | pack `mcp` | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8/skills/python-mcp-server-generator) | MIT | description overridden |
 | `repo-template` | global | this repository | MIT |  |
 | `research` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/research) | MIT |  |
-| `resolving-merge-conflicts` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/resolving-merge-conflicts) | MIT |  |
 | `retro` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/a7d038f6bf7f01b516408e95e2fb56e0b338fa6f/skills/engineering/retro) | MIT | runs only as `/retro` |
 | `ruff` | global | [astral-sh/claude-code-plugins](https://github.com/astral-sh/claude-code-plugins/tree/f3ce88a7ba830f53afd6d944c1d0278ed318e142/plugins/astral/skills/ruff) | MIT OR Apache-2.0 |  |
-| `setup-matt-pocock-skills` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/setup-matt-pocock-skills) | MIT | runs only as `/setup-matt-pocock-skills` |
+| `sam3` | pack `vision` | this repository | MIT |  |
+| `setup-matt-pocock-skills` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/setup-matt-pocock-skills) | MIT | runs only as `/setup-matt-pocock-skills` |
 | `setup-ts-deep-modules` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/setup-ts-deep-modules) | MIT | runs only as `/setup-ts-deep-modules` |
+| `shadcn` | pack `react` | this repository | MIT | derived from [shadcn-ui/ui](https://github.com/shadcn-ui/ui/tree/d51870f66fd13cc975d82ecbb9eace3cff066878/skills/shadcn) |
 | `skill-scanner` | global | [getsentry/skills](https://github.com/getsentry/skills/tree/d18b7aa8ba878354e5c348310230e652f7690f9c/skills/skill-scanner) | Apache-2.0 |  |
 | `supply-chain-risk-auditor` | global | [trailofbits/skills](https://github.com/trailofbits/skills/tree/123037ec8aed26f0d86327cc39137ee5043e5deb/plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor) | CC-BY-SA-4.0 |  |
-| `tdd` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/tdd) | MIT |  |
-| `teach` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/teach) | MIT | runs only as `/teach` |
+| `tdd` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/tdd) | MIT |  |
+| `teach` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/teach) | MIT | runs only as `/teach` |
 | `to-questionnaire` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/to-questionnaire) | MIT | runs only as `/to-questionnaire` |
 | `to-spec` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/engineering/to-spec) | MIT | runs only as `/to-spec` |
-| `to-tickets` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/to-tickets) | MIT | runs only as `/to-tickets` |
+| `to-tickets` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/to-tickets) | MIT | runs only as `/to-tickets` |
 | `triage` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/triage) | MIT | runs only as `/triage` |
 | `uv` | global | [astral-sh/claude-code-plugins](https://github.com/astral-sh/claude-code-plugins/tree/f3ce88a7ba830f53afd6d944c1d0278ed318e142/plugins/astral/skills/uv) | MIT OR Apache-2.0 |  |
+| `vercel-composition-patterns` | pack `react` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/composition-patterns) | MIT |  |
+| `vercel-react-best-practices` | pack `react` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/react-best-practices) | MIT | description overridden |
+| `vllm-bench-serve` | pack `local-inference` | [vllm-project/vllm-skills](https://github.com/vllm-project/vllm-skills/tree/c99623410c1531148ff9b39fe1dcb27efbf4bf23/plugins/vllm-skills/skills/vllm-bench-serve) | Apache-2.0 |  |
 | `wait-what` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/productivity/wait-what) | MIT | runs only as `/wait-what` |
-| `wayfinder` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/wayfinder) | MIT | runs only as `/wayfinder` |
-| `wizard` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/wizard) | MIT |  |
+| `wayfinder` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wayfinder) | MIT | runs only as `/wayfinder` |
+| `web-interface-guidelines` | pack `react` | this repository | MIT | derived from [vercel-labs/web-interface-guidelines](https://github.com/vercel-labs/web-interface-guidelines/tree/434b7f91364665f2f733b310ec54809bf8f37937/command.md) |
+| `wizard` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wizard) | MIT |  |
 | `writing-beats` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/writing-beats) | MIT | runs only as `/writing-beats` |
 | `writing-for-agents` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/writing-for-agents) | MIT |  |
 | `writing-fragments` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/in-progress/writing-fragments) | MIT | runs only as `/writing-fragments` |
 | `writing-shape` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/in-progress/writing-shape) | MIT | runs only as `/writing-shape` |
+
+| MCP server | Where | Clients | Runs | Denied tools | Why |
+| --- | --- | --- | --- | --- | --- |
+| `azure` | pack `azure`, pack `foundry` | claude, codex | `uvx msmcp-azure@3.0.0` |  | Read-only Azure tools through az login; each pack picks its namespaces (no Key Vault). App Service settings, which can hold connection strings, are returned only after a consent prompt. The foundry and arm namespaces proxy Microsoft's hosted servers, so which of their tools count as read-only comes from those services at run time, and foundryextensions can call deployed models, which spends tokens. The first start downloads about 62 MB. |
+| `docs-langchain` | pack `langchain`, pack `react` | claude, codex | https://docs.langchain.com/mcp | `submit_feedback` | Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers. |
+| `fastmcp-docs` | pack `mcp` | claude, codex | https://gofastmcp.com/mcp | `submit_feedback` | Searches the FastMCP docs (two read-only tools); its feedback tool is denied. |
+| `gradio-docs` | pack `gradio` | claude, codex | https://gradio-docs-mcp.hf.space/gradio_api/mcp/ |  | Searches and loads the Gradio docs for the gradio pack. |
+| `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |
+| `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |
+| `playwright` | global | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. |
+| `reference-langchain` | pack `langchain`, pack `react` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
+| `shadcn` | pack `react` | claude, codex | `npx shadcn@4.21.3` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
 <!-- <<< repo-template catalog -->
 
-Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
-the portable settings in `.agents/claude-settings.json` rather than vendored here.
+Claude Code plugins (skill-creator, GitHub, hookify, and others) are enabled through the
+portable settings in `.agents/claude-settings.json` rather than vendored here; the `playwright`
+plugin is off, replaced by the pinned `playwright` MCP server.
 
 ### Skill receipts
 
@@ -621,7 +765,14 @@ For each skill, `--upgrade`:
 
 `--upstream` also confirms each recorded commit holds the vendored folder, says when upstream
 changed a field an override replaces, and, for a skill pinned to a tag (not a branch), when a
-newer release is out, with the command that re-pins it. A repository that is itself one skill (`SKILL.md` at its root) can't be vendored yet.
+newer release is out, with the command that re-pins it. A repository that is itself one skill
+(`SKILL.md` at its root) can't be vendored yet.
+
+It also checks each MCP server's pin (`.agents/mcp-servers.json`) against npm or PyPI. A newer
+final release at least 7 days old is reported as a change, to re-pin with its `publishedAt`; a
+younger one is a note with the day its cooldown ends. Pre-releases, and releases yanked or
+deprecated, are never offered. A pin younger than 7 days needs a `pinException` giving the
+reason, and `--upstream` says when it no longer does.
 
 A weekly workflow (`.github/workflows/catalog-drift.yml`) runs `globals --upstream` with a
 read-only token and fails when something changed, so drift shows up without anyone looking.
@@ -660,15 +811,21 @@ and follow `writing-for-agents`.
 - Global files are backed up before being replaced with links.
 - `~/.claude` is never linked wholesale: individual skills are linked, and the portable settings
   are merged into `~/.claude/settings.json`, entry by entry, keeping changes made on the machine.
-- Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/` and
-  `.codex/`. The pre-commit hook blocks staged private keys and AWS- or OpenAI-style keys.
+- Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/`,
+  `.codex/`, Playwright's session, login, trace and report folders, `.azure/` and `.foundry/`; a
+  repository's `.codex/config.toml` is written only where Git ignores it. The pre-commit hook
+  blocks added lines holding a private-key header, or an AWS, OpenAI, Anthropic, Hugging Face or
+  Meta API key in its usual form; it doesn't look inside files Git treats as binary, or at a
+  key split across lines. Its checks run without Git's repository variables, so a commit from a
+  worktree can't have tests write into the repository.
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
 
 ## Current limitations
 
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
-- Python/uv is the only project profile.
+- Python/uv is the only full project profile; any other repository can take packs only
+  (`update --packs-only`).
 
 ## License
 

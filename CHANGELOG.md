@@ -1,5 +1,129 @@
 # Changelog
 
+## 0.5.2 - 2026-10-14
+
+- Skills refreshed from upstream: `ask-matt`, `claude-handoff`, `code-review`, `diagnosing-bugs`,
+  `grilling`, `handoff`, `implement`, `managed-deep-agents`, `setup-matt-pocock-skills`, `tdd`,
+  `teach`, `to-tickets`, `wayfinder`, `wizard`.
+- Skills removed (gone upstream): `langsmith-online-eval-engineering`, `resolving-merge-conflicts`.
+- Skills added from upstream: `appinsights-instrumentation`, `azure-ai`, `azure-ai-projects-ts`,
+  `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`,
+  `azure-resource-lookup`, `azure-storage`, `azure-validate`, `docker-build-strategies`,
+  `docker-compose-patterns`, `docker-destructive-guardrails`, `entra-app-registration`, `fastapi`,
+  `frontend-design`, `hf-mem`, `huggingface-local-models`, `microsoft-foundry`, `model-recipes`,
+  `playwright-best-practices`, `playwright-cli`, `playwright-trace`, `python-mcp-server-generator`,
+  `vercel-composition-patterns`, `vercel-react-best-practices`, `vllm-bench-serve`.
+- New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
+  healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
+- Pack `react`: `frontend-design` (anthropics/skills, Apache-2.0) and a `shadcn` skill derived
+  from shadcn-ui/ui at `shadcn@4.21.3` (the CLI pinned, nothing run when it loads, no icon
+  images), with the `shadcn` MCP server (`shadcn@4.21.3`, read-only) and the LangChain docs
+  servers for `useStream` UIs. Vercel's React skills aren't vendored: vercel-labs/agent-skills
+  has no license file.
+- Pack `playwright`: `playwright-best-practices` (currents-dev, MIT, description overridden) and
+  `playwright-trace` (microsoft/playwright v1.64.0, Apache-2.0).
+- Packs `azure` (azure-prepare, -validate, -deploy, -diagnostics, -resource-lookup,
+  -storage, appinsights-instrumentation, entra-app-registration, azure-identity-py and -ts) and
+  `foundry` (microsoft-foundry, azure-ai, azure-ai-projects-ts), from microsoft/azure-skills and
+  microsoft/skills (MIT). Long descriptions are overridden; `microsoft-foundry` runs only when
+  asked (`/microsoft-foundry`), since on load it installs an azd extension, edits AGENTS.md and
+  starts billable evaluations. Both packs share the `azure` MCP server: Azure MCP 3.0.0 through
+  `uvx`, `--read-only`, with each pack's namespaces (no Key Vault), signing in through az
+  login. 3.0.0 is under 7 days old, with a recorded `pinException`. Packs may add only
+  `--namespace` (`packArgs`), so none can undo `--read-only`; `AZURE_TOKEN_CREDENTIALS` may only
+  name a credential type. App Service settings are returned only after a consent prompt; the
+  `foundry` and `arm` namespaces proxy Microsoft's hosted servers, whose read-only marking comes
+  from those services, and `foundryextensions` can call deployed models (spending tokens).
+- Pack `react` adds `vercel-react-best-practices` and `vercel-composition-patterns`
+  (vercel-labs/agent-skills). That repository has no license file; its README says MIT, so the
+  README is the recorded license text and a change to it is flagged for review. The React
+  description is scoped to Next.js App Router and React 19.2+, and points to the rule files
+  rather than the compiled AGENTS.md, which drops code in five sections.
+- New derived skill `web-interface-guidelines` in pack `react`: Vercel's Web Interface
+  Guidelines (vercel-labs/web-interface-guidelines, MIT) copied at a fixed commit. The upstream
+  `web-design-guidelines` skill fetched them from `main` at every review, so it isn't vendored.
+- Pack `local-inference`: `model-recipes` (vllm-project/vllm), `vllm-bench-serve`
+  (vllm-project/vllm-skills), `hf-mem` and `huggingface-local-models` (huggingface/skills), all
+  Apache-2.0, and two local skills: `local-model-serving` (vLLM, llama.cpp and Ollama on a
+  workstation GPU: pinned images, parsers, Ampere quantization, co-resident memory, exposure,
+  clients and Claude Code against a local model) and `muse-glimmer` (Meta Muse Glimmer on vLLM:
+  sampling, reasoning strength, tool calls, LangChain, Open WebUI and Claude Code).
+- Pack `vision`: local skills `opencv-python` (one headless wheel, colour order, dtypes and
+  EXIF at every hand-off, video I/O, servers, tests) and `sam3` (Meta SAM 3 and 3.1: hosted,
+  transformers and native paths, prompts, coordinates, GPU memory, the SAM License).
+- `compose-gpu-serving`: vLLM's `--gpu-memory-utilization` default is 0.92 (v0.29 to v0.31).
+- Packs `fastapi` (local `fastapi-services`: tests, lifespan, auth with PyJWT and pwdlib,
+  CORS, Open WebUI tool servers, an OpenAI-compatible streaming endpoint in front of a graph),
+  `mcp` (local `mcp-servers`, and `python-mcp-server-generator` from github/awesome-copilot with
+  its description overridden; MCP server `fastmcp-docs`, its feedback tool denied) and
+  `openwebui` (local `openwebui`: an agent as an OpenAI-compatible model, Pipes, Tools, Filters,
+  tool servers, deployment; and `frontend-design`).
+- Pack `foundry` adds the local `foundry-langchain` (LangChain, LangGraph and Deep Agents on
+  Foundry, keyless); pack `gradio` adds `frontend-design`. The `microsoft-foundry` description
+  no longer mentions agent.yaml, which the current azd agent extension refuses.
+- `langgraph-decision-models` (langchain-ai/langchain-skills) is recorded as ignored: it routes
+  through LangSmith Gateway or the TypeSafe API, and LangSmith is out of scope here.
+- The `azure` plugin is off (the packs replace it: about 16,000 characters of descriptions in
+  every session, a telemetry hook, and an MCP server that runs `@azure/mcp@latest`).
+- Portable settings ask before Azure deploys, deletes and purges, role assignments, admin
+  consent, credential resets, key listings, `az`/`azd` extension installs, `terraform
+  apply`/`destroy` and `kubectl debug`/`delete`/`drain`.
+- `globals --upgrade` accepts an empty `.gitignore` in a skill (microsoft-foundry has one).
+- Portable settings ask before `playwright-cli run-code` (it runs code outside the page).
+- `globals --upgrade` accepts a new source's skill whose `license` field states the license
+  GitHub detects for the repository (docker/skills does), instead of refusing it.
+- Codex 0.160.1 shows about 40,000 characters of skills before it truncates; a test keeps the
+  global skills to half of that.
+- Generated `.gitignore` ignores `.playwright-cli/`, `.playwright-mcp/`, `.auth/`,
+  `test-results/`, `playwright-report/` and `blob-report/` (browser sessions, saved logins,
+  traces and reports), `.azure/` (azd environment settings) and `.foundry/` (the
+  microsoft-foundry skill's copies of production conversations and connection strings); the
+  global excludes that `globals` writes add the two Playwright CLI folders.
+- The pre-commit secret scan also stops Hugging Face tokens (`hf_…`), Meta API keys
+  (`LLM|<id>|<secret>`), more private-key headers, temporary AWS keys (`ASIA…`) and more OpenAI
+  and Anthropic key forms. It looks only at lines being added, so a commit that removes a key
+  isn't stopped, and it reads the diff the same way whatever the user's diff settings (colour,
+  external diff tools, textconv) or the file's encoding.
+- `update` adds the baseline's `[build-system]` (uv_build) to a `pyproject.toml` without one when
+  the code is in `src/<package>/`, unless `[tool.uv] package = false`: repositories generated
+  before the baseline had it couldn't install their package, so their own tests failed.
+- The pre-commit hook runs `uv lock`, Ruff, mypy and pytest without Git's repository variables
+  (`git rev-parse --local-env-vars`). Git sets them for hooks, and in a worktree a test that ran
+  git in a temporary folder wrote into the repository being committed instead (it happened here:
+  `core.bare` and a test user landed in the shared config). The test suite strips them too.
+
+## 0.5.1 - 2026-10-14
+
+- `update --packs-only --pack <name>` adopts a repository that isn't Python/uv for its skill packs
+  and their MCP servers alone: its manifest records the `packs-only` profile, which later `update`
+  and `check` follow, and no baseline file, hook path or lockfile is written.
+- `globals --upstream` checks each MCP pin against npm or PyPI: a newer final release past the
+  7-day cooldown is a change, a younger one a note; a yanked pin, a wrong `publishedAt`, a pin
+  inside its cooldown without a `pinException`, and an exception no longer needed are for review.
+- `check` takes `--packs-only` and `--pack`, to preview an adoption. Every refusal (a Python/uv
+  or foreign manifest, a newer version, a missing directory) now comes before anything is
+  written, and a `.repo-template.json` with no known profile is never overwritten.
+
+## 0.5.0 - 2026-10-14
+
+- MCP servers: `.agents/mcp-servers.json` defines each server once (pinned `npx`/`uvx` package or
+  URL, clients, denied tools, why). `globals` installs the global ones in Claude Code's user scope
+  (`claude mcp add-json`) and `~/.codex/config.toml`; a pack's servers go into the repository's
+  `.mcp.json` and an ignored `.codex/config.toml`. Claude Code gets `${NAME:-default}`, Codex
+  literal values. Entries are owned by name and digest (in `globals-state.json` and the manifest's
+  new `mcp_servers` and `mcp_kept`): an entry changed by hand is kept and reported once, and one
+  removed stays removed. A denied tool is denied in both clients. The catalog accepts only `npx`
+  and `uvx` commands that run their pin first, pins at least 7 days old (or with a
+  `pinException`; a younger one isn't installed), and nothing that looks like a secret or a
+  machine's Azure IDs. A pack may add only the flags its server lists in `packArgs`, checked
+  the same way, so `--read-only` can't be undone; `--dangerously-*`, `--insecure-*` and a
+  non-stdio `--transport` are refused.
+  Global: `playwright` (0.0.83, isolated, headless), `huggingface`, and `microsoft-learn` for
+  Codex; the `langchain` pack gets the LangChain docs and reference servers, `gradio` its docs
+  server.
+- The `playwright` plugin is off in the portable settings (the pinned server replaces it), and
+  `mcp__*__submit_feedback` is denied.
+
 ## 0.4.3 - 2026-10-14
 
 - Pack skills move to `.agents/packs/`, outside every folder Codex reads on its own, so Codex

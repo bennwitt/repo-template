@@ -27,6 +27,17 @@ htmlcov/
 .codex/
 CLAUDE.local.md
 
+# Tool state: browser sessions, saved logins and test reports, cloud environment
+# settings, Foundry datasets
+.playwright-cli/
+.playwright-mcp/
+.auth/
+test-results/
+playwright-report/
+blob-report/
+.azure/
+.foundry/
+
 # Editors and operating systems
 .idea/
 .DS_Store
@@ -40,6 +51,7 @@ CLAUDE.local.md
 /.agents/*
 !/.agents/.skill-lock.json
 !/.agents/skill-packs.json
+!/.agents/mcp-servers.json
 !/.agents/skill-overrides.json
 !/.agents/claude-settings.json
 !/.agents/skill-sources.json

@@ -5,48 +5,46 @@
 
 from __future__ import annotations
 
-import shutil
-import subprocess
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Any
 
+from repo_template.mcp import Server, for_packs, load_mcp_servers, pack_servers, usable
+from repo_template.mcp_project import (
+    McpPlan,
+    apply_codex_mcp,
+    apply_project_mcp,
+    kept_mcp,
+    plan_codex_mcp,
+    plan_project_mcp,
+    recorded_mcp,
+)
 from repo_template.model import Result
-from repo_template.scaffold import new_project, skill_packs, update_project
-from repo_template.standards import sync_project_packs, unknown_packs
+from repo_template.runner import SUBPROCESS, Completed, Runner, SubprocessRunner
+from repo_template.scaffold import (
+    PACKS_ONLY,
+    new_project,
+    preflight,
+    skill_packs,
+    update_packs_only,
+    update_project,
+)
+from repo_template.standards import load_skill_packs, sync_project_packs, unknown_packs
 
 AGENTS_DIR = Path.home() / ".agents"
 HOOKS_PATH = ".githooks"
 HOOKS_LABEL = f"git config core.hooksPath {HOOKS_PATH}"
 LOCK_NAME = "uv.lock"
-
-
-@dataclass(frozen=True)
-class Completed:
-    code: int
-    out: str = ""
-    err: str = ""
-
-
-class Runner(Protocol):
-    """Runs Git and uv. Production uses subprocesses; tests substitute a recording fake."""
-
-    def which(self, program: str) -> bool: ...
-
-    def run(self, args: Sequence[str], cwd: Path) -> Completed: ...
-
-
-class SubprocessRunner:
-    def which(self, program: str) -> bool:
-        return shutil.which(program) is not None
-
-    def run(self, args: Sequence[str], cwd: Path) -> Completed:
-        process = subprocess.run(list(args), cwd=cwd, check=False, text=True, capture_output=True)
-        return Completed(process.returncode, process.stdout, process.stderr)
-
-
-SUBPROCESS = SubprocessRunner()
+__all__ = [
+    "SUBPROCESS",
+    "Completed",
+    "Runner",
+    "SubprocessRunner",
+    "create_repository",
+    "update_repository",
+]
 
 
 def _reconcile_hooks(root: Path, result: Result, runner: Runner, *, check: bool) -> None:
@@ -99,6 +97,57 @@ def _require_known_packs(packs: Sequence[str], agents_dir: Path) -> None:
         )
 
 
+@dataclass
+class _Mcp:
+    """The pack MCP servers a repository's packs use, and how to plan them."""
+
+    servers: dict[str, Server]
+    owned: set[str]
+    removals: bool
+    cache: str
+    errors: list[str] = field(default_factory=list)  # servers held back, and why
+
+
+def _mcp(
+    root: Path, packs: Sequence[str], agents_dir: Path, manifest: dict[str, Any]
+) -> _Mcp | None:
+    """None for a repository with no packs and no MCP records, which needs no MCP catalog (CI
+    has no ~/.agents)."""
+    if not packs and not recorded_mcp(manifest) and not kept_mcp(manifest):
+        return None
+    servers = load_mcp_servers(agents_dir)
+    definitions = load_skill_packs(agents_dir)
+    known = [pack for pack in packs if pack in definitions]
+    owned = manifest.get("project_owned", [])
+    errors: list[str] = []
+    wanted = for_packs(known, servers, pack_servers(agents_dir, servers))
+    return _Mcp(
+        usable(wanted, datetime.now(UTC), errors),
+        {item for item in owned if isinstance(item, str)} if isinstance(owned, list) else set(),
+        removals=len(known) == len(packs),
+        cache=str(Path.home() / ".cache/repo-template"),
+        errors=errors,
+    )
+
+
+def _plan_claude(root: Path, mcp: _Mcp | None, manifest: dict[str, Any]) -> McpPlan | None:
+    if mcp is None:
+        return None
+    return plan_project_mcp(root, mcp.servers, manifest, owned=mcp.owned, removals=mcp.removals)
+
+
+def _sync_codex(root: Path, mcp: _Mcp | None, result: Result, *, check: bool) -> None:
+    """After the baseline: its .gitignore decides whether the Codex file may be written."""
+    if mcp is None:
+        return
+    # in check mode the .gitignore isn't written yet; the baseline's ignores .codex/
+    ignored = True if check and ".gitignore" in result.created + result.updated else None
+    plan = plan_codex_mcp(
+        root, mcp.servers, owned=mcp.owned, removals=mcp.removals, cache=mcp.cache, ignored=ignored
+    )
+    apply_codex_mcp(root, plan, result, check=check)
+
+
 def create_repository(
     target: Path,
     *,
@@ -113,9 +162,21 @@ def create_repository(
 ) -> Result:
     """Render the baseline into an empty directory, then initialize Git and the lockfile."""
     _require_known_packs(packs, agents_dir)
+    mcp = _mcp(target.resolve(), list(packs), agents_dir, {})
+    plan = _plan_claude(target.resolve(), mcp, {})
     result = new_project(
-        target, name=name, description=description, python_version=python_version, packs=packs
+        target,
+        name=name,
+        description=description,
+        python_version=python_version,
+        packs=packs,
+        mcp=plan.manifest if plan else None,
     )
+    if plan:
+        apply_project_mcp(result.root, plan, result, check=False)
+    _sync_codex(result.root, mcp, result, check=False)
+    if mcp:
+        result.errors.extend(mcp.errors)
     sync_project_packs(result.root, packs, result, check=False, agents_dir=agents_dir)
     if git:
         if not runner.which("git"):
@@ -131,6 +192,12 @@ def create_repository(
     return result
 
 
+def _merge(first: Result, result: Result) -> None:
+    """Put `first`'s lines ahead of `result`'s, as if one step had made them all."""
+    for name in ("created", "updated", "unchanged", "preserved", "removed", "errors", "notes"):
+        getattr(result, name)[:0] = getattr(first, name)
+
+
 def update_repository(
     root: Path,
     *,
@@ -140,15 +207,33 @@ def update_repository(
     packs: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
     agents_dir: Path = AGENTS_DIR,
+    packs_only: bool = False,
 ) -> Result:
     """Plan (check=True) or apply every change that brings `root` to the baseline.
 
     `packs` adds skill packs to the repository's manifest; every listed pack is then linked.
+    `packs_only` adopts a repository for its packs alone (its manifest then says so, and later
+    runs follow it): no baseline file, hook path or lockfile.
     """
     _require_known_packs(packs, agents_dir)
-    result = update_project(root, check=check, add_packs=packs)
-    wanted = sorted({*skill_packs(result.root), *packs})
+    # every refusal before the first write (.mcp.json is written ahead of the manifest)
+    manifest = preflight(root, packs_only=packs_only, add_packs=packs)
+    packs_only = packs_only or manifest.get("profile") == PACKS_ONLY
+    wanted = sorted({*skill_packs(root.resolve()), *packs})
+    mcp = _mcp(root.resolve(), wanted, agents_dir, manifest)
+    plan = _plan_claude(root.resolve(), mcp, manifest)
+    first = Result(root.resolve())
+    if plan:  # .mcp.json first: the manifest written next records only what was written
+        apply_project_mcp(root.resolve(), plan, first, check=check)
+    update = update_packs_only if packs_only else update_project
+    result = update(root, check=check, add_packs=packs, mcp=plan.manifest if plan else None)
+    _merge(first, result)
+    if mcp:
+        result.errors.extend(mcp.errors)
+    _sync_codex(result.root, mcp, result, check=check)
     sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
+    if packs_only:
+        return result
     if hooks:
         _reconcile_hooks(result.root, result, runner, check=check)
     if lock:
