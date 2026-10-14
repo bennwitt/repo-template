@@ -92,6 +92,11 @@ def _installed_root() -> Path | None:
     return None
 
 
+def installed_root() -> Path | None:
+    """The standards repository this CLI runs from, when it is an editable install of one."""
+    return _installed_root()
+
+
 def find_standards_root(explicit: Path | None = None) -> Path:
     """Use --standards-root, else $AI_DEV_STANDARDS, else the checkout this CLI is installed
     from, else the current directory if it is a repo-template checkout.
@@ -641,17 +646,61 @@ def _merge_global_gitignore(existing: str) -> str:
     return merge_marked_block(existing, GITIGNORE_CONTENT, GITIGNORE_START, GITIGNORE_END)
 
 
-def _sync_global_gitignore(home: Path, result: Result, *, check: bool) -> None:
-    path = home / ".config/git/ignore"
-    existing = path.read_text() if path.exists() else ""
+def global_ignore_file(home: Path) -> Path:
+    """The file Git reads its global ignores from: the one `core.excludesFile` names (in an
+    included config too), else $XDG_CONFIG_HOME/git/ignore, else ~/.config/git/ignore. For
+    another home (a test's), only that home's config counts."""
+    real = home == Path.home().expanduser().resolve()
+    env = {**git_env(), "HOME": str(home)}
+    if not real:
+        env.pop("XDG_CONFIG_HOME", None)
+    try:
+        done = subprocess.run(
+            ["git", "config", "--global", "--includes", "--get", "core.excludesFile"],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+        )
+        named = done.stdout.strip() if done.returncode == 0 else ""
+    except FileNotFoundError:  # no Git: the default
+        named = ""
+    if named:
+        if named == "~" or named.startswith("~/"):
+            return home / named[2:]
+        return Path(named) if Path(named).is_absolute() else home / named
+    xdg = os.environ.get("XDG_CONFIG_HOME") if real else None
+    return (Path(xdg) if xdg else home / ".config") / "git" / "ignore"
+
+
+def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: str) -> None:
+    """repo-template's block in the file Git reads (through a link, to the file it names),
+    backed up before it changes. A block without both markers is left alone."""
+    path = global_ignore_file(home)
+    try:
+        existing = path.read_text() if path.exists() else ""
+    except (OSError, UnicodeDecodeError) as exc:
+        result.errors.append(f"cannot read {path}: {exc}")
+        return
+    if existing.count(GITIGNORE_START) > 1 or (
+        existing.count(GITIGNORE_START) != existing.count(GITIGNORE_END)
+    ):
+        result.preserved.append(f"{path} (repo-template's block has lost a marker line; kept)")
+        return
     proposed = _merge_global_gitignore(existing)
     if proposed == existing:
         result.unchanged.append(str(path))
         return
     (result.updated if path.exists() else result.created).append(str(path))
-    if not check:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(proposed)
+    if check:
+        return
+    target = path.resolve()
+    if target.exists():
+        backup = home / ".repo-template" / "backups" / stamp / "git-ignore"
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(target, backup)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(proposed)
 
 
 def sync_globals(
@@ -712,5 +761,5 @@ def sync_globals(
     )
     _sync_mirror(standards_root, global_names, result, check=check)
 
-    _sync_global_gitignore(home, result, check=check)
+    _sync_global_gitignore(home, result, check=check, stamp=stamp)
     return result

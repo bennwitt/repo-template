@@ -4,6 +4,7 @@ network, no real home, no terminal (each run gets a session of its own, so it ca
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -221,9 +222,13 @@ def test_the_profile_block_replaces_an_old_one_and_keeps_the_rest(
     assert list((home / ".repo-template/backups").glob("*/.zshrc"))  # the old one, kept
 
 
-def test_the_script_is_executable_and_shellcheck_style_safe() -> None:
+def test_the_script_is_executable_and_shellcheck_finds_nothing() -> None:
     assert os.access(SCRIPT, os.X_OK)
     assert subprocess.run(["bash", "-n", str(SCRIPT)]).returncode == 0
+    shellcheck = shutil.which("shellcheck")  # the shellcheck-py dev dependency
+    assert shellcheck, "uv sync --dev installs shellcheck"
+    done = subprocess.run([shellcheck, "-s", "bash", str(SCRIPT)], capture_output=True, text=True)
+    assert done.returncode == 0, done.stdout
 
 
 def test_without_a_terminal_a_named_folder_still_needs_yes(machine: dict[str, Path]) -> None:

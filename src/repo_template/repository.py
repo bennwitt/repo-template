@@ -115,8 +115,10 @@ def _reconcile_lock(root: Path, result: Result, runner: Runner, *, check: bool) 
 def _require_known_packs(packs: Sequence[str], agents_dir: Path) -> None:
     unknown = unknown_packs(packs, agents_dir)
     if unknown:
+        known = ", ".join(sorted(load_skill_packs(agents_dir))) or "none defined"
         raise ValueError(
-            f"unknown skill pack: {', '.join(unknown)} (see {agents_dir / 'skill-packs.json'})"
+            f"unknown skill pack: {', '.join(unknown)} (the packs: {known}; see "
+            f"{agents_dir / 'skill-packs.json'})"
         )
 
 

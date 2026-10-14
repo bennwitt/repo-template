@@ -1,0 +1,33 @@
+name: macOS
+
+# The test suite on macOS too: setup-machine.sh runs there under /bin/bash 3.2 with BSD sed, awk
+# and readlink, and the CLI writes to a Mac's home. (ci.yml comes from the project baseline,
+# which every generated repository shares, so this job lives in a file of its own.)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync --locked --dev
+      - run: /bin/bash --version | head -n 1
+      - run: uv run pytest

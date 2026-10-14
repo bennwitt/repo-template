@@ -32,7 +32,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from types import FrameType, TracebackType
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from repo_template.catalog import (
     LICENSE_FILE,
@@ -59,6 +59,9 @@ from repo_template.catalog import (
 from repo_template.model import Result
 from repo_template.resolve import Options, Prompt, visible
 from repo_template.skillfile import field_lines, read_fields
+
+if TYPE_CHECKING:  # pins and repin import this module
+    from repo_template.pins import Registry
 
 SOURCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}")
 NAME = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?")
@@ -856,12 +859,13 @@ class Upgrade:
     removed: list[str] = field(default_factory=list)
     refused: list[str] = field(default_factory=list)
     undecided: list[str] = field(default_factory=list)
+    repinned: list[str] = field(default_factory=list)  # MCP servers moved to a newer release
     network: str | None = None
     interrupted: str | None = None
 
     @property
     def changed(self) -> list[str]:
-        return self.applied + self.added + self.removed
+        return self.applied + self.added + self.removed + self.repinned
 
     @property
     def exit_code(self) -> int:
@@ -1161,6 +1165,7 @@ CHANGELOG_NOTES = {
     "applied": "- Skills refreshed from upstream: ",
     "added": "- Skills added from upstream: ",
     "removed": "- Skills removed (gone upstream): ",
+    "repinned": "- MCP servers re-pinned to their newest release at least 7 days old: ",
 }
 
 
@@ -1434,9 +1439,11 @@ def upgrade(
     prompt: Prompt | None,
     allow_findings: str | None = None,
     home: Path | None = None,
+    registry: Registry | None = None,
 ) -> Upgrade:
     """Vendor the named skills (or every changed one): stage, verify, scan, show, ask, swap.
-    `prompt` is None for --no-input. Never commits."""
+    A name that is an MCP server (and no vendored skill), or `mcp:<name>`, re-pins that server
+    through `registry` instead. `prompt` is None for --no-input. Never commits."""
     if allow_findings is not None and (prompt is None or not allow_findings.strip()):
         raise ValueError("--allow-findings needs a reason, and a terminal to confirm each skill")
     with _exclusive(root), _signals_raise():
@@ -1452,7 +1459,7 @@ def upgrade(
                 "on its own:\n" + clean(dirty.strip())
             )
         try:
-            _upgrade(root, specs, outcome, github, scanner, prompt, allow_findings)
+            _upgrade(root, specs, outcome, github, scanner, prompt, allow_findings, registry)
         except (KeyboardInterrupt, _Interrupted) as exc:
             outcome.interrupted = str(exc) or type(exc).__name__
         finally:
@@ -1469,8 +1476,16 @@ def _upgrade(
     scanner: Scanner,
     prompt: Prompt | None,
     allow_findings: str | None,
+    registry: Registry | None = None,
 ) -> None:
     records = _Records(root)
+    servers, skills = _split_servers(root, specs, records.skills)
+    if servers:
+        if registry is None:
+            raise ValueError("re-pinning an MCP server needs npm and PyPI")
+        if _repin_servers(root, servers, outcome, registry, prompt) or not skills:
+            return  # quit, or only servers were named
+    specs = skills
     snapshot = _snapshots(github)
     try:
         targets = _targets(specs, records.skills, records.sources, snapshot)
@@ -1508,6 +1523,85 @@ def _upgrade(
 
 class _Quit(Exception):
     pass
+
+
+def _split_servers(
+    root: Path, specs: Sequence[str], lock: dict[str, Any]
+) -> tuple[list[str], list[str]]:
+    """The names to re-pin as MCP servers, and the rest (skills)."""
+    from repo_template.repin import SERVER_PREFIX, server_names
+
+    names = server_names(root)
+    servers: list[str] = []
+    skills: list[str] = []
+    for spec in specs:
+        if spec.startswith(SERVER_PREFIX):
+            servers.append(spec[len(SERVER_PREFIX) :])
+        elif spec in names and spec not in lock and parse_spec(spec) is None:
+            servers.append(spec)
+        else:
+            skills.append(spec)
+    return servers, skills
+
+
+def _repin_servers(
+    root: Path,
+    names: Sequence[str],
+    outcome: Upgrade,
+    registry: Registry,
+    prompt: Prompt | None,
+) -> bool:
+    """Re-pin each named server, showing the change and asking first (--no-input applies them:
+    they were named). True when the user quit."""
+    from repo_template.repin import apply_repin, plan_repin
+
+    now = datetime.now(UTC)
+    for position, name in enumerate(names):
+        try:
+            plan = plan_repin(root, name, registry, now)
+        except NotFound as exc:
+            outcome.refused.append(f"{name}: {clean(str(exc))}")
+            continue
+        except NetworkError as exc:
+            outcome.network = str(exc)
+            outcome.undecided += list(names[position:])
+            return True
+        except ValueError as exc:
+            message = clean(str(exc))
+            outcome.refused.append(
+                message if message.startswith(f"{name}:") else f"{name}: {message}"
+            )
+            continue
+        if plan is None:
+            outcome.result.notes.append(
+                f"{name}: already pinned to its newest release past the cooldown"
+            )
+            continue
+        if prompt is not None:
+            prompt.say(
+                visible(
+                    f"{name}: {plan.package} {plan.old} -> {plan.new}, published {plan.published}"
+                )
+            )
+            prompt.diff(plan.diff)
+            choice = prompt.choose("re-pin it", UPGRADE_CHOICES)
+            if choice == "q":
+                outcome.undecided += list(names[position:])
+                return True
+            if choice == "s":
+                outcome.undecided.append(f"{name}: skipped")
+                continue
+        try:
+            apply_repin(root, plan)
+        except ValueError as exc:
+            outcome.refused.append(f"{name}: {clean(str(exc))}")
+            continue
+        outcome.repinned.append(name)
+        for mention in plan.mentions:
+            outcome.result.notes.append(
+                f"{mention} still names {plan.package} {plan.old}: move it to {plan.new} too"
+            )
+    return False
 
 
 def _ask_or_leave(

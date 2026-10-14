@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from repo_template import __version__
 from repo_template.cli import main
 from repo_template.scaffold import new_project
 
@@ -137,3 +138,14 @@ def test_globals_exits_2_when_it_preserves_a_folder(
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
 
     assert main(["globals", "--standards-root", str(standards)]) == 2
+
+
+def test_version_names_the_release_and_the_checkout_it_runs_from(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        main(["--version"])
+
+    assert stopped.value.code == 0
+    root = Path(__file__).resolve().parents[1]
+    assert capsys.readouterr().out == f"repo-template {__version__} ({root})\n"

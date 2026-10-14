@@ -10,7 +10,9 @@ import shutil
 import subprocess
 from collections.abc import Sequence
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -1933,3 +1935,154 @@ def test_a_pack_skill_is_staged_with_the_ignore_rules_of_its_folder(tmp_path: Pa
 
     assert outcome.applied == [], outcome
     assert any(".gitignore would hide run.log" in refusal for refusal in outcome.refused)
+
+
+# --upgrade for MCP servers: re-pinning to the newest release past the cooldown
+
+
+class FakeRegistry:
+    def __init__(self, releases: dict[str, dict[str, datetime]]) -> None:
+        self.by_package = releases
+        self.asked: list[tuple[str, str]] = []
+
+    def releases(self, registry: str, package: str) -> dict[str, datetime]:
+        self.asked.append((registry, package))
+        return self.by_package[package]
+
+
+DAY = timedelta(days=1)
+
+
+def _with_servers(root: Path, **servers: dict[str, object]) -> None:
+    """Add MCP servers to the catalog, committed."""
+    (root / ".agents/mcp-servers.json").write_text(
+        json.dumps({"schema": 1, "servers": servers}, indent=2) + "\n"
+    )
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "servers")
+
+
+def _npx(version: str, published: datetime, **pin: object) -> dict[str, object]:
+    return {
+        "scope": "pack",
+        "command": "npx",
+        "args": ["-y", f"@x/mcp@{version}", "mcp"],
+        "pin": {
+            "registry": "npm",
+            "package": "@x/mcp",
+            "version": version,
+            "publishedAt": published.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            **pin,
+        },
+        "source": "https://example.com/x",
+        "why": "x",
+    }
+
+
+def _servers(root: Path) -> dict[str, Any]:
+    return json.loads((root / ".agents/mcp-servers.json").read_text())["servers"]
+
+
+def test_a_named_server_is_repinned_to_its_newest_release_past_the_cooldown(
+    tmp_path: Path,
+) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    _with_servers(root, x=_npx("1.0.0", now - 60 * DAY, pinException="needed it early"))
+    registry = FakeRegistry(
+        {"@x/mcp": {"1.0.0": now - 60 * DAY, "1.0.10": now - 9 * DAY, "1.1.0": now - 2 * DAY}}
+    )
+    scanner = FakeScanner()
+
+    outcome = _run(root, github, ["x"], registry=registry, scanner=scanner)
+
+    entry = _servers(root)["x"]
+    assert outcome.repinned == ["x"] and outcome.exit_code == 0, outcome
+    assert entry["args"] == ["-y", "@x/mcp@1.0.10", "mcp"]
+    assert entry["pin"]["version"] == "1.0.10" and "pinException" not in entry["pin"]
+    assert entry["pin"]["publishedAt"] == (now - 9 * DAY).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert "- MCP servers re-pinned to their newest release at least 7 days old: `x`." in (
+        (root / "CHANGELOG.md").read_text()
+    )
+    assert scanner.scanned == []  # no skill was touched
+
+
+def test_a_server_already_current_is_left_alone(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    _with_servers(root, x=_npx("1.0.0", now - 60 * DAY))
+    before = (root / ".agents/mcp-servers.json").read_text()
+
+    outcome = _run(
+        root, github, ["mcp:x"], registry=FakeRegistry({"@x/mcp": {"1.0.0": now - 60 * DAY}})
+    )
+
+    assert outcome.repinned == [] and outcome.exit_code == 0
+    assert (root / ".agents/mcp-servers.json").read_text() == before
+    assert "x: already pinned to its newest release past the cooldown" in outcome.result.notes
+
+
+@pytest.mark.parametrize(("answer", "repinned"), [("a", ["x"]), ("s", []), ("q", [])])
+def test_a_repin_is_shown_and_asked_first(tmp_path: Path, answer: str, repinned: list[str]) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    _with_servers(root, x=_npx("1.0.0", now - 60 * DAY))
+    registry = FakeRegistry({"@x/mcp": {"1.0.0": now - 60 * DAY, "1.2.0": now - 8 * DAY}})
+
+    outcome = _run(root, github, ["x"], answer, registry=registry)
+
+    assert outcome.repinned == repinned
+    assert (_servers(root)["x"]["pin"]["version"] == "1.2.0") == bool(repinned)
+    assert outcome.exit_code == (0 if repinned else 2)
+
+
+def test_a_server_that_names_its_version_twice_is_refused(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    server = _npx("1.0.0", now - 60 * DAY)
+    server["args"] = ["-y", "@x/mcp@1.0.0", "--also", "@x/mcp@1.0.0"]
+    _with_servers(root, x=server)
+    registry = FakeRegistry({"@x/mcp": {"1.0.0": now - 60 * DAY, "1.2.0": now - 8 * DAY}})
+
+    outcome = _run(root, github, ["x"], registry=registry)
+
+    assert outcome.exit_code == 1 and "re-pin it by hand" in outcome.refused[0]
+    assert _servers(root)["x"]["pin"]["version"] == "1.0.0"
+
+
+def test_a_skill_naming_the_old_version_is_reported(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    local = root / ".agents/skills/local-x"
+    local.mkdir()
+    (local / "SKILL.md").write_text("---\nname: local-x\ndescription: d\n---\nRun @x/mcp@1.0.0.\n")
+    _with_servers(root, x=_npx("1.0.0", now - 60 * DAY))
+    registry = FakeRegistry({"@x/mcp": {"1.0.0": now - 60 * DAY, "1.2.0": now - 8 * DAY}})
+
+    outcome = _run(root, github, ["x"], registry=registry)
+
+    assert (
+        ".agents/skills/local-x/SKILL.md still names @x/mcp 1.0.0: move it to 1.2.0 too"
+        in outcome.result.notes
+    )
+
+
+def test_a_name_shared_by_a_skill_and_a_server_means_the_skill_unless_prefixed(
+    tmp_path: Path,
+) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    _with_servers(root, s=_npx("1.0.0", now - 60 * DAY))
+    registry = FakeRegistry({"@x/mcp": {"1.0.0": now - 60 * DAY, "1.2.0": now - 8 * DAY}})
+
+    as_skill = _run(root, github, ["s"], registry=registry)
+    as_server = _run(root, github, ["mcp:s"], registry=registry)
+
+    assert as_skill.repinned == [] and registry.asked == [("npm", "@x/mcp")]
+    assert as_server.repinned == ["s"]

@@ -159,7 +159,7 @@ def test_unknown_pack_is_rejected_before_anything_changes(tmp_path: Path) -> Non
     root = _repository(tmp_path / "service")
     before = (root / ".repo-template.json").read_text()
 
-    with pytest.raises(ValueError, match="unknown skill pack: nope"):
+    with pytest.raises(ValueError, match=r"unknown skill pack: nope \(the packs: lc"):
         update_repository(root, hooks=False, lock=False, packs=["nope"], agents_dir=agents)
     assert (root / ".repo-template.json").read_text() == before
 

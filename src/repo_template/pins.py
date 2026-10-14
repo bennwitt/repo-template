@@ -154,8 +154,8 @@ def check_pins(
         best = max(ripe, key=_key) if ripe else pin.version
         if ripe:
             report.changed.append(
-                f"{label} {best} is newer than the pinned {pin.version}; re-pin it in "
-                f"{MCP_SERVERS_NAME} (args and pin) with publishedAt {_stamp(newer[best])}"
+                f"{label} {best} is newer than the pinned {pin.version}; re-pin it with "
+                f"`repo-template globals --upgrade mcp:{name}`"
             )
             report.pin_changes += 1
         else:

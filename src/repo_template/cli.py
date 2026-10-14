@@ -6,13 +6,14 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from repo_template import __version__
 from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
 from repo_template.pins import HttpRegistry, check_pins
 from repo_template.repository import SUBPROCESS, create_repository, update_repository
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import manifest_version, normalize_project_name
-from repo_template.standards import find_standards_root, sync_globals
+from repo_template.standards import find_standards_root, installed_root, sync_globals
 from repo_template.upstream import (
     GhApi,
     HeadScanner,
@@ -33,6 +34,13 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="repo-template",
         description="Create, update, and validate standardized repositories.",
+    )
+    root = installed_root()
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"repo-template {__version__}" + (f" ({root})" if root else ""),
+        help="show the version, and the standards repository this CLI runs from",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -148,7 +156,8 @@ def _parser() -> argparse.ArgumentParser:
         "--upgrade",
         action="store_true",
         help="vendor skills from upstream, each verified, scanned and shown before it goes live: "
-        "the SKILLs named, or every changed one",
+        "the SKILLs named, or every changed one; a name that is an MCP server (or mcp:NAME) "
+        "re-pins it to its newest release at least 7 days old",
     )
     globals_parser.add_argument(
         "skills",
@@ -362,6 +371,7 @@ def _upgrade(root: Path, args: argparse.Namespace) -> int:
             scanner=scanner,
             prompt=None if args.no_input else TerminalPrompt(),
             allow_findings=args.allow_findings,
+            registry=HttpRegistry(),
         )
     if outcome.result.needs_attention:
         _print_result(outcome.result)
@@ -369,6 +379,7 @@ def _upgrade(root: Path, args: argparse.Namespace) -> int:
         ("Refreshed", outcome.applied),
         ("Added", outcome.added),
         ("Removed", outcome.removed),
+        ("Re-pinned MCP servers", outcome.repinned),
         ("Left as they are", outcome.undecided),
     ):
         if names:

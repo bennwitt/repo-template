@@ -82,8 +82,8 @@ def test_the_newest_release_past_its_cooldown_is_offered(tmp_path: Path) -> None
     report = _report(tmp_path, releases)
 
     assert report.changed == [
-        "x: npm @x/mcp 1.0.10 is newer than the pinned 1.0.0; re-pin it in mcp-servers.json "
-        "(args and pin) with publishedAt 2026-10-07T12:00:00Z"
+        "x: npm @x/mcp 1.0.10 is newer than the pinned 1.0.0; re-pin it with "
+        "`repo-template globals --upgrade mcp:x`"
     ]
     assert report.notes == ["x: npm @x/mcp 1.1.0 is in its cooldown until 2026-10-19T12:00:00Z"]
     assert report.pins == [] and report.exit_code == 1
@@ -300,4 +300,6 @@ def test_upgrade_is_suggested_only_for_skills(
     monkeypatch.setattr(cli, "HttpRegistry", lambda: registry)
 
     assert cli._upstream(root) == 1
-    assert "--upgrade" not in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "to review and apply the skills" not in out  # the skills hint: no skill changed
+    assert "`repo-template globals --upgrade mcp:x`" in out  # the pin's own line says how
