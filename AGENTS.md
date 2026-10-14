@@ -34,6 +34,7 @@ project-owned files.
 
 - Existing unrecognized content is preserved.
 - Replaced global files are backed up before symlinks are installed.
-- `~/.claude` itself is never symlinked; only portable settings and individual skills are.
+- `~/.claude` itself is never symlinked; individual skills are, and the portable settings are
+  merged into `~/.claude/settings.json` without overwriting entries changed on the machine.
 - Generated repositories never commit `.agents`, `.claude`, `.codex`, `.env`, or private keys.
 - Hooks in the portable settings always exit 0, so they can never block a session.

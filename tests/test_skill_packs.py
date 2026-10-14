@@ -21,8 +21,7 @@ def _catalog(root: Path) -> Path:
     (agents / "skill-packs.json").write_text(
         json.dumps({"lc": {"description": "LangChain", "skills": ["lc-one", "lc-two"]}})
     )
-    (root / ".claude").mkdir()
-    (root / ".claude/settings.json").write_text("{}\n")
+    (root / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}\n')
     return agents
 
 

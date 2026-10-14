@@ -49,8 +49,7 @@ def _standards(root: Path, overrides: dict[str, object]) -> Path:
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text(SKILL)
     (root / ".agents/skill-overrides.json").write_text(json.dumps(overrides))
-    (root / ".claude").mkdir()
-    (root / ".claude/settings.json").write_text("{}\n")
+    (root / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}\n')
     return root
 
 

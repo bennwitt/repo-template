@@ -10,6 +10,7 @@ from pathlib import Path
 
 from repo_template.model import Result
 from repo_template.policies import merge_marked_block
+from repo_template.settings import SOURCE_NAME, sync_claude_settings
 from repo_template.skillfile import set_field
 
 GITIGNORE_START = "# >>> repo-template personal AI directories"
@@ -24,12 +25,12 @@ MANIFEST_LABEL = ".repo-template.json"
 
 
 def _is_standards_root(path: Path) -> bool:
-    return (path / ".agents/skills").is_dir() and (path / ".claude/settings.json").is_file()
+    return (path / ".agents/skills").is_dir() and (path / ".agents" / SOURCE_NAME).is_file()
 
 
 def _is_this_project(path: Path) -> bool:
     """A standards root that is a checkout of repo-template itself, not just any repository with
-    .agents/skills and .claude/settings.json (which `npx skills add` and Claude Code create)."""
+    .agents/skills (which `npx skills add` creates) and a settings file."""
     if not (_is_standards_root(path) and (path / ".agents/.skill-lock.json").is_file()):
         return False
     try:
@@ -63,7 +64,7 @@ def find_standards_root(explicit: Path | None = None) -> Path:
         if not _is_standards_root(root):
             raise ValueError(
                 f"{source} {root} is not a standards repository "
-                "(it needs .agents/skills/ and .claude/settings.json)"
+                f"(it needs .agents/skills/ and .agents/{SOURCE_NAME})"
             )
         return root
     installed = _installed_root()
@@ -335,16 +336,8 @@ def sync_globals(
     stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
 
     agents = standards_root / ".agents"
-    claude_settings = standards_root / ".claude/settings.json"
     _link(agents, home / ".agents", result, home=home, stamp=stamp, check=check)
-    _link(
-        claude_settings,
-        home / ".claude/settings.json",
-        result,
-        home=home,
-        stamp=stamp,
-        check=check,
-    )
+    sync_claude_settings(standards_root, home, result, check=check, stamp=stamp)
 
     apply_skill_overrides(standards_root, result, check=check)
     skill_root = standards_root / ".agents/skills"

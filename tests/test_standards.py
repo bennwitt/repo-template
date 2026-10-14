@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from pathlib import Path
@@ -14,9 +15,8 @@ def _standards(tmp_path: Path) -> Path:
     skill = root / ".agents/skills/example"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("# Example\n")
-    settings = root / ".claude/settings.json"
-    settings.parent.mkdir(parents=True)
-    settings.write_text('{"theme": "auto"}\n')
+    source = {"portable": {"env": {"PORTABLE": "1"}}, "defaults": {"theme": "auto"}}
+    (root / ".agents/claude-settings.json").write_text(json.dumps(source))
     return root
 
 
@@ -39,9 +39,12 @@ def test_global_sync_links_portable_files_and_keeps_claude_directory_local(
     assert (home / ".agents").resolve() == (standards / ".agents").resolve()
     assert (home / ".claude").is_dir()
     assert not (home / ".claude").is_symlink()
-    assert (home / ".claude/settings.json").resolve() == (
-        standards / ".claude/settings.json"
-    ).resolve()
+    assert not old_settings.is_symlink()  # merged into, never linked
+    assert json.loads(old_settings.read_text()) == {
+        "old": True,
+        "env": {"PORTABLE": "1"},
+        "theme": "auto",
+    }
     assert (home / ".claude/skills/example").resolve() == (
         standards / ".agents/skills/example"
     ).resolve()
@@ -144,11 +147,12 @@ INSTALLED_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _lookalike(root: Path, *, name: str | None = None) -> Path:
-    """A repository with .agents/skills and .claude/settings.json, as `npx skills add` and Claude
-    Code leave behind; with `name`, a full repo-template checkout under that project name."""
+    """A repository that looks like a standards root (.agents/skills, settings files); with `name`,
+    a full repo-template checkout under that project name."""
     (root / ".agents/skills").mkdir(parents=True)
     (root / ".claude").mkdir()
     (root / ".claude/settings.json").write_text("{}\n")
+    (root / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}\n')
     if name is not None:
         (root / ".agents/.skill-lock.json").write_text("{}\n")
         (root / "pyproject.toml").write_text(f'[project]\nname = "{name}"\n')

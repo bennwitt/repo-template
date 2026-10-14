@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.2 - 2026-10-13
+
+- `globals` merges portable settings into a real `~/.claude/settings.json` instead of linking it
+  to this repository. A link let Claude Code write `/model` and `/effort` changes from any
+  machine into the shared file. The source moves to `.agents/claude-settings.json`. It has a
+  `portable` part that `globals` keeps current entry by entry (a plugin switch, a permission
+  rule, a hook) and a `defaults` part (model, effort, theme, notifications) that is written once
+  per machine. An entry changed on the machine is kept and reported once, not overwritten.
+  Values you already had, and links that repo-template didn't create, are left alone.
+- **Upgrading other machines:** follow "Upgrading a machine from a linked settings file" in the
+  README: save a copy of `.claude/settings.json`, `git checkout --` it (Claude Code's writes through
+  the link block the pull), pull, put the copy back (Git ignores it now), run `repo-template
+  globals`, then delete the copy. The migration then keeps that machine's own values and backs up
+  its content. Without the copy, the dangling link is treated like a fresh machine. Until
+  `globals` runs, Claude Code on that machine has no user settings.
+- Portable settings changes: `mcp-server-dev` (stale against MCP spec 2026-07-28 and SDK v2),
+  `mcp-apps` and `sourcegraph` are turned off; `typescript-lsp` is turned on; Azure telemetry
+  opt-outs; destructive Docker commands (`prune`, `rmi`, `volume rm`, `compose down -v`) ask
+  first; Playwright's `browser_run_code_unsafe` is denied; the `.env` deny rules match at any
+  depth (`./**/.env`), not only the session's directory. `remoteControlAtStartup` and
+  `permissions.allow` are no longer distributed: settings that widen access are chosen on each
+  machine. A migrated machine that had `remoteControlAtStartup` keeps it as its own setting.
+- `typescript-lsp` and `pyright-lsp` need their language servers on each machine:
+  `npm i -g typescript-language-server@6.0.1 typescript` and `uv tool install pyright` (or
+  `npm i -g pyright`).
+
 ## 0.4.1 - 2026-10-13
 
 Fixes from auditing the update process:

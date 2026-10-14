@@ -41,6 +41,7 @@ CLAUDE.local.md
 !/.agents/.skill-lock.json
 !/.agents/skill-packs.json
 !/.agents/skill-overrides.json
+!/.agents/claude-settings.json
 !/.agents/skills/
 !/.agents/skills/**
 !/.agents/hooks/
@@ -48,6 +49,5 @@ CLAUDE.local.md
 /.agents/hooks/__pycache__/
 !/.claude/
 /.claude/*
-!/.claude/settings.json
 !/.claude/skills/
 !/.claude/skills/**

@@ -41,12 +41,12 @@ flowchart LR
   subgraph S["Standards repository (this repo)"]
     T["Project baseline<br/>src/repo_template/templates.py"]
     K["Skill catalog<br/>.agents/skills/"]
-    C["Portable settings<br/>.claude/settings.json"]
+    C["Portable settings<br/>.agents/claude-settings.json"]
   end
   T -- "repo-template new / update" --> P1["my-service/"]
   T -- "repo-template new / update" --> P2["legacy-app/"]
   K -- "repo-template globals" --> H["~/.agents<br/>~/.claude/skills/*"]
-  C -- "repo-template globals" --> H2["~/.claude/settings.json"]
+  C -- "repo-template globals (merge)" --> H2["~/.claude/settings.json"]
   H --> A["Claude Code and Codex,<br/>in every repository"]
   H2 --> A
 ```
@@ -85,8 +85,8 @@ Running `update` a second time changes nothing.
 
 - links `~/.agents` → `<standards>/.agents` (Codex and the `npx skills` CLI read global skills
   from here);
-- links `~/.claude/settings.json` → `<standards>/.claude/settings.json` (model, effort level,
-  enabled plugins, deny rules for reading `.env` and key files, and the skill receipt hooks);
+- merges the portable settings in `<standards>/.agents/claude-settings.json` into a real
+  `~/.claude/settings.json` (see below);
 - creates one link per skill that isn't in a skill pack,
   `~/.claude/skills/<name>` → `<standards>/.agents/skills/<name>`, and removes links to skills
   that were deleted or moved into a pack;
@@ -98,6 +98,75 @@ Running `update` a second time changes nothing.
 It never links `~/.claude` itself, so credentials, sessions, history, caches and Claude's
 `synced` directory stay on the machine. Anything it replaces is first moved to
 `~/.repo-template/backups/<timestamp>/`.
+
+### Portable settings: merged, not linked
+
+`.agents/claude-settings.json` has three parts:
+
+- `portable`: owned by repo-template and kept current on every machine, entry by entry. Each
+  plugin switch, environment variable (telemetry opt-outs) and marketplace, each permission rule
+  (deny reading `.env` and key files at any depth, ask before destructive Docker commands), and
+  each hook, identified by its event, matcher and command (the skill receipts, which always end
+  in `|| true`).
+- `defaults`: model, effort level, theme, notifications (only machine preferences are accepted
+  here). Each one is written once, when a machine doesn't have it, and never again: after that it
+  belongs to the machine (`/model` and `/config` write it), even if you remove it.
+- `linked`: what the pre-0.4.2 link distributed, used once to migrate that link (below).
+
+`globals` merges `portable` into `~/.claude/settings.json` and records what it wrote in
+`~/.repo-template/globals-state.json`, so it can tell a change in the standards from a change you
+made on this machine:
+
+- an entry still as `globals` wrote it takes the new portable value, including `false` and
+  removals;
+- an entry you changed here is kept and reported under **Preserved for manual review**, as
+  `! … enabledPlugins.<plugin> (changed on this machine; kept)`,
+  `! … permissions.deny <rule> (removed on this machine)` or
+  `! … hooks.<event> <matcher or *> <command> (changed on this machine; kept)`. That run exits
+  `2`; later runs are quiet until the standard's value for that entry changes, which is reported
+  once more;
+- everything else in the file is never touched: your own plugins, rules and hooks (also hooks
+  you add inside a portable matcher group), and values you already had before your first
+  `globals` run.
+
+To **change a portable setting for every machine**, edit `.agents/claude-settings.json` here,
+commit, then `git pull && repo-template globals` elsewhere. A `/plugin` toggle or a hand edit of
+`~/.claude/settings.json` stays on that machine. To **take the standard's value back** for an
+entry you changed, set it to the value in `.agents/claude-settings.json` (or re-add the removed
+rule): `globals` then treats it as current again. To **start over**, delete
+`~/.repo-template/globals-state.json` together with every portable entry (or whole `enabledPlugins`,
+`permissions` and `hooks` sections) in `~/.claude/settings.json`; the next run writes them again as
+its own. Entries you leave in place after deleting the state file count as this machine's, and
+defaults you removed are written again.
+
+`permissions.allow` and settings that widen access to the machine, such as
+`remoteControlAtStartup`, are never distributed: `globals` refuses a source that contains them.
+A link at `~/.claude/settings.json` that repo-template didn't create (dotfiles, stow) is left
+alone and reported once.
+
+#### Upgrading a machine from a linked settings file (before 0.4.2)
+
+Before 0.4.2, `~/.claude/settings.json` was a link to `.claude/settings.json` in this repository,
+so Claude Code wrote `/model`, `/effort` and `/plugin` changes from every machine into that shared
+file. That file is gone in 0.4.2. On each machine:
+
+```bash
+cd /aiDevStandards
+cp .claude/settings.json ~/claude-settings-before-0.4.2.json   # this machine's view
+git checkout -- .claude/settings.json      # changes Claude Code wrote through the link block the pull
+git pull                                   # removes .claude/settings.json: the link now dangles
+cp ~/claude-settings-before-0.4.2.json .claude/settings.json   # Git ignores it now
+repo-template globals
+rm .claude/settings.json
+```
+
+Putting the saved copy back before `globals` lets the migration see this machine's settings
+through the link. It then backs up that content and the link target under
+`~/.repo-template/backups/<timestamp>/`, writes a real file, and keeps everything the old shared
+file didn't distribute (your own plugins, rules, hooks, `model`, `remoteControlAtStartup`). If you
+skip that step, the dangling link is treated like a fresh machine: every portable entry and
+default is written, and nothing of the old file is kept. Between the pull and `globals`, Claude
+Code on that machine has no user settings: no deny rules, plugins or receipt hooks.
 
 ## Quick start
 
@@ -118,8 +187,8 @@ Because the install is editable, a `git pull` updates the CLI and its templates 
 reinstall. Set `AI_DEV_STANDARDS=/aiDevStandards` in your shell profile to omit
 `--standards-root`. A root named either way must be a standards repository, or the command stops
 with an error. Without either, `globals` uses the checkout the CLI is installed from, so running
-it inside some other repository (which may well have `.agents/skills/` and
-`.claude/settings.json` of its own) never relinks `~/.agents` there. If you're inside a second
+it inside some other repository (which may well have `.agents/skills/` of its own, from
+`npx skills add`) never relinks `~/.agents` there. If you're inside a second
 repo-template checkout, it stops and asks you to pass `--standards-root`.
 
 ### Create a repository
@@ -203,8 +272,8 @@ what is already there:
 | `new` | created | created, but a Git or uv step failed | n/a |
 | `update` | applied cleanly | an error was reported: a Git or uv step failed, or a listed skill pack isn't defined or lists a skill that isn't installed | files preserved for manual review |
 | `check` | current (every path, when given several) | something would change, or an error was reported | n/a |
-| `globals` | applied cleanly | an error was reported (for example an override for a missing skill) | something was preserved: a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
-| `globals --check` | current | links would change | n/a |
+| `globals` | applied cleanly | an error was reported (for example an override for a missing skill, or settings that aren't valid JSON) | something was preserved: a portable setting changed on this machine (reported once), a link at `~/.claude/settings.json` that repo-template didn't create, or a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
+| `globals --check` | current | a link or setting would change, or something is reported for review (once: a setting changed on this machine, a link repo-template didn't create) | n/a |
 
 Every command also exits `1` with a `repo-template: error: …` line when it can't run at all: an
 unknown pack, an unreadable manifest, a non-empty target for `new`, or a manifest from a newer
@@ -319,7 +388,7 @@ belonged to that pack.
 | `typescript` | `setup-ts-deep-modules`, `migrate-to-shoehorn` | mattpocock/skills |
 
 Claude Code plugins (skill-creator, GitHub, Playwright, hookify, and others) are enabled through
-`.claude/settings.json` rather than vendored here.
+the portable settings in `.agents/claude-settings.json` rather than vendored here.
 
 ### Skill receipts
 
@@ -380,7 +449,8 @@ plugin, and follow `writing-for-agents`.
 - `check` and `globals --check` never write.
 - Files are written atomically (temporary file, then rename).
 - Global files are backed up before being replaced with links.
-- `~/.claude` is never linked wholesale; only `settings.json` and individual skills are.
+- `~/.claude` is never linked wholesale: individual skills are linked, and the portable settings
+  are merged into `~/.claude/settings.json`, entry by entry, keeping changes made on the machine.
 - Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/` and
   `.codex/`. The pre-commit hook blocks staged private keys and AWS- or OpenAI-style keys.
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
@@ -406,8 +476,9 @@ uv run repo-template --help
 - Template content: `src/repo_template/templates.py`, one `add()` call per file with its policy.
 - What each policy may do to a file (managed, seed, merged): `src/repo_template/policies.py`,
   one class per policy behind a single `decide` interface. Applying them to a repository and
-  writing the manifest: `src/repo_template/scaffold.py`. Hook path and lockfile, shared by `new`,
-  `update` and `check`: `src/repo_template/repository.py`. Global linking:
+  writing the manifest: `src/repo_template/scaffold.py`. Portable settings merge, its state file
+  and the migration from the old link: `src/repo_template/settings.py`. Hook path and lockfile,
+  shared by `new`, `update` and `check`: `src/repo_template/repository.py`. Global linking:
   `src/repo_template/standards.py`.
 - This repository is the first consumer of its own baseline: it commits a `.repo-template.json`
   and `tests/test_baseline_sync.py` fails whenever `repo-template check .` would change anything,

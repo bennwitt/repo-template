@@ -55,8 +55,7 @@ def test_globals_exits_1_when_it_reports_errors(
 ) -> None:
     standards = tmp_path / "standards"
     (standards / ".agents/skills").mkdir(parents=True)
-    (standards / ".claude").mkdir()
-    (standards / ".claude/settings.json").write_text("{}\n")
+    (standards / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}\n')
     overrides = {"gone": {"why": "test", "frontmatter": {"description": "x"}}}
     (standards / ".agents/skill-overrides.json").write_text(json.dumps(overrides))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
@@ -134,7 +133,7 @@ def test_globals_exits_2_when_it_preserves_a_folder(
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("---\nname: example\ndescription: x\n---\n")
     (standards / ".claude/skills/example").mkdir(parents=True)  # a real folder, not a link
-    (standards / ".claude/settings.json").write_text("{}\n")
+    (standards / ".agents/claude-settings.json").write_text('{"portable": {}, "defaults": {}}\n')
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
 
     assert main(["globals", "--standards-root", str(standards)]) == 2
