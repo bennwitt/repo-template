@@ -33,7 +33,8 @@ _Avoid_: patched file
 **Manifest**:
 `.repo-template.json` in a repository repo-template manages: its profile, template version, skill
 packs and pack MCP records; for the Python/uv profile also the project variables and the hash of
-each file as generated.
+each file as generated. A personal repository's is `.git/repo-template.json`, with no MCP
+records (those are in `~/.repo-template/globals-state.json`).
 _Avoid_: lock, state file
 
 **Accepted difference**:
@@ -76,6 +77,12 @@ _Avoid_: skill bundle, plugin
 A repository adopted with `update --packs-only`: its manifest's profile is `packs-only`, and
 repo-template manages only its skill packs and their MCP servers, never baseline files.
 _Avoid_: partial adoption
+
+**Personal repository**:
+A repository someone else manages, adopted with `update --personal` for one person's skill packs:
+nothing anyone else sees changes. Its manifest, ignore entries and MCP servers stay on that
+person's machine (`.git/`, Claude Code's local scope).
+_Avoid_: private adoption, local adoption
 
 **Cooldown**:
 The 7 days a package release must be public before repo-template pins it (MCP servers, tools).

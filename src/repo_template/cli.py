@@ -80,6 +80,13 @@ def _parser() -> argparse.ArgumentParser:
         help="adopt a repository for its skill packs (and their MCP servers) alone: no baseline "
         "files, hook path or lockfile; recorded, so later runs need no flag",
     )
+    update.add_argument(
+        "--personal",
+        action="store_true",
+        help="adopt a repository you don't manage for your own skill packs: nothing anyone else "
+        "sees changes (the record is in .git, the links in .git/info/exclude, the MCP servers "
+        "in Claude Code's local scope); recorded, so later runs need no flag",
+    )
 
     check = subparsers.add_parser(
         "check", help="report what update would change, without writing anything"
@@ -105,6 +112,11 @@ def _parser() -> argparse.ArgumentParser:
         "--packs-only",
         action="store_true",
         help="plan a packs-only adoption (as update --packs-only would)",
+    )
+    check.add_argument(
+        "--personal",
+        action="store_true",
+        help="plan a personal adoption (as update --personal would)",
     )
 
     globals_parser = subparsers.add_parser(
@@ -201,8 +213,15 @@ def _interactive(args: argparse.Namespace) -> bool:
 def _update(args: argparse.Namespace) -> int:
     hooks, lock = not args.no_hooks, not args.no_lock
     result = update_repository(
-        args.path, hooks=hooks, lock=lock, packs=args.pack, packs_only=args.packs_only
+        args.path,
+        hooks=hooks,
+        lock=lock,
+        packs=args.pack,
+        packs_only=args.packs_only,
+        personal=args.personal,
     )
+    # Only baseline files conflict, so packs-only and personal runs never reach the second pass
+    # below (which relies on the recorded profile, not the flags).
     if result.conflicts and _interactive(args):
         _print_result(result, preserved=False)
         print()
@@ -243,6 +262,7 @@ def _check(args: argparse.Namespace) -> int:
             lock=not args.no_lock,
             packs=args.pack,
             packs_only=args.packs_only,
+            personal=args.personal,
         )
         _print_result(result, check=True)
         return 1 if result.needs_attention else 0
@@ -256,6 +276,7 @@ def _check(args: argparse.Namespace) -> int:
                 lock=not args.no_lock,
                 packs=args.pack,
                 packs_only=args.packs_only,
+                personal=args.personal,
             )
         except (OSError, ValueError) as exc:
             print(f"{path}: error")

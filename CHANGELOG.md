@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.3 - 2026-10-14
+
+- `update --personal` (and `check --personal`) adopts a repository you don't manage, such as a
+  team's, for your own skill packs without changing anything anyone else sees. The manifest is
+  `.git/repo-template.json`; the links it makes are listed in a repo-template block in
+  `.git/info/exclude`; the packs' MCP servers go to Claude Code's local scope for that checkout
+  (never `.mcp.json`) and to an ignored `.codex/config.toml` (never one of your own that Git
+  doesn't ignore). Paths the repository tracks are never linked, listed or removed, a server its
+  `.mcp.json` defines is left to it, and a link or Codex block Git would no longer ignore is
+  taken out. Later runs follow the recorded profile; it is refused in a subfolder, in a linked
+  worktree (of a personal checkout, for any run), and in a repository with its own
+  `.repo-template.json`.
+- Pack `react` no longer brings the LangChain docs servers; the `langchain` pack has them, so a
+  repository with both still gets them.
+- The checks of what Git ignores and tracks run without the variables that tie Git to one
+  repository (`GIT_DIR`, `GIT_INDEX_FILE`...), so run from a hook they ask about the right one;
+  `git -c` settings still apply.
+
 ## 0.5.2 - 2026-10-14
 
 - Skills refreshed from upstream: `ask-matt`, `claude-handoff`, `code-review`, `diagnosing-bugs`,

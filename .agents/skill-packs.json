@@ -160,7 +160,7 @@
     ]
   },
   "react": {
-    "description": "React and shadcn/ui front ends, including LangGraph useStream chat UIs.",
+    "description": "React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs.",
     "skills": [
       "frontend-design",
       "shadcn",
@@ -169,9 +169,7 @@
       "web-interface-guidelines"
     ],
     "mcp": [
-      "shadcn",
-      "docs-langchain",
-      "reference-langchain"
+      "shadcn"
     ]
   },
   "typescript": {

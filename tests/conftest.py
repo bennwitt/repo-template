@@ -4,6 +4,15 @@ import os
 
 import pytest
 
+from repo_template import repository
+
+
+@pytest.fixture(autouse=True)
+def _no_real_claude(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A personal adoption adds servers to Claude Code's local scope through the real `claude`
+    CLI and ~/.claude.json: a test passes a fake (and a temporary home) or gets none."""
+    monkeypatch.setattr(repository, "local_claude", lambda root, home: None)
+
 
 @pytest.fixture(autouse=True)
 def _no_machine_config_dirs(monkeypatch: pytest.MonkeyPatch) -> None:
