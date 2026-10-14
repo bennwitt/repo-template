@@ -11,6 +11,8 @@ from repo_template.repository import update_repository
 from repo_template.templates import project_files
 
 ROOT = Path(__file__).resolve().parents[1]
+# Dev dependencies this repository needs for its own tests that generated repositories don't.
+STANDARDS_ONLY_DEV = {"hypothesis"}
 
 
 def _baseline() -> dict[str, str]:
@@ -35,7 +37,8 @@ def test_baseline_pins_match_this_repository() -> None:
     baseline = tomllib.loads(_baseline()["pyproject.toml"])
 
     assert baseline["build-system"]["requires"] == ours["build-system"]["requires"]
-    assert set(ours["dependency-groups"]["dev"]) <= set(baseline["dependency-groups"]["dev"])
+    extra = set(ours["dependency-groups"]["dev"]) - set(baseline["dependency-groups"]["dev"])
+    assert {re.split(r"[<>=!~ \[]", item, maxsplit=1)[0] for item in extra} <= STANDARDS_ONLY_DEV
 
 
 def test_workflow_actions_are_pinned_to_a_commit() -> None:

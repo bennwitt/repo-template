@@ -71,15 +71,7 @@ def validate_schema(value: Any, path: str) -> None:
 
     schema_type = value.get("type")
     if schema_type is not None:
-        valid_types = {
-            "array",
-            "boolean",
-            "integer",
-            "null",
-            "number",
-            "object",
-            "string",
-        }
+        valid_types = {"array", "boolean", "integer", "null", "number", "object", "string"}
         types = [schema_type] if isinstance(schema_type, str) else schema_type
         if (
             not isinstance(types, list)
@@ -99,23 +91,14 @@ def validate_schema(value: Any, path: str) -> None:
 
     properties = value.get("properties")
     if properties is not None:
-        if not isinstance(properties, dict) or not all(
-            isinstance(name, str) for name in properties
-        ):
+        if not isinstance(properties, dict) or not all(isinstance(name, str) for name in properties):
             raise SchemaError(f"{path}.properties must be an object")
         for name, child in properties.items():
             validate_schema(child, f"{path}.properties.{name}")
 
     if "items" in value:
         validate_schema(value["items"], f"{path}.items")
-    for keyword in (
-        "additionalProperties",
-        "contains",
-        "not",
-        "propertyNames",
-        "unevaluatedItems",
-        "unevaluatedProperties",
-    ):
+    for keyword in ("additionalProperties", "contains", "not", "propertyNames", "unevaluatedItems", "unevaluatedProperties"):
         if keyword in value:
             validate_schema(value[keyword], f"{path}.{keyword}")
     for keyword in ("allOf", "anyOf", "oneOf", "prefixItems"):
@@ -152,12 +135,7 @@ def compare_schema(
     if isinstance(required, bool) or isinstance(actual, bool):
         if required != actual:
             findings.append(
-                {
-                    "path": path,
-                    "issue": "boolean_schema_changed",
-                    "required": repr(required),
-                    "actual": repr(actual),
-                }
+                {"path": path, "issue": "boolean_schema_changed", "required": repr(required), "actual": repr(actual)}
             )
         return
     if required is None:
@@ -165,12 +143,7 @@ def compare_schema(
     if not isinstance(required, dict) or not isinstance(actual, dict):
         if required != actual:
             findings.append(
-                {
-                    "path": path,
-                    "issue": "value_changed",
-                    "required": repr(required),
-                    "actual": repr(actual),
-                }
+                {"path": path, "issue": "value_changed", "required": repr(required), "actual": repr(actual)}
             )
         return
 
@@ -178,46 +151,25 @@ def compare_schema(
     actual_type = actual.get("type")
     if required_type != actual_type:
         findings.append(
-            {
-                "path": f"{path}.type",
-                "issue": "type_changed",
-                "required": str(required_type),
-                "actual": str(actual_type),
-            }
+            {"path": f"{path}.type", "issue": "type_changed", "required": str(required_type), "actual": str(actual_type)}
         )
 
     required_enum = required.get("enum")
     actual_enum = actual.get("enum")
     if isinstance(required_enum, list):
-        required_values = {
-            json.dumps(value, sort_keys=True, separators=(",", ":"))
-            for value in required_enum
-        }
+        required_values = {json.dumps(value, sort_keys=True, separators=(",", ":")) for value in required_enum}
         actual_values = (
-            {
-                json.dumps(value, sort_keys=True, separators=(",", ":"))
-                for value in actual_enum
-            }
+            {json.dumps(value, sort_keys=True, separators=(",", ":")) for value in actual_enum}
             if isinstance(actual_enum, list)
             else set()
         )
         if required_values != actual_values:
             findings.append(
-                {
-                    "path": f"{path}.enum",
-                    "issue": "enum_changed",
-                    "required": repr(required_enum),
-                    "actual": repr(actual_enum),
-                }
+                {"path": f"{path}.enum", "issue": "enum_changed", "required": repr(required_enum), "actual": repr(actual_enum)}
             )
     elif actual_enum is not None:
         findings.append(
-            {
-                "path": f"{path}.enum",
-                "issue": "enum_changed",
-                "required": "<absent>",
-                "actual": repr(actual_enum),
-            }
+            {"path": f"{path}.enum", "issue": "enum_changed", "required": "<absent>", "actual": repr(actual_enum)}
         )
 
     strict_keywords = {
@@ -283,11 +235,7 @@ def compare_schema(
         "title",
         "writeOnly",
     }
-    handled = (
-        {"type", "enum", "required", "properties", "items"}
-        | strict_keywords
-        | annotations
-    )
+    handled = {"type", "enum", "required", "properties", "items"} | strict_keywords | annotations
     for keyword in sorted((set(required) | set(actual)) - handled):
         if required.get(keyword, "<absent>") != actual.get(keyword, "<absent>"):
             findings.append(
@@ -319,12 +267,7 @@ def compare_schema(
         for name, child in required_properties.items():
             if name not in actual_properties:
                 findings.append(
-                    {
-                        "path": f"{path}.properties.{name}",
-                        "issue": "property_missing",
-                        "required": "present",
-                        "actual": "missing",
-                    }
+                    {"path": f"{path}.properties.{name}", "issue": "property_missing", "required": "present", "actual": "missing"}
                 )
             else:
                 compare_schema(
@@ -338,10 +281,7 @@ def compare_schema(
         for name in sorted(set(actual_properties) - set(required_properties)):
             if input_schema and name not in actual_required:
                 additions.append(
-                    {
-                        "path": f"{path}.properties.{name}",
-                        "change": "optional_property_added",
-                    }
+                    {"path": f"{path}.properties.{name}", "change": "optional_property_added"}
                 )
             else:
                 findings.append(
@@ -356,21 +296,11 @@ def compare_schema(
     if "items" in required or "items" in actual:
         if "items" not in actual:
             findings.append(
-                {
-                    "path": f"{path}.items",
-                    "issue": "items_schema_missing",
-                    "required": "present",
-                    "actual": "missing",
-                }
+                {"path": f"{path}.items", "issue": "items_schema_missing", "required": "present", "actual": "missing"}
             )
         elif "items" not in required:
             findings.append(
-                {
-                    "path": f"{path}.items",
-                    "issue": "items_schema_added",
-                    "required": "missing",
-                    "actual": "present",
-                }
+                {"path": f"{path}.items", "issue": "items_schema_added", "required": "missing", "actual": "present"}
             )
         else:
             compare_schema(
@@ -395,12 +325,7 @@ def compare(required_path: Path, actual_path: Path) -> dict[str, Any]:
     for name, tool in required.items():
         if name not in actual:
             findings.append(
-                {
-                    "path": f"tools.{name}",
-                    "issue": "tool_missing",
-                    "required": "present",
-                    "actual": "missing",
-                }
+                {"path": f"tools.{name}", "issue": "tool_missing", "required": "present", "actual": "missing"}
             )
             continue
         for schema_name in ("input", "output", "error"):
@@ -409,12 +334,8 @@ def compare(required_path: Path, actual_path: Path) -> dict[str, Any]:
                     {
                         "path": f"tools.{name}.{schema_name}",
                         "issue": "schema_presence_changed",
-                        "required": "present"
-                        if tool[schema_name] is not None
-                        else "missing",
-                        "actual": "present"
-                        if actual[name][schema_name] is not None
-                        else "missing",
+                        "required": "present" if tool[schema_name] is not None else "missing",
+                        "actual": "present" if actual[name][schema_name] is not None else "missing",
                     }
                 )
             elif tool[schema_name] is not None:

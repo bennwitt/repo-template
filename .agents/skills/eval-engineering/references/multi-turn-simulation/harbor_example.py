@@ -140,9 +140,7 @@ class MultiTurnHarborAgent(BaseAgent):
             followups = self.scripted_followups()
             contract = self.user_contract()
             if (followups is None) == (contract is None):
-                raise ValueError(
-                    "choose exactly one of scripted_followups or user_contract"
-                )
+                raise ValueError("choose exactly one of scripted_followups or user_contract")
             if followups is not None:
                 result = await run_scripted_conversation(
                     first_message=instruction,
@@ -274,17 +272,12 @@ class MultiTurnHarborAgent(BaseAgent):
                 values["timestamp"] = turn["timestamp"]
             steps.append(Step(**values))
         if not steps:
-            steps.append(
-                Step(step_id=1, source="user", message=interaction["instruction"])
-            )
+            steps.append(Step(step_id=1, source="user", message=interaction["instruction"]))
         return Trajectory(
             schema_version="ATIF-v1.7",
             session_id=interaction.get("session_id"),
             agent=Agent(name=self.name(), version=self.version()),
             steps=steps,
             final_metrics=FinalMetrics(total_steps=len(steps)),
-            extra={
-                "termination": interaction["termination"],
-                "error": interaction["error"],
-            },
+            extra={"termination": interaction["termination"], "error": interaction["error"]},
         )

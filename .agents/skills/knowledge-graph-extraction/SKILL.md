@@ -1,6 +1,6 @@
 ---
 name: knowledge-graph-extraction
-description: "Build a knowledge graph from unstructured text with Claude: a closed-vocabulary ontology, entity and relation extraction anchored to source evidence, entity resolution, graph assembly, multi-hop queries, ArangoDB-shaped export, and evaluation against a gold set. Use when turning documents into entities and relationships, deduplicating names across sources, building GraphRAG, designing an ontology, or connecting facts that span documents, even if nobody says \"knowledge graph\"."
+description: "Build a knowledge graph from unstructured text with Claude: closed-vocabulary ontology, evidence-anchored entity and relation extraction, entity resolution, multi-hop queries, ArangoDB export, gold-set evaluation. Use when turning documents into entities and relations, deduplicating names, or building GraphRAG."
 ---
 
 # Knowledge Graph Extraction
@@ -13,7 +13,7 @@ The classical pipeline needed a trained NER model, a trained relation classifier
 
 ## Design the schema before extracting anything
 
-`scripts/kg_pipeline.py` carries an `Ontology`: closed entity types, each with an upper-layer parent (PERSON→AGENT, SERVICE→ARTIFACT), and typed edges with declared domain and range (`OWNS: TEAM → SERVICE|COMPONENT|JOB`). Types and predicates reach the model as `Literal`s, so an invented type is rejected by the API, and an edge whose endpoints violate domain/range is refused at assembly *with a reason*. Two registered ontologies: `generic` (the cookbook's five types) and `incident` (SERVICE/COMPONENT/JOB/INCIDENT/TEAM/PERSON/CHANGE). Write your own as JSON and pass `--ontology my.json`.
+`scripts/kg_pipeline.py` carries an `Ontology`: closed entity types, each with an upper-layer parent (PERSON→AGENT, SERVICE→ARTIFACT), and typed edges with declared domain and range (`OWNS: TEAM → SERVICE|COMPONENT|JOB`). Types and predicates reach the model as `Literal`s, so an invented type is rejected by the API, and an edge whose endpoints violate domain/range is refused at assembly *with a reason*. Two registered ontologies: `generic` (the five types of the [Claude cookbook's knowledge graph guide](https://github.com/anthropics/claude-cookbooks/tree/ef99c70e2e6d5e4f5e227ee6745df32bcac72fdc/capabilities/knowledge_graph)) and `incident` (SERVICE/COMPONENT/JOB/INCIDENT/TEAM/PERSON/CHANGE). Write your own as JSON and pass `--ontology my.json`.
 
 **Domain types beat the generic five.** They tell the extractor what "central to this document" means. `references/schema-design.md` has the rules for deciding what becomes a node, a label or a property, when an edge needs time validity, and when a relation must be reified — read it before writing a schema by hand.
 

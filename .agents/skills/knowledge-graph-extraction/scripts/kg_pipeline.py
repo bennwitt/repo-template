@@ -1,3 +1,5 @@
+# Adapted in part from anthropics/claude-cookbooks (capabilities/knowledge_graph at
+# ef99c70e2e6d), Copyright (c) 2023 Anthropic, MIT License; see ../LICENSE.txt.
 """Knowledge graph construction from unstructured text with Claude -- standalone.
 
 Self-contained, with no imports from any host repository, so the skill works in

@@ -89,6 +89,25 @@ def test_dropping_a_pack_removes_only_its_links(tmp_path: Path) -> None:
     assert sorted(os.listdir(root / ".claude/skills")) == ["project-only"]
 
 
+def test_a_skill_shared_by_two_packs_stays_when_one_is_dropped(tmp_path: Path) -> None:
+    """frontend-design serves gradio, react and openwebui."""
+    agents = _catalog(tmp_path / "standards")
+    packs = json.loads((agents / "skill-packs.json").read_text())
+    packs["ui"] = {"description": "UI", "skills": ["lc-two"]}
+    (agents / "skill-packs.json").write_text(json.dumps(packs))
+    root = _repository(tmp_path / "service")
+    update_repository(root, hooks=False, lock=False, packs=["lc", "ui"], agents_dir=agents)
+    manifest_path = root / ".repo-template.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["skill_packs"] = ["ui"]
+    manifest_path.write_text(json.dumps(manifest))
+
+    result = update_repository(root, hooks=False, lock=False, agents_dir=agents)
+
+    assert result.removed == [".claude/skills/lc-one"]
+    assert sorted(os.listdir(root / ".claude/skills")) == ["lc-two"]
+
+
 def test_unknown_pack_is_rejected_before_anything_changes(tmp_path: Path) -> None:
     agents = _catalog(tmp_path / "standards")
     root = _repository(tmp_path / "service")

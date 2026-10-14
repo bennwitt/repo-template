@@ -1,0 +1,365 @@
+{
+  "sources": {
+    "astral-sh/claude-code-plugins": {
+      "license": "MIT OR Apache-2.0",
+      "copyright": "Copyright (c) 2025 Astral Software Inc.",
+      "licenseFiles": {
+        "LICENSE-MIT": "014835144877ea9c926d027ece3e1a26290cf481",
+        "LICENSE-APACHE": "47fd5b871ae0c1b3158ce6c41aca0f592731cb50"
+      },
+      "discover": "none"
+    },
+    "getsentry/skills": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright 2025 Functional Software, Inc. dba Sentry",
+      "licenseFiles": {
+        "LICENSE": "753a6c03c60a9232405d05170bd3ad3cab49a1ef"
+      },
+      "discover": "none"
+    },
+    "github/awesome-copilot": {
+      "license": "MIT",
+      "copyright": "Copyright GitHub, Inc.",
+      "licenseFiles": {
+        "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
+      },
+      "discover": "none"
+    },
+    "gradio-app/gradio": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (the LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
+    },
+    "langchain-ai/langchain-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) LangChain, Inc.",
+      "licenseFiles": {
+        "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+      },
+      "discover": "all"
+    },
+    "mattpocock/skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Matt Pocock",
+      "licenseFiles": {
+        "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+      },
+      "discover": "all"
+    },
+    "trailofbits/skills": {
+      "license": "CC-BY-SA-4.0",
+      "copyright": "Not stated upstream; the README says \"Made by Trail of Bits\"",
+      "licenseFiles": {
+        "LICENSE": "3b7b82d0da2db857eda1a798dbd908ea136f07b5"
+      },
+      "discover": "none"
+    },
+    "vercel-labs/skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Vercel, Inc.",
+      "licenseFiles": {
+        "LICENSE": "eabe3008f6c0275929faa8b07d406e82717648cc"
+      },
+      "discover": "none"
+    }
+  },
+  "local": {
+    "knowledge-graph-extraction": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "anthropics/claude-cookbooks",
+        "path": "capabilities/knowledge_graph",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2023 Anthropic",
+        "licenseFiles": {
+          "LICENSE": "e0d914d8c81feba1a081620902f8c4877ad6313d"
+        },
+        "commit": "ef99c70e2e6d5e4f5e227ee6745df32bcac72fdc"
+      }
+    },
+    "repo-template": {
+      "license": "MIT"
+    }
+  },
+  "skills": {
+    "ask-matt": {
+      "commit": "e484a8095543718ced436b9b49a8160ed4554000",
+      "tree": "8ab83b2d681b3a343b869e0840535ecf832a17b5"
+    },
+    "claude-handoff": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "6845c30e62e1c0c2c0fbdea8307379197f0b4dc4"
+    },
+    "code-review": {
+      "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
+      "tree": "d8e341cee7980127dddda05159bedf25dc853615"
+    },
+    "codebase-design": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "07ba1cd60efc12d0d3a083005c1d9651cf15e39a"
+    },
+    "deep-agents-core": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "9e46674077d75bcdf5f0cf174357ac9024e744bb"
+    },
+    "deep-agents-memory": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "3b4f2f07c1ae04f68763c101844e704c5555381b"
+    },
+    "deep-agents-orchestration": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "3f34bdfaee45686ec98e8630c96ec02adfcde549"
+    },
+    "deepagents-python-quickstart": {
+      "commit": "514d17f139972d4513c4c01c799881a381567159",
+      "tree": "d4cc9788517d84535b3d0f96bbc6f4025e19df74"
+    },
+    "deepagents-typescript-quickstart": {
+      "commit": "514d17f139972d4513c4c01c799881a381567159",
+      "tree": "d62ee11c19684fb7751c6fd629a9ed061bb98c82"
+    },
+    "diagnosing-bugs": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "de4236cf34757c4e9ea7afe78d46c023213ff254"
+    },
+    "domain-modeling": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "ea30ee454ba264543dbe40737973b1a5afb9f0e6"
+    },
+    "ecosystem-primer": {
+      "commit": "9feb8147562f0f186b081b343e5ccaf53e9e7a18",
+      "tree": "179ffaf610a29cc8cd9b257ae923d6ebecd1e372"
+    },
+    "eval-engineering": {
+      "commit": "fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7",
+      "tree": "171e0b69b291d65553bdcb89f59f085e22770e09"
+    },
+    "find-skills": {
+      "commit": "773fb2c7bbf16781670a3520affc4abd0c6151ae",
+      "tree": "76a98a285cb0434f3d39e1a873823556330e398b"
+    },
+    "git-guardrails-claude-code": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "ceed97af09633b300826d0ca0b1464c527ec9a35"
+    },
+    "github-actions-hardening": {
+      "commit": "df566343b3a685e821f8ebe8ea70a2a8eb8b857b",
+      "tree": "25d75a622f5f8c034be5b25bf6585850d6f7fcd7"
+    },
+    "gradio": {
+      "commit": "b79748e4801ad9a73c6839a637a68dcad9a366b3",
+      "tree": "ddda04ac8f9eab50d03cae92e9d5d83fd4a50b39"
+    },
+    "grill-me": {
+      "commit": "fcf0071560d32913c9d4f820e0d7ca467c881619",
+      "tree": "3df14e2d3a89459bf300614be9247e3ce74798f8"
+    },
+    "grill-with-docs": {
+      "commit": "447ca70872026d5b79d6073a546dac082117fed7",
+      "tree": "eedaf2562c83155115e9c649fa3ecaac2e10e81d"
+    },
+    "grilling": {
+      "commit": "85f83d3fde1d3a90d5c9a657f6998c79a6c37308",
+      "tree": "f0732035b8b1b60ae39454e4191caef32fa91903"
+    },
+    "handoff": {
+      "commit": "d28dfdc39beadc3142a33359b5cfa4765dcbd0bc",
+      "tree": "2242e8f05424b8c2ae94194a90d97b88d16108ec"
+    },
+    "hf-gradio": {
+      "commit": "3cae4986c69fc851a4b18c340f7cbeb9dcdee410",
+      "tree": "cf152b8708e94e97902eb340d24e17fc2a746694"
+    },
+    "implement": {
+      "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
+      "tree": "f07d230f645fc9ac390cf13a450bbff12ad791a3"
+    },
+    "implement-spec": {
+      "commit": "c612defa9e5cf9372262d0279eb124993ba77b71",
+      "tree": "0cfefc751d0cb64f0c948ffcb17e13b94e778f08"
+    },
+    "improve-codebase-architecture": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "39bd9cc130f7dfcc4e3ea0b3613f6ebed0d0ad2b"
+    },
+    "langchain-dependencies": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "ebdb8abc2c1ee9cea5da98f08043ce01e55a2b43"
+    },
+    "langchain-fundamentals": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "64d425535583b9bd96a434be24986bca192e45f6"
+    },
+    "langchain-middleware": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "fc36a1097394fb462a22d6f015450771a653b099"
+    },
+    "langchain-python-quickstart": {
+      "commit": "514d17f139972d4513c4c01c799881a381567159",
+      "tree": "054b9185ab85f2d4015fc9fadefda1bfb9a6156f"
+    },
+    "langchain-rag": {
+      "commit": "6c63acc130304741ce2a52e497ab58a7072f54c0",
+      "tree": "bc52c499ec8f4b03308eb683ff6b2bc12c74fcd7"
+    },
+    "langchain-typescript-quickstart": {
+      "commit": "514d17f139972d4513c4c01c799881a381567159",
+      "tree": "b9103283d1ce2544293fb4bbb9ee7c658aab2207"
+    },
+    "langgraph-cli": {
+      "commit": "16a992f09ab3ccfb642dd4f08d350d833d1990bf",
+      "tree": "51f0eaa1322bf31014dab8de84084f2e5a28710d"
+    },
+    "langgraph-fundamentals": {
+      "commit": "657ca08b6b8a4c8c9a2ef6cd49ec451597bdf1bc",
+      "tree": "480d57e3f5d3f0ac2d98108592a2d185f61cc2ec"
+    },
+    "langgraph-human-in-the-loop": {
+      "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
+      "tree": "b8ba56b3d8a2a148731c4ca136f4bdcbc4144dc5"
+    },
+    "langgraph-persistence": {
+      "commit": "488e510f880b8c4c6994fab37736faa7d1971d94",
+      "tree": "78329e3bc968c16282b186a265e04eaa01ca8fbd"
+    },
+    "langgraph-python-quickstart": {
+      "commit": "514d17f139972d4513c4c01c799881a381567159",
+      "tree": "5ed1610a20bfe1c4558c6a325ace3cc9260be289"
+    },
+    "langgraph-typescript-quickstart": {
+      "commit": "514d17f139972d4513c4c01c799881a381567159",
+      "tree": "10a80b9bdb2e3065e930a16626d6ea2578935b19"
+    },
+    "langsmith-online-eval-engineering": {
+      "commit": "6732f69c053c6e09e630970f557ae5b46e598a83",
+      "tree": "3cb006a828f54ab33e56ecfb839a5242aad1f863"
+    },
+    "loop-me": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "a0dfdc3562686d920900973b50289b36e2f7eafe"
+    },
+    "managed-deep-agents": {
+      "commit": "bd7c43d921418b468d38bf0b59788ea54ed103f4",
+      "tree": "a52aba9d263c5f0506c93c187f44e2117adcafa2"
+    },
+    "migrate-to-shoehorn": {
+      "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
+      "tree": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23"
+    },
+    "pr": {
+      "commit": "e484a8095543718ced436b9b49a8160ed4554000",
+      "tree": "00b896d811adffad747c7ca30078d909d60c7f93"
+    },
+    "property-based-testing": {
+      "commit": "123037ec8aed26f0d86327cc39137ee5043e5deb",
+      "tree": "cf5e77d684180c80a2f3aa228c53d04b1fa1ba77",
+      "author": "Henrik Brodin (Trail of Bits)"
+    },
+    "prototype": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "e41d92e171f074a2b6887d8f6faca4a15c83d1ca"
+    },
+    "research": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "0a6796c5667e95ed2301ba7381c123b4acb2ae1a"
+    },
+    "resolving-merge-conflicts": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "77f0d7de3143abbf03e55a63522d30bff31ae908"
+    },
+    "retro": {
+      "commit": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f",
+      "tree": "335c1862a43da9d629abafdb79ca0c0de118be08"
+    },
+    "ruff": {
+      "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",
+      "tree": "46e64350889df1af25113df450999101f48fd744"
+    },
+    "setup-matt-pocock-skills": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "b1568cde855a189b16e5d7dd8a0fa4c3f156bc2e"
+    },
+    "setup-ts-deep-modules": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "b32508a8a7d62c07d32d7c5cff84d357719def7f"
+    },
+    "skill-scanner": {
+      "commit": "d18b7aa8ba878354e5c348310230e652f7690f9c",
+      "tree": "25e154ab28dda80215e7830778036a9b0933fd09"
+    },
+    "supply-chain-risk-auditor": {
+      "commit": "123037ec8aed26f0d86327cc39137ee5043e5deb",
+      "tree": "954cc68e05e24a2a14447b60d1e8946b53323b1b",
+      "author": "Eric Quintero"
+    },
+    "tdd": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "bf1bf5ffcd63aa8abce830f2955a853c121fb463"
+    },
+    "teach": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "2ab11f2f51f3c29771edb5d4258d807a49462491"
+    },
+    "to-questionnaire": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "46dfbeeba12a9e52eef446676f42e7551023d9a9"
+    },
+    "to-spec": {
+      "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
+      "tree": "136b9651747cfccbfbb7c50a6b0dfb757e7547d2"
+    },
+    "to-tickets": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "b32c94e5a51c24ee9c41fcb7fe9ea9fff9af6369"
+    },
+    "triage": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "4cb951d62ecccaed601cdc5f9a1b7b3d8a799635"
+    },
+    "uv": {
+      "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",
+      "tree": "bca0368b210d4b3ce04b4895829afe0dbc6949a8"
+    },
+    "wait-what": {
+      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
+      "tree": "c8b050e6b8c711be1a9008ceacb2126914f0763e"
+    },
+    "wayfinder": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "8ec0462658381bd1606d3f9db14ffc67df6a2a43"
+    },
+    "wizard": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "0a163daf092c6f361158ca9627e81f2cb5230574"
+    },
+    "writing-beats": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "3a28fb076fdaaec0927080718abb98fc0f340011"
+    },
+    "writing-for-agents": {
+      "commit": "321658273cb1d20b76026717d027d505790106d4",
+      "tree": "ad2925850efb8973a72d2e666f7a975f9a2d4a9b"
+    },
+    "writing-fragments": {
+      "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
+      "tree": "98e500e0097ec80f52f6a024c5a2ff6d15235bdb"
+    },
+    "writing-shape": {
+      "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
+      "tree": "ac92229646fccf7315ae139c37b479b3790617f2"
+    }
+  },
+  "ignored": {
+    "mattpocock/skills": {
+      "chief-of-staff": "in-progress beta, not yet listed upstream; revisit when it is",
+      "scaffold-exercises": "specific to Matt Pocock's course repositories",
+      "setup-pre-commit": "Husky/npm hooks; conflicts with this baseline's pre-commit hook"
+    },
+    "langchain-ai/langchain-skills": {
+      "swarm": "runs only inside the Deep Agents runtime (quickjs swarm_task tool)"
+    }
+  }
+}

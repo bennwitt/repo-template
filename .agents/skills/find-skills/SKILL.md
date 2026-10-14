@@ -1,6 +1,7 @@
 ---
 name: find-skills
 description: "Discover and install agent skills from the open skills ecosystem (npx skills, skills.sh). Use when the user explicitly asks to find, search for, compare, or install a skill, or asks whether a skill exists for a task. Not for answering ordinary how-to questions."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/vercel-labs/skills/tree/773fb2c7bbf16781670a3520affc4abd0c6151ae/skills/find-skills (MIT).
 ---
 
 # Find Skills

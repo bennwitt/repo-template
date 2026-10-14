@@ -1,6 +1,6 @@
 ---
 name: repo-template
-description: "Apply and maintain the repo-template baseline in a repository: plan with `repo-template check`, apply with `update`, resolve the files it preserves for manual review (exit code 2), add skill packs, or start a repository with `new`. Use when asked to bring a repository up to standard or update its standards, when repo-template reports preserved files, or to add a skill pack."
+description: "Apply and maintain the repo-template baseline in a repository: plan with `repo-template check`, apply with `update`, resolve files it preserves (exit 2), add skill packs, or start one with `new`. Use when bringing a repository up to standard, when repo-template reports preserved files, or to add a pack."
 ---
 
 # repo-template

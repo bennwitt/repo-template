@@ -2,16 +2,31 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import tomllib
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
 
+from repo_template.catalog import (
+    LICENSES_DIR,
+    LOCK_NAME,
+    NOTICES_NAME,
+    SHA,
+    SOURCES_NAME,
+    blob_sha,
+    integrity,
+    lock_completion,
+    origin,
+    override,
+    read_skill,
+    sync_documents,
+)
 from repo_template.model import Result
 from repo_template.policies import merge_marked_block
 from repo_template.settings import SOURCE_NAME, sync_claude_settings
-from repo_template.skillfile import set_field
+from repo_template.skillfile import field_lines
 
 GITIGNORE_START = "# >>> repo-template personal AI directories"
 GITIGNORE_END = "# <<< repo-template personal AI directories"
@@ -22,10 +37,24 @@ SKILL_MIRROR_TARGET = Path("../../.agents/skills")
 SKILL_PACKS_NAME = "skill-packs.json"
 SKILL_OVERRIDES_NAME = "skill-overrides.json"
 MANIFEST_LABEL = ".repo-template.json"
+FIELD_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
 
 
 def _is_standards_root(path: Path) -> bool:
     return (path / ".agents/skills").is_dir() and (path / ".agents" / SOURCE_NAME).is_file()
+
+
+def _is_full_catalog(path: Path) -> bool:
+    """A catalog with provenance (this repository), not a minimal standards root: then the
+    lock and the sources are required, so deleting them can't turn the checks off."""
+    markers = (LOCK_NAME, SOURCES_NAME, LICENSES_DIR, NOTICES_NAME)
+    if any((path / marker).exists() for marker in markers):
+        return True
+    try:
+        metadata = tomllib.loads((path / "pyproject.toml").read_text()).get("project", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+    return isinstance(metadata, dict) and metadata.get("name") == "repo-template"
 
 
 def _is_this_project(path: Path) -> bool:
@@ -131,34 +160,74 @@ def load_skill_overrides(agents_dir: Path) -> dict[str, dict[str, str | bool]]:
             raise ValueError(
                 f"{path}: {name!r} needs a 'frontmatter' object of strings or booleans"
             )
+        for key, value in fields.items():
+            if not FIELD_NAME.fullmatch(key) or (isinstance(value, str) and "---" in value):
+                # Claude Code ends the frontmatter at the first "---", even inside a value
+                raise ValueError(f"{path}: {name!r} can't set {key!r} to a value with '---'")
+        upstream, base = entry.get("upstream"), entry.get("base")
+        if upstream is not None and not (isinstance(upstream, str) and SHA.fullmatch(upstream)):
+            raise ValueError(f"{path}: {name!r} 'upstream' must be a 40-character blob SHA")
+        if base is not None and not (
+            isinstance(base, dict) and all(isinstance(raw, str | None) for raw in base.values())
+        ):
+            raise ValueError(f"{path}: {name!r} 'base' must map fields to their upstream text")
         overrides[name] = fields
     return overrides
 
 
-def apply_skill_overrides(standards_root: Path, result: Result, *, check: bool) -> None:
-    """Re-apply local frontmatter edits that `npx skills update` would otherwise overwrite."""
+def _write_exact(path: Path, text: str) -> None:
+    """Write atomically, keeping the text's own line endings."""
+    temporary = path.with_name(f".{path.name}.repo-template-tmp")
+    with temporary.open("w", newline="") as handle:
+        handle.write(text)
+    temporary.replace(path)
+
+
+def apply_skill_overrides(standards_root: Path, result: Result, *, check: bool) -> set[str]:
+    """Re-apply local frontmatter edits that vendoring a skill again would overwrite, mark each
+    changed SKILL.md, and record in each override the upstream text it replaces. Returns the
+    skills whose SKILL.md it rewrote (or, with check, would)."""
     agents = standards_root / ".agents"
-    for name, fields in load_skill_overrides(agents).items():
+    overrides = load_skill_overrides(agents)
+    rewritten: set[str] = set()
+    if not overrides:
+        return rewritten
+    records_path = agents / SKILL_OVERRIDES_NAME
+    records = json.loads(records_path.read_text())
+    completes = lock_completion(standards_root)
+    recorded = False
+    for name, fields in overrides.items():
         path = agents / "skills" / name / "SKILL.md"
         if not path.is_file():
             result.errors.append(f"{SKILL_OVERRIDES_NAME} overrides {name!r}, not in the catalog")
             continue
-        with path.open(newline="") as handle:  # keep the file's own line endings
-            text = handle.read()
-        updated = text
+        text = read_skill(path)
         try:
-            for key, value in fields.items():
-                updated = set_field(updated, key, value)
+            upstream, updated = override(
+                text, fields, records[name], completes(name, text), origin(standards_root, name)
+            )
         except ValueError as exc:
             result.errors.append(f"{SKILL_OVERRIDES_NAME} can't override {name!r}: {exc}")
             continue
+        provenance = {
+            "upstream": blob_sha(upstream.encode()),
+            "base": {key: field_lines(upstream, key) for key in fields},
+        }
+        if any(records[name].get(key) != value for key, value in provenance.items()):
+            records[name].update(provenance)
+            recorded = True
         if updated == text:
             result.unchanged.append(str(path))
             continue
         result.updated.append(f"{path} (override)")
+        rewritten.add(name)
         if not check:
-            with path.open("w", newline="") as handle:
-                handle.write(updated)
+            _write_exact(path, updated)
+    if recorded:
+        result.updated.append(f"{records_path} (the upstream text each override replaces)")
+        if not check:
+            _write_exact(records_path, json.dumps(records, indent=2, ensure_ascii=False) + "\n")
+    return rewritten
 
 
 def _prune_links(
@@ -339,14 +408,23 @@ def sync_globals(
     _link(agents, home / ".agents", result, home=home, stamp=stamp, check=check)
     sync_claude_settings(standards_root, home, result, check=check, stamp=stamp)
 
-    apply_skill_overrides(standards_root, result, check=check)
+    rewritten = apply_skill_overrides(standards_root, result, check=check)
     skill_root = standards_root / ".agents/skills"
     names = skill_names(standards_root)
     packs = load_skill_packs(standards_root / ".agents")
+    unsafe: set[str] = set()
+    if _is_full_catalog(standards_root):
+        # documents wait for a sound catalog, and a skill with a problem isn't linked
+        problems, unsafe = integrity(standards_root, names, rewritten if check else set())
+        result.errors.extend(problems)
+        if not problems:
+            sync_documents(standards_root, names, packs, result, check=check)
     in_packs = {name for skills in packs.values() for name in skills}
     for missing in sorted(in_packs - set(names)):
         result.errors.append(f"{SKILL_PACKS_NAME} lists {missing!r}, which isn't in the catalog")
-    global_names = [name for name in names if name not in in_packs]
+    for name in sorted(unsafe - in_packs):
+        result.errors.append(f"{name}: not linked until its problems above are fixed")
+    global_names = [name for name in names if name not in in_packs and name not in unsafe]
     for name in global_names:
         _link(
             skill_root / name,
