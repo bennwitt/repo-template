@@ -127,7 +127,10 @@
     "description": "React and shadcn/ui front ends, including LangGraph useStream chat UIs.",
     "skills": [
       "frontend-design",
-      "shadcn"
+      "shadcn",
+      "vercel-composition-patterns",
+      "vercel-react-best-practices",
+      "web-interface-guidelines"
     ],
     "mcp": [
       "shadcn",

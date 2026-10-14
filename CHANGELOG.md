@@ -11,7 +11,7 @@
   `azure-resource-lookup`, `azure-storage`, `azure-validate`, `docker-build-strategies`,
   `docker-compose-patterns`, `docker-destructive-guardrails`, `entra-app-registration`, `fastapi`,
   `frontend-design`, `microsoft-foundry`, `playwright-best-practices`, `playwright-cli`,
-  `playwright-trace`.
+  `playwright-trace`, `vercel-composition-patterns`, `vercel-react-best-practices`.
 - New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
   healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
 - Pack `react`: `frontend-design` (anthropics/skills, Apache-2.0) and a `shadcn` skill derived
@@ -33,6 +33,14 @@
   name a credential type. App Service settings are returned only after a consent prompt; the
   `foundry` and `arm` namespaces proxy Microsoft's hosted servers, whose read-only marking comes
   from those services, and `foundryextensions` can call deployed models (spending tokens).
+- Pack `react` adds `vercel-react-best-practices` and `vercel-composition-patterns`
+  (vercel-labs/agent-skills). That repository has no license file; its README says MIT, so the
+  README is the recorded license text and a change to it is flagged for review. The React
+  description is scoped to Next.js App Router and React 19.2+, and points to the rule files
+  rather than the compiled AGENTS.md, which drops code in five sections.
+- New derived skill `web-interface-guidelines` in pack `react`: Vercel's Web Interface
+  Guidelines (vercel-labs/web-interface-guidelines, MIT) copied at a fixed commit. The upstream
+  `web-design-guidelines` skill fetched them from `main` at every review, so it isn't vendored.
 - The `azure` plugin is off (the packs replace it: about 16,000 characters of descriptions in
   every session, a telemetry hook, and an MCP server that runs `@azure/mcp@latest`).
 - Portable settings ask before Azure deploys, deletes and purges, role assignments, admin

@@ -119,6 +119,14 @@
       },
       "discover": "none"
     },
+    "vercel-labs/agent-skills": {
+      "license": "MIT",
+      "copyright": "Not stated upstream (there is no license file; its README.md says 'License: MIT')",
+      "licenseFiles": {
+        "README.md": "04a1a5a46a22cfd430e2877b7c145e34fc2653ab"
+      },
+      "discover": "none"
+    },
     "vercel-labs/skills": {
       "license": "MIT",
       "copyright": "Copyright (c) 2026 Vercel, Inc.",
@@ -159,6 +167,19 @@
           "LICENSE.md": "fad4d887a681dd49233e5ed01ee2c7a1513089a0"
         },
         "commit": "d51870f66fd13cc975d82ecbb9eace3cff066878"
+      }
+    },
+    "web-interface-guidelines": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "vercel-labs/web-interface-guidelines",
+        "path": "command.md",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Vercel Labs",
+        "licenseFiles": {
+          "LICENSE": "b3575a3c1358eac4b9ee36a4c851872d81417760"
+        },
+        "commit": "434b7f91364665f2f733b310ec54809bf8f37937"
       }
     }
   },
@@ -508,6 +529,14 @@
     "uv": {
       "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",
       "tree": "bca0368b210d4b3ce04b4895829afe0dbc6949a8"
+    },
+    "vercel-composition-patterns": {
+      "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",
+      "tree": "bf90d0a4b83ea054653350f9c67f6de235d3a368"
+    },
+    "vercel-react-best-practices": {
+      "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",
+      "tree": "343db72180d05814949fef7d46be96b5c6ee86b3"
     },
     "wait-what": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",

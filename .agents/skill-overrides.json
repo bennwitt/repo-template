@@ -200,5 +200,15 @@
     "base": {
       "description": "description: \"Writes, reviews, and debugs property-based tests — Hypothesis, fast-check, proptest, jqwik, rapid, and Echidna or Medusa for Solidity invariants. Use whenever tests should cover a whole input domain instead of a hand-picked list of examples: encode/decode and serialize/deserialize pairs, parsers, canonicalizers and normalizers, validators, numeric and Decimal types, comparators and sort order, data structures, and smart-contract state invariants. Also use when adding cases to an existing @given, fast-check, or proptest suite, when judging whether existing property tests assert anything real, and when a generator has shrunk a counterexample and you need to tell a wrong property from a genuine bug. Not for coverage-guided binary fuzzing (libFuzzer, AFL), mutation-testing campaigns, static analysis, benchmarking, or end-to-end UI tests.\"\n"
     }
+  },
+  "vercel-react-best-practices": {
+    "why": "Upstream triggers on any React or performance task, but many rules are Next.js-only and need React 19.2+; its compiled AGENTS.md drops or swaps code in five sections, while the rule files are right.",
+    "frontmatter": {
+      "description": "React and Next.js performance rules from Vercel: rendering, re-renders, data fetching, bundle size, server components. Use when writing or reviewing React or Next.js code for performance. Targets Next.js App Router and React 19.2+; read the rules/ files for a topic, not the compiled AGENTS.md."
+    },
+    "upstream": "237988de4a66dd8a71d30a2c24ebe1a86b58d04e",
+    "base": {
+      "description": "description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.\n"
+    }
   }
 }
