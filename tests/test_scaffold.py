@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from repo_template import scaffold
 from repo_template.policies import GITIGNORE_END, GITIGNORE_START
 from repo_template.scaffold import (
     new_project,
@@ -157,8 +158,11 @@ def test_project_owned_files_are_left_alone_and_stay_owned(tmp_path: Path) -> No
     manifest["project_owned"] = [".github/workflows/ci.yml"]
     manifest_path.write_text(json.dumps(manifest))
 
-    assert not update_project(root, check=True).needs_attention
+    planned = update_project(root, check=True)
+    assert planned.preserved == []
+    assert planned.updated == [".repo-template.json"]  # its stale hash for ci.yml is dropped
     update_project(root)
+    assert not update_project(root, check=True).needs_attention
     assert workflow.read_text() == "name: Custom CI\n"
     assert json.loads(manifest_path.read_text())["project_owned"] == [".github/workflows/ci.yml"]
 
@@ -200,6 +204,8 @@ def test_adoption_asks_to_move_an_existing_claude_guide_into_agents_md(tmp_path:
 
     (root / "AGENTS.md").write_text("# Guide\n\nRun the tests.\n")
     (root / "CLAUDE.md").write_text("@AGENTS.md\n")
+    assert update_project(root, check=True).updated == [".repo-template.json"]
+    update_project(root)
     assert not update_project(root, check=True).needs_attention
 
 
@@ -209,3 +215,109 @@ def test_a_bare_claude_import_does_not_block_agents_md(tmp_path: Path) -> None:
     update_project(root)
 
     assert (root / "AGENTS.md").is_file()
+
+
+def test_check_reports_the_manifest_rewrite_a_new_version_needs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A clean check means update has nothing to do, including the manifest's own version."""
+    root = tmp_path / "service"
+    new_project(root, name="service", description="Service.", python_version="3.12")
+    monkeypatch.setattr(scaffold, "__version__", "99.0.0")
+
+    planned = update_project(root, check=True)
+
+    assert planned.updated == [".repo-template.json"]
+    assert json.loads((root / ".repo-template.json").read_text())["template_version"] != "99.0.0"
+    update_project(root)
+    assert json.loads((root / ".repo-template.json").read_text())["template_version"] == "99.0.0"
+    assert not update_project(root, check=True).needs_attention
+
+
+def test_an_older_cli_refuses_a_manifest_from_a_newer_one(tmp_path: Path) -> None:
+    """Otherwise a machine that hasn't pulled would downgrade every managed file."""
+    root = tmp_path / "service"
+    new_project(root, name="service", description="Service.", python_version="3.12")
+    manifest_path = root / ".repo-template.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["template_version"] = "99.0.0"
+    manifest_path.write_text(json.dumps(manifest))
+    before = manifest_path.read_text()
+
+    with pytest.raises(ValueError, match="git pull"):
+        update_project(root)
+    with pytest.raises(ValueError, match="newer than this"):
+        update_project(root, check=True)
+    assert manifest_path.read_text() == before
+
+
+def test_a_deleted_project_owned_file_stays_deleted(tmp_path: Path) -> None:
+    root = tmp_path / "renovate"
+    new_project(root, name="renovate", description="Uses Renovate.", python_version="3.12")
+    manifest_path = root / ".repo-template.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["project_owned"] = [".github/dependabot.yml"]
+    manifest_path.write_text(json.dumps(manifest))
+    (root / ".github/dependabot.yml").unlink()
+
+    update_project(root)
+
+    assert not (root / ".github/dependabot.yml").exists()
+    assert not update_project(root, check=True).needs_attention
+
+
+def test_a_complete_json_file_keeps_its_own_formatting(tmp_path: Path) -> None:
+    root = tmp_path / "service"
+    new_project(root, name="service", description="Service.", python_version="3.12")
+    settings = root / ".vscode/settings.json"
+    four_spaces = json.dumps(json.loads(settings.read_text()), indent=4) + "\n"
+    settings.write_text(four_spaces)
+
+    result = update_project(root)
+
+    assert ".vscode/settings.json" in result.unchanged
+    assert settings.read_text() == four_spaces
+
+
+@pytest.mark.parametrize(
+    ("owned", "legacy", "content"),
+    [("AGENTS.md", "CLAUDE.md", "# Our guide\n"), ("GLOSSARY.md", "CONTEXT.md", "# Terms\n")],
+)
+def test_a_deleted_owned_file_is_not_offered_a_move_from_its_old_name(
+    tmp_path: Path, owned: str, legacy: str, content: str
+) -> None:
+    """Owning AGENTS.md (or GLOSSARY.md) and deleting it is a decision about CLAUDE.md
+    (or CONTEXT.md) too: update must not ask to move it on every run."""
+    root = tmp_path / "service"
+    new_project(root, name="service", description="Service.", python_version="3.12")
+    manifest_path = root / ".repo-template.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["project_owned"] = [owned]
+    manifest_path.write_text(json.dumps(manifest))
+    (root / owned).unlink()
+    (root / legacy).write_text(content)
+
+    result = update_project(root)
+
+    assert not (root / owned).exists()
+    assert not [item for item in result.preserved if item.startswith(legacy + " (now")]
+    assert not result.conflicts or all(conflict.moves_to is None for conflict in result.conflicts)
+
+
+def test_versions_compare_as_major_minor_patch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "service"
+    new_project(root, name="service", description="Service.", python_version="3.12")
+    manifest_path = root / ".repo-template.json"
+    manifest = json.loads(manifest_path.read_text())
+    monkeypatch.setattr(scaffold, "__version__", "0.4")
+    manifest["template_version"] = "0.4.0"
+    manifest_path.write_text(json.dumps(manifest))
+
+    update_project(root, check=True)  # "0.4" and "0.4.0" are one release: no refusal
+
+    manifest["template_version"] = "0.4.1"
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="newer than this"):
+        update_project(root, check=True)

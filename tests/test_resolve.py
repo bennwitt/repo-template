@@ -19,6 +19,7 @@ class ScriptedPrompt:
     def __init__(self, *answers: str) -> None:
         self.answers = list(answers)
         self.said: list[str] = []
+        self.offered: list[list[str]] = []
 
     def say(self, text: str = "") -> None:
         self.said.append(text)
@@ -27,6 +28,7 @@ class ScriptedPrompt:
         self.said.extend(lines)
 
     def choose(self, question: str, options: Options) -> str:
+        self.offered.append([key for key, _ in options])
         answer = self.answers.pop(0)
         assert answer in {key for key, _ in options}, (answer, options)
         return answer
@@ -48,6 +50,8 @@ def _edit_editorconfig(root: Path) -> str:
 
 
 def _resolve(root: Path, *answers: str) -> tuple[list[tuple[str, str]], ScriptedPrompt]:
+    """Decide each conflict. No second update runs: every decision records itself in the
+    manifest exactly as update would, so check is clean straight away."""
     conflicts = update_project(root).conflicts
     prompt = ScriptedPrompt(*answers)
     return resolve_conflicts(root, conflicts, prompt, SUBPROCESS), prompt
@@ -176,3 +180,28 @@ def test_move_context_md_without_git(tmp_path: Path) -> None:
     assert (root / "GLOSSARY.md").is_file()
     assert not (root / "CONTEXT.md").exists()
     assert not update_project(root, check=True).needs_attention
+
+
+def test_an_unparseable_merged_file_is_never_replaced_by_the_bare_template(tmp_path: Path) -> None:
+    """The baseline's pyproject.toml is a template with no dependencies; taking it (wholesale or
+    change by change) would wipe the project's metadata with one keypress."""
+    root = _repository(tmp_path / "repo")
+    pyproject = root / "pyproject.toml"
+    broken = pyproject.read_text() + "\n[tool.oops\n"
+    pyproject.write_text(broken)
+
+    outcomes, prompt = _resolve(root, "s")
+
+    assert outcomes == [("pyproject.toml", "skipped")]
+    assert prompt.offered == [["k", "a", "s"]]
+    assert pyproject.read_text() == broken
+
+
+def test_an_unparseable_json_file_offers_only_keep_or_skip(tmp_path: Path) -> None:
+    root = _repository(tmp_path / "repo")
+    settings = root / ".vscode/settings.json"
+    settings.write_text("{\n  // team default\n" + settings.read_text()[2:])
+
+    _, prompt = _resolve(root, "s")
+
+    assert prompt.offered == [["k", "a", "s"]]

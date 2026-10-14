@@ -23,8 +23,9 @@ def test_this_repository_meets_its_own_baseline() -> None:
     result = update_repository(ROOT, check=True, hooks=False)
 
     assert not result.needs_attention, (
-        "this repository has drifted from its baseline; copy the newer version into "
-        f"templates.py or run `uv run repo-template update .`: created={result.created} "
+        "this repository has drifted from its baseline: after a version bump, run "
+        "`uv run repo-template update .` and commit .repo-template.json; after a Dependabot "
+        f"update, copy the newer version into templates.py: created={result.created} "
         f"updated={result.updated} preserved={result.preserved}"
     )
 

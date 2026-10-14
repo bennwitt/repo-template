@@ -43,6 +43,8 @@ class Conflict:
 
     `moves_to` is set when `path` is the old name of a baseline file (CONTEXT.md, CLAUDE.md);
     `legacy_baseline` is then what the baseline wants at `path` after the move, if anything.
+    `replaceable` is False when the baseline's version must not replace the file wholesale.
+    `policy` (and `legacy_policy` for the old name) say how the manifest records the outcome.
     """
 
     path: str
@@ -52,6 +54,9 @@ class Conflict:
     executable: bool = False
     moves_to: str | None = None
     legacy_baseline: str | None = None
+    replaceable: bool = True
+    policy: PolicyName = "managed"
+    legacy_policy: PolicyName = "managed"
 
 
 @dataclass

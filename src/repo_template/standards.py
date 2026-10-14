@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import tomllib
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -19,14 +20,40 @@ GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/"
 SKILL_MIRROR_TARGET = Path("../../.agents/skills")
 SKILL_PACKS_NAME = "skill-packs.json"
 SKILL_OVERRIDES_NAME = "skill-overrides.json"
+MANIFEST_LABEL = ".repo-template.json"
 
 
 def _is_standards_root(path: Path) -> bool:
     return (path / ".agents/skills").is_dir() and (path / ".claude/settings.json").is_file()
 
 
+def _is_this_project(path: Path) -> bool:
+    """A standards root that is a checkout of repo-template itself, not just any repository with
+    .agents/skills and .claude/settings.json (which `npx skills add` and Claude Code create)."""
+    if not (_is_standards_root(path) and (path / ".agents/.skill-lock.json").is_file()):
+        return False
+    try:
+        metadata = tomllib.loads((path / "pyproject.toml").read_text()).get("project", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+    return isinstance(metadata, dict) and metadata.get("name") == "repo-template"
+
+
+def _installed_root() -> Path | None:
+    """The standards repository this package runs from (an editable install), if any."""
+    for parent in Path(__file__).resolve().parents:
+        if _is_this_project(parent):
+            return parent
+    return None
+
+
 def find_standards_root(explicit: Path | None = None) -> Path:
-    """Use --standards-root, else $AI_DEV_STANDARDS, else search; a named root must be valid."""
+    """Use --standards-root, else $AI_DEV_STANDARDS, else the checkout this CLI is installed
+    from, else the current directory if it is a repo-template checkout.
+
+    A named root must be valid. Two different checkouts (the installed one and the current
+    directory) are ambiguous, so the root must then be named.
+    """
     named = [(explicit, "--standards-root")] if explicit is not None else []
     env_root = os.environ.get("AI_DEV_STANDARDS")
     if not named and env_root:
@@ -39,11 +66,19 @@ def find_standards_root(explicit: Path | None = None) -> Path:
                 "(it needs .agents/skills/ and .claude/settings.json)"
             )
         return root
-    for candidate in [Path.cwd(), *Path(__file__).resolve().parents]:
-        root = candidate.expanduser().resolve()
-        if _is_standards_root(root):
-            return root
-    raise ValueError("standards root not found; pass --standards-root or set AI_DEV_STANDARDS")
+    installed = _installed_root()
+    here = next(
+        (path for path in [Path.cwd(), *Path.cwd().parents] if _is_this_project(path)), None
+    )
+    if installed and here and installed != here.resolve():
+        raise ValueError(
+            f"two standards repositories: this CLI runs from {installed}, but the current "
+            f"directory is in {here}; pass --standards-root to choose one"
+        )
+    found = installed or (here.resolve() if here else None)
+    if found is None:
+        raise ValueError("standards root not found; pass --standards-root or set AI_DEV_STANDARDS")
+    return found
 
 
 def skill_names(standards_root: Path) -> list[str]:
@@ -107,16 +142,22 @@ def apply_skill_overrides(standards_root: Path, result: Result, *, check: bool) 
         if not path.is_file():
             result.errors.append(f"{SKILL_OVERRIDES_NAME} overrides {name!r}, not in the catalog")
             continue
-        text = path.read_text()
+        with path.open(newline="") as handle:  # keep the file's own line endings
+            text = handle.read()
         updated = text
-        for key, value in fields.items():
-            updated = set_field(updated, key, value)
+        try:
+            for key, value in fields.items():
+                updated = set_field(updated, key, value)
+        except ValueError as exc:
+            result.errors.append(f"{SKILL_OVERRIDES_NAME} can't override {name!r}: {exc}")
+            continue
         if updated == text:
             result.unchanged.append(str(path))
             continue
         result.updated.append(f"{path} (override)")
         if not check:
-            path.write_text(updated)
+            with path.open("w", newline="") as handle:
+                handle.write(updated)
 
 
 def _prune_links(
@@ -196,11 +237,18 @@ def sync_project_packs(
     """Link each skill of the repository's packs into <root>/.claude/skills (ignored by Git).
 
     Links point at <agents_dir>/skills/<name>, normally ~/.agents/skills, so they follow the
-    standards repository wherever it lives. Links for packs no longer listed are removed.
+    standards repository wherever it lives. Links for packs no longer listed are removed, unless
+    a listed pack isn't defined: its links can't be told apart, so nothing is removed.
     """
     definitions = load_skill_packs(agents_dir)
     skills_dir = agents_dir / "skills"
     wanted: dict[str, Path] = {}
+    undefined = [pack for pack in packs if pack not in definitions]
+    for pack in undefined:
+        result.errors.append(
+            f"skill pack {pack!r} is listed in {MANIFEST_LABEL} but not defined in "
+            f"{agents_dir / SKILL_PACKS_NAME}; its links were left in place"
+        )
     for pack in packs:
         for name in definitions.get(pack, []):
             if (skills_dir / name / "SKILL.md").is_file():
@@ -209,7 +257,9 @@ def sync_project_packs(
                 result.errors.append(f"skill pack {pack!r} lists {name!r}, which isn't installed")
     target_dir = root / ".claude/skills"
     _sync_links(target_dir, dict(sorted(wanted.items())), result, check=check, base=root)
-    _prune_links(target_dir, _points_into(skills_dir), set(wanted), result, check=check, base=root)
+    if not undefined:
+        owned = _points_into(skills_dir)
+        _prune_links(target_dir, owned, set(wanted), result, check=check, base=root)
 
 
 def unknown_packs(packs: Sequence[str], agents_dir: Path) -> list[str]:

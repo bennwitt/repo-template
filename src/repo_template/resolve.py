@@ -18,7 +18,7 @@ from typing import Protocol
 
 from repo_template.model import Conflict
 from repo_template.repository import Runner
-from repo_template.scaffold import accept_difference, own_file, write_file
+from repo_template.scaffold import accept_difference, own_file, record_baseline, write_file
 
 Options = Sequence[tuple[str, str]]
 
@@ -28,6 +28,13 @@ FILE_CHOICES: Options = (
     ("m", "merge change by change"),
     ("a", "always keep yours"),
     ("s", "skip for now"),
+)
+# For a merged file that doesn't parse: the baseline's version is a bare template, so taking it
+# (wholesale or change by change) would replace the project's metadata and dependencies.
+UNPARSEABLE_CHOICES: Options = (
+    ("k", "keep yours"),
+    ("a", "always keep yours"),
+    ("s", "skip for now (fix it by hand, then run update again)"),
 )
 MOVE_CHOICES: Options = (("m", "move it now"), ("s", "skip for now"))
 MAX_REFERENCES = 10
@@ -136,6 +143,7 @@ def _move(root: Path, conflict: Conflict, prompt: Prompt, runner: Runner) -> str
         os.replace(root / old, root / new)
     if conflict.legacy_baseline is not None:
         write_file(root, old, conflict.legacy_baseline)
+        record_baseline(root, old, conflict.legacy_baseline, conflict.legacy_policy)
         prompt.say(f"  Moved {old} to {new}; {old} now holds the baseline's version.")
     else:
         prompt.say(f"  Moved {old} to {new}.")
@@ -150,6 +158,13 @@ def _move(root: Path, conflict: Conflict, prompt: Prompt, runner: Runner) -> str
 
 
 def _decide_file(root: Path, conflict: Conflict, prompt: Prompt) -> str:
+    if not conflict.replaceable:
+        problem = "doesn't parse" if conflict.reason.startswith("invalid") else conflict.reason
+        prompt.say(
+            f"  update can't merge the baseline's entries into {conflict.path} ({problem}). "
+            "Fix it by hand and run update again, or keep it as it is."
+        )
+        return _keep_or_skip(root, conflict, prompt.choose("Your choice", UNPARSEABLE_CHOICES))
     lines = list(
         difflib.unified_diff(
             conflict.existing.splitlines(keepends=True),
@@ -161,23 +176,34 @@ def _decide_file(root: Path, conflict: Conflict, prompt: Prompt) -> str:
     prompt.diff(lines)
     answer = prompt.choose("Your choice", FILE_CHOICES)
     if answer == "o":
-        write_file(root, conflict.path, conflict.desired, executable=conflict.executable)
+        _use_baseline(root, conflict, conflict.desired)
         return "used the baseline"
+    if answer in ("k", "a"):
+        return _keep_or_skip(root, conflict, answer)
+    if answer == "m":
+        merged = _merge(conflict.existing, conflict.desired, prompt)
+        if merged == conflict.desired:
+            _use_baseline(root, conflict, merged)
+            return "used the baseline"
+        if merged != conflict.existing:
+            write_file(root, conflict.path, merged, executable=conflict.executable)
+        accept_difference(root, conflict.path, merged, conflict.desired, conflict.policy)
+        return "merged"
+    return "skipped"
+
+
+def _use_baseline(root: Path, conflict: Conflict, content: str) -> None:
+    write_file(root, conflict.path, content, executable=conflict.executable)
+    record_baseline(root, conflict.path, content, conflict.policy)
+
+
+def _keep_or_skip(root: Path, conflict: Conflict, answer: str) -> str:
     if answer == "k":
-        accept_difference(root, conflict.path, conflict.existing, conflict.desired)
+        accept_difference(root, conflict.path, conflict.existing, conflict.desired, conflict.policy)
         return "kept yours"
     if answer == "a":
         own_file(root, conflict.path)
         return "always keep yours"
-    if answer == "m":
-        merged = _merge(conflict.existing, conflict.desired, prompt)
-        if merged == conflict.desired:
-            write_file(root, conflict.path, merged, executable=conflict.executable)
-            return "used the baseline"
-        if merged != conflict.existing:
-            write_file(root, conflict.path, merged, executable=conflict.executable)
-        accept_difference(root, conflict.path, merged, conflict.desired)
-        return "merged"
     return "skipped"
 
 

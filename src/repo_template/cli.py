@@ -8,7 +8,7 @@ from pathlib import Path
 from repo_template.model import Result
 from repo_template.repository import SUBPROCESS, create_repository, update_repository
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
-from repo_template.scaffold import normalize_project_name
+from repo_template.scaffold import manifest_version, normalize_project_name
 from repo_template.standards import find_standards_root, sync_globals
 
 
@@ -67,7 +67,14 @@ def _parser() -> argparse.ArgumentParser:
     check = subparsers.add_parser(
         "check", help="report what update would change, without writing anything"
     )
-    check.add_argument("path", type=Path, nargs="?", default=Path.cwd())
+    check.add_argument(
+        "paths",
+        type=Path,
+        nargs="*",
+        metavar="path",
+        help="repositories to check (default: the current directory); with several, one "
+        "summary line each",
+    )
     check.add_argument("--no-hooks", action="store_true", help="ignore the Git hook path")
     check.add_argument("--no-lock", action="store_true", help="ignore uv.lock")
 
@@ -143,31 +150,75 @@ def _update(args: argparse.Namespace) -> int:
             )
         except KeyboardInterrupt:
             print("\nStopped. Decisions made so far are applied; run update again to continue.")
-            return 2
+            return 1 if result.errors else 2
         print("\nDecisions:")
         for path, outcome in outcomes:
             print(f"  {path}: {outcome}")
         print()
+        first = result
         result = update_repository(args.path, hooks=hooks, lock=lock)
+        # A failure in the first pass (say `uv lock`) isn't repeated by the second, which sees
+        # pyproject.toml unchanged; it still decides the exit code.
+        result.errors[:0] = [error for error in first.errors if error not in result.errors]
     _print_result(result)
     if result.conflicts and not _interactive(args):
         print("Run `repo-template update` in a terminal to compare and decide each file.")
-    return 2 if result.preserved else (1 if result.errors else 0)
+    return _exit_code(result)
+
+
+def _exit_code(result: Result) -> int:
+    """Errors win over preserved files: fix what failed first, then decide what was kept."""
+    return 1 if result.errors else (2 if result.preserved else 0)
 
 
 def _check(args: argparse.Namespace) -> int:
-    result = update_repository(
-        args.path, check=True, hooks=not args.no_hooks, lock=not args.no_lock
-    )
-    _print_result(result, check=True)
-    return 1 if result.needs_attention else 0
+    paths = args.paths or [Path.cwd()]
+    if len(paths) == 1:
+        result = update_repository(
+            paths[0], check=True, hooks=not args.no_hooks, lock=not args.no_lock
+        )
+        _print_result(result, check=True)
+        return 1 if result.needs_attention else 0
+    drifted = 0
+    for path in paths:
+        try:
+            result = update_repository(
+                path, check=True, hooks=not args.no_hooks, lock=not args.no_lock
+            )
+        except (OSError, ValueError) as exc:
+            print(f"{path}: error")
+            print(f"repo-template: error: {path}: {exc}", file=sys.stderr)
+            drifted += 1
+            continue
+        version = manifest_version(result.root) or "no manifest"
+        print(f"{path}: {_summary(result)} ({version})")
+        for error in result.errors:
+            print(f"repo-template: error: {path}: {error}", file=sys.stderr)
+        drifted += result.needs_attention
+    return 1 if drifted else 0
+
+
+def _summary(result: Result) -> str:
+    """One line for a repository's check: what update would do there."""
+    if not result.needs_attention:
+        return "current"
+    counts = [
+        (len(result.created), "to create"),
+        (len(result.updated), "to update"),
+        (len(result.removed), "to remove"),
+        (len(result.preserved), "for review"),
+        (len(result.errors), "errors"),
+    ]
+    return ", ".join(f"{count} {label}" for count, label in counts if count)
 
 
 def _globals(args: argparse.Namespace) -> int:
     root = find_standards_root(args.standards_root)
     result = sync_globals(root, check=args.check)
     _print_result(result, check=args.check)
-    return 1 if args.check and result.needs_attention else 0
+    if args.check:
+        return 1 if result.needs_attention else 0
+    return _exit_code(result)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -183,7 +234,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "globals":
             return _globals(args)
     except (OSError, ValueError) as exc:
-        parser.error(str(exc))
+        # Exit 2 means "preserved for manual review" (and argparse usage errors), so a runtime
+        # failure (unknown pack, unreadable manifest, non-empty target) exits 1.
+        print(f"repo-template: error: {exc}", file=sys.stderr)
+        return 1
     raise AssertionError("unreachable")
 
 

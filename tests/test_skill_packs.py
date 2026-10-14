@@ -129,3 +129,30 @@ def test_new_repository_can_start_with_a_pack(tmp_path: Path) -> None:
 
     assert ".claude/skills/lc-one" in result.created
     assert skill_packs(result.root) == ["lc"]
+
+
+def test_a_pack_the_catalog_no_longer_defines_is_reported_and_its_links_kept(
+    tmp_path: Path,
+) -> None:
+    agents = _catalog(tmp_path / "standards")
+    root = _repository(tmp_path / "service")
+    update_repository(root, hooks=False, lock=False, packs=["lc"], agents_dir=agents)
+    (agents / "skill-packs.json").write_text(json.dumps({"renamed": {"skills": ["lc-one"]}}))
+
+    result = update_repository(root, hooks=False, lock=False, agents_dir=agents)
+
+    assert any("'lc'" in error and "left in place" in error for error in result.errors)
+    assert result.removed == []
+    assert sorted(os.listdir(root / ".claude/skills")) == ["lc-one", "lc-two"]
+
+
+def test_check_reports_the_manifest_change_a_new_pack_would_make(tmp_path: Path) -> None:
+    agents = _catalog(tmp_path / "standards")
+    root = _repository(tmp_path / "service")
+
+    planned = update_repository(
+        root, check=True, hooks=False, lock=False, packs=["lc"], agents_dir=agents
+    )
+
+    assert ".repo-template.json" in planned.updated
+    assert skill_packs(root) == []

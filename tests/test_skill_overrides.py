@@ -89,3 +89,46 @@ def test_malformed_overrides_are_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="frontmatter"):
         apply_skill_overrides(standards, Result(standards), check=True)
+
+
+def test_set_field_handles_windows_line_endings() -> None:
+    crlf = SKILL.replace("\n", "\r\n")
+
+    updated = set_field(crlf, "description", "Short.")
+
+    assert read_fields(updated)["description"] == "Short."
+    assert '\r\ndescription: "Short."\r\n' in updated
+    assert "\n" not in updated.replace("\r\n", "")
+
+
+def test_an_unusable_override_is_reported_without_stopping_the_others(tmp_path: Path) -> None:
+    agents = tmp_path / ".agents"
+    for name, text in {"broken": "no frontmatter\n", "rag": SKILL}.items():
+        (agents / "skills" / name).mkdir(parents=True)
+        (agents / "skills" / name / "SKILL.md").write_text(text)
+    overrides = {
+        name: {"why": "test", "frontmatter": {"description": "Short."}}
+        for name in ("broken", "rag")
+    }
+    (agents / "skill-overrides.json").write_text(json.dumps(overrides))
+    result = Result(tmp_path)
+
+    apply_skill_overrides(tmp_path, result, check=False)
+
+    assert len(result.errors) == 1 and "'broken'" in result.errors[0]
+    assert read_fields((agents / "skills/rag/SKILL.md").read_text())["description"] == "Short."
+
+
+def test_overrides_keep_a_skill_files_own_line_endings(tmp_path: Path) -> None:
+    agents = tmp_path / ".agents"
+    skill = agents / "skills/rag/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_bytes(SKILL.replace("\n", "\r\n").encode())
+    overrides = {"rag": {"why": "test", "frontmatter": {"description": "Short."}}}
+    (agents / "skill-overrides.json").write_text(json.dumps(overrides))
+
+    apply_skill_overrides(tmp_path, Result(tmp_path), check=False)
+
+    data = skill.read_bytes()
+    assert b'description: "Short."\r\n' in data
+    assert b"\n" not in data.replace(b"\r\n", b"")

@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.4.1 - 2026-10-13
+
+Fixes from auditing the update process:
+
+- `check` reports the rewrite of `.repo-template.json` that `update` makes (a new template
+  version, dropped or new hashes), so a clean `check` really means `update` has nothing to do.
+  Before, `check` said "Standards are current." while `update` still changed the manifest.
+- A manifest written by a newer repo-template stops `update` and `check` with "git pull the
+  standards repository", instead of downgrading every managed file to the older baseline.
+- Runtime errors (an unknown pack, an unreadable manifest, a non-empty target) print
+  `repo-template: error: …` and exit 1. They used to exit 2, the code for "preserved for manual
+  review", so scripts and agents went looking for files to decide.
+- `globals` exits 1 when it reports an error and 2 when it preserves something, instead of 0.
+- `globals` no longer picks the current directory as the standards repository just because it
+  has `.agents/skills/` and `.claude/settings.json`: it uses the installed checkout, and asks for
+  `--standards-root` when the current directory is a different repo-template checkout. Running
+  `globals` inside a project could relink `~/.agents` and the Claude settings to that project.
+- A skill pack listed in a manifest but no longer defined in `skill-packs.json` is reported, and
+  its links are kept, instead of being removed silently.
+- A project-owned file that the project deleted stays deleted.
+- A merged file that doesn't parse (`pyproject.toml`, `.vscode/*.json`) can no longer be replaced
+  by the baseline's bare template, which would have wiped the project's metadata and
+  dependencies with one keypress.
+- A complete VS Code JSON file keeps its own formatting instead of being rewritten with 2-space
+  indentation.
+- Skill overrides work on SKILL.md files with Windows line endings, and one unusable override is
+  reported instead of stopping `globals`.
+- `check` accepts several repositories and prints one summary line for each, with any errors on
+  stderr.
+- A decision made while resolving (keep, merge, use the baseline, move) records itself in the
+  manifest exactly as `update` would, so a fully resolved session ends with "Standards are
+  current." instead of a manifest update.
+- A dev dependency with extras (`coverage[toml]`) no longer makes a valid `pyproject.toml` look
+  like invalid TOML: the merge found the end of the `dev` array at the `]` inside the extras. A
+  valid file whose layout the merge can't handle is now reported as such, not as invalid.
+- A project-owned `AGENTS.md` or `GLOSSARY.md` that the project deleted is no longer offered a
+  move from `CLAUDE.md` or `CONTEXT.md` on every run.
+- An interactive `update` keeps a first-pass failure (a failed `uv lock`) in its exit code. When a
+  run has both errors and preserved files, `update` and `globals` now both exit 1.
+- Skill overrides keep a SKILL.md's own line endings.
+
 ## 0.4.0 - 2026-10-01
 
 - `update` resolves discrepancies itself. In a terminal it shows a diff for each file that differs

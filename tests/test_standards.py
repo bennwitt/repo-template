@@ -138,3 +138,60 @@ def test_a_named_standards_root_must_be_valid(
     monkeypatch.setenv("AI_DEV_STANDARDS", str(tmp_path / "missing"))
     with pytest.raises(ValueError, match="AI_DEV_STANDARDS"):
         find_standards_root()
+
+
+INSTALLED_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _lookalike(root: Path, *, name: str | None = None) -> Path:
+    """A repository with .agents/skills and .claude/settings.json, as `npx skills add` and Claude
+    Code leave behind; with `name`, a full repo-template checkout under that project name."""
+    (root / ".agents/skills").mkdir(parents=True)
+    (root / ".claude").mkdir()
+    (root / ".claude/settings.json").write_text("{}\n")
+    if name is not None:
+        (root / ".agents/.skill-lock.json").write_text("{}\n")
+        (root / "pyproject.toml").write_text(f'[project]\nname = "{name}"\n')
+    return root
+
+
+def test_globals_in_another_repository_still_uses_the_installed_standards(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Running `repo-template globals` inside a project must not relink ~/.agents to it."""
+    monkeypatch.delenv("AI_DEV_STANDARDS", raising=False)
+    monkeypatch.chdir(_lookalike(tmp_path / "project", name="some-app"))
+
+    assert find_standards_root() == INSTALLED_ROOT
+
+
+def test_a_second_standards_checkout_must_be_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("AI_DEV_STANDARDS", raising=False)
+    monkeypatch.chdir(_lookalike(tmp_path / "other-checkout", name="repo-template"))
+
+    with pytest.raises(ValueError, match="two standards repositories"):
+        find_standards_root()
+    assert find_standards_root(tmp_path / "other-checkout") == tmp_path / "other-checkout"
+
+
+def test_a_subdirectory_of_the_installed_checkout_is_not_a_second_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("AI_DEV_STANDARDS", raising=False)
+    monkeypatch.chdir(INSTALLED_ROOT / "src/repo_template")
+
+    assert find_standards_root() == INSTALLED_ROOT
+
+
+def test_a_lookalike_without_a_skill_lock_is_not_a_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Named repo-template but with no .agents/.skill-lock.json: not ambiguous, just ignored."""
+    lookalike = _lookalike(tmp_path / "fork", name="repo-template")
+    (lookalike / ".agents/.skill-lock.json").unlink()
+    monkeypatch.delenv("AI_DEV_STANDARDS", raising=False)
+    monkeypatch.chdir(lookalike)
+
+    assert find_standards_root() == INSTALLED_ROOT
