@@ -20,7 +20,6 @@
       "langgraph-persistence",
       "langgraph-python-quickstart",
       "langgraph-typescript-quickstart",
-      "langsmith-online-eval-engineering",
       "managed-deep-agents"
     ],
     "mcp": [

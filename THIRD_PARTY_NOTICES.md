@@ -722,8 +722,7 @@ SOFTWARE.
   - `langgraph-persistence`: [config/skills/langgraph-persistence](https://github.com/langchain-ai/langchain-skills/tree/488e510f880b8c4c6994fab37736faa7d1971d94/config/skills/langgraph-persistence) at 488e510f880b
   - `langgraph-python-quickstart`: [config/skills/langgraph-python-quickstart](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/langgraph-python-quickstart) at 514d17f13997
   - `langgraph-typescript-quickstart`: [config/skills/langgraph-typescript-quickstart](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/langgraph-typescript-quickstart) at 514d17f13997
-  - `langsmith-online-eval-engineering`: [config/skills/langsmith-online-eval-engineering](https://github.com/langchain-ai/langchain-skills/tree/6732f69c053c6e09e630970f557ae5b46e598a83/config/skills/langsmith-online-eval-engineering) at 6732f69c053c
-  - `managed-deep-agents`: [config/skills/managed-deep-agents](https://github.com/langchain-ai/langchain-skills/tree/bd7c43d921418b468d38bf0b59788ea54ed103f4/config/skills/managed-deep-agents) at bd7c43d92141
+  - `managed-deep-agents`: [config/skills/managed-deep-agents](https://github.com/langchain-ai/langchain-skills/tree/16a992f09ab3ccfb642dd4f08d350d833d1990bf/config/skills/managed-deep-agents) at 16a992f09ab3
 
 ### LICENSE
 
@@ -757,18 +756,18 @@ SOFTWARE.
 - License: MIT
 - Copyright: Copyright (c) 2026 Matt Pocock
 - Skills:
-  - `ask-matt`: [skills/engineering/ask-matt](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/ask-matt) at e484a8095543
-  - `claude-handoff`: [skills/in-progress/claude-handoff](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/claude-handoff) at 321658273cb1
-  - `code-review`: [skills/engineering/code-review](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/engineering/code-review) at 5c89081d4bbe
+  - `ask-matt`: [skills/engineering/ask-matt](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/ask-matt) at 49dd158d1076
+  - `claude-handoff`: [skills/in-progress/claude-handoff](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/in-progress/claude-handoff) at 49dd158d1076
+  - `code-review`: [skills/engineering/code-review](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/code-review) at 49dd158d1076
   - `codebase-design`: [skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/codebase-design) at d80fa0f4ebe0
-  - `diagnosing-bugs`: [skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/diagnosing-bugs) at d80fa0f4ebe0
+  - `diagnosing-bugs`: [skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/diagnosing-bugs) at 49dd158d1076
   - `domain-modeling`: [skills/engineering/domain-modeling](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/domain-modeling) at d80fa0f4ebe0
   - `git-guardrails-claude-code`: [skills/misc/git-guardrails-claude-code](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) at 321658273cb1
   - `grill-me`: [skills/productivity/grill-me](https://github.com/mattpocock/skills/tree/fcf0071560d32913c9d4f820e0d7ca467c881619/skills/productivity/grill-me) at fcf0071560d3
   - `grill-with-docs`: [skills/engineering/grill-with-docs](https://github.com/mattpocock/skills/tree/447ca70872026d5b79d6073a546dac082117fed7/skills/engineering/grill-with-docs) at 447ca7087202
-  - `grilling`: [skills/productivity/grilling](https://github.com/mattpocock/skills/tree/85f83d3fde1d3a90d5c9a657f6998c79a6c37308/skills/productivity/grilling) at 85f83d3fde1d
-  - `handoff`: [skills/productivity/handoff](https://github.com/mattpocock/skills/tree/d28dfdc39beadc3142a33359b5cfa4765dcbd0bc/skills/productivity/handoff) at d28dfdc39bea
-  - `implement`: [skills/engineering/implement](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/engineering/implement) at 697d4ce9742d
+  - `grilling`: [skills/productivity/grilling](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/grilling) at 49dd158d1076
+  - `handoff`: [skills/productivity/handoff](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/handoff) at 49dd158d1076
+  - `implement`: [skills/engineering/implement](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/implement) at 49dd158d1076
   - `implement-spec`: [skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/c612defa9e5cf9372262d0279eb124993ba77b71/skills/engineering/implement-spec) at c612defa9e5c
   - `improve-codebase-architecture`: [skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/improve-codebase-architecture) at d80fa0f4ebe0
   - `loop-me`: [skills/in-progress/loop-me](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/loop-me) at 321658273cb1
@@ -776,19 +775,18 @@ SOFTWARE.
   - `pr`: [skills/engineering/pr](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/pr) at e484a8095543
   - `prototype`: [skills/engineering/prototype](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/prototype) at 321658273cb1
   - `research`: [skills/engineering/research](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/research) at 321658273cb1
-  - `resolving-merge-conflicts`: [skills/engineering/resolving-merge-conflicts](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/resolving-merge-conflicts) at 321658273cb1
   - `retro`: [skills/engineering/retro](https://github.com/mattpocock/skills/tree/a7d038f6bf7f01b516408e95e2fb56e0b338fa6f/skills/engineering/retro) at a7d038f6bf7f
-  - `setup-matt-pocock-skills`: [skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/setup-matt-pocock-skills) at d80fa0f4ebe0
+  - `setup-matt-pocock-skills`: [skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/setup-matt-pocock-skills) at 49dd158d1076
   - `setup-ts-deep-modules`: [skills/in-progress/setup-ts-deep-modules](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/setup-ts-deep-modules) at 321658273cb1
-  - `tdd`: [skills/engineering/tdd](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/tdd) at d80fa0f4ebe0
-  - `teach`: [skills/productivity/teach](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/teach) at 321658273cb1
+  - `tdd`: [skills/engineering/tdd](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/tdd) at 49dd158d1076
+  - `teach`: [skills/productivity/teach](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/teach) at 49dd158d1076
   - `to-questionnaire`: [skills/productivity/to-questionnaire](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/to-questionnaire) at 321658273cb1
   - `to-spec`: [skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/engineering/to-spec) at 5c89081d4bbe
-  - `to-tickets`: [skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/to-tickets) at 321658273cb1
+  - `to-tickets`: [skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/to-tickets) at 49dd158d1076
   - `triage`: [skills/engineering/triage](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/triage) at d80fa0f4ebe0
   - `wait-what`: [skills/productivity/wait-what](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/productivity/wait-what) at d80fa0f4ebe0
-  - `wayfinder`: [skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/wayfinder) at 321658273cb1
-  - `wizard`: [skills/engineering/wizard](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/wizard) at 321658273cb1
+  - `wayfinder`: [skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wayfinder) at 49dd158d1076
+  - `wizard`: [skills/engineering/wizard](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wizard) at 49dd158d1076
   - `writing-beats`: [skills/in-progress/writing-beats](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/writing-beats) at 321658273cb1
   - `writing-for-agents`: [skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/writing-for-agents) at 321658273cb1
   - `writing-fragments`: [skills/in-progress/writing-fragments](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/in-progress/writing-fragments) at 5c89081d4bbe

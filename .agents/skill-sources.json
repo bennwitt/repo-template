@@ -86,16 +86,16 @@
   },
   "skills": {
     "ask-matt": {
-      "commit": "e484a8095543718ced436b9b49a8160ed4554000",
-      "tree": "8ab83b2d681b3a343b869e0840535ecf832a17b5"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "d6a0d9bf3cdc78cbfcbd6466ac5fd3deffb52877"
     },
     "claude-handoff": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "6845c30e62e1c0c2c0fbdea8307379197f0b4dc4"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "57d198aca08eddccb113632d52c6c13f1f3066ac"
     },
     "code-review": {
-      "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
-      "tree": "d8e341cee7980127dddda05159bedf25dc853615"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "fee7bb5fdddc069d58cbea09b2c36b5a859eac05"
     },
     "codebase-design": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -122,8 +122,8 @@
       "tree": "d62ee11c19684fb7751c6fd629a9ed061bb98c82"
     },
     "diagnosing-bugs": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "de4236cf34757c4e9ea7afe78d46c023213ff254"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "5fdd6cc53385395441910b026c72d71768e993d4"
     },
     "domain-modeling": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -162,20 +162,20 @@
       "tree": "eedaf2562c83155115e9c649fa3ecaac2e10e81d"
     },
     "grilling": {
-      "commit": "85f83d3fde1d3a90d5c9a657f6998c79a6c37308",
-      "tree": "f0732035b8b1b60ae39454e4191caef32fa91903"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "28aceb4c9567b985cb47f7db88cf23c9f33af8b8"
     },
     "handoff": {
-      "commit": "d28dfdc39beadc3142a33359b5cfa4765dcbd0bc",
-      "tree": "2242e8f05424b8c2ae94194a90d97b88d16108ec"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "ce24892bd2d4b9e7fd5ac9b95c03175e18bef388"
     },
     "hf-gradio": {
       "commit": "3cae4986c69fc851a4b18c340f7cbeb9dcdee410",
       "tree": "cf152b8708e94e97902eb340d24e17fc2a746694"
     },
     "implement": {
-      "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
-      "tree": "f07d230f645fc9ac390cf13a450bbff12ad791a3"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "4804b466ab26c9b9d8d42917547db133d1f20a9f"
     },
     "implement-spec": {
       "commit": "c612defa9e5cf9372262d0279eb124993ba77b71",
@@ -233,17 +233,13 @@
       "commit": "514d17f139972d4513c4c01c799881a381567159",
       "tree": "10a80b9bdb2e3065e930a16626d6ea2578935b19"
     },
-    "langsmith-online-eval-engineering": {
-      "commit": "6732f69c053c6e09e630970f557ae5b46e598a83",
-      "tree": "3cb006a828f54ab33e56ecfb839a5242aad1f863"
-    },
     "loop-me": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "a0dfdc3562686d920900973b50289b36e2f7eafe"
     },
     "managed-deep-agents": {
-      "commit": "bd7c43d921418b468d38bf0b59788ea54ed103f4",
-      "tree": "a52aba9d263c5f0506c93c187f44e2117adcafa2"
+      "commit": "16a992f09ab3ccfb642dd4f08d350d833d1990bf",
+      "tree": "b688ea60bf2601fad78a7b24ead62ac78408e8e1"
     },
     "migrate-to-shoehorn": {
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
@@ -266,10 +262,6 @@
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "0a6796c5667e95ed2301ba7381c123b4acb2ae1a"
     },
-    "resolving-merge-conflicts": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "77f0d7de3143abbf03e55a63522d30bff31ae908"
-    },
     "retro": {
       "commit": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f",
       "tree": "335c1862a43da9d629abafdb79ca0c0de118be08"
@@ -279,8 +271,8 @@
       "tree": "46e64350889df1af25113df450999101f48fd744"
     },
     "setup-matt-pocock-skills": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "b1568cde855a189b16e5d7dd8a0fa4c3f156bc2e"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "aafaabf96fa3945d8a4069317a7a6d36b7169670"
     },
     "setup-ts-deep-modules": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -309,12 +301,12 @@
       }
     },
     "tdd": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "bf1bf5ffcd63aa8abce830f2955a853c121fb463"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "667dbdd00c09d0e2189e082986e6a4d61a67c2a6"
     },
     "teach": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "2ab11f2f51f3c29771edb5d4258d807a49462491"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "3fd617b610e59acbb99644de1ef37e394ff53cd1"
     },
     "to-questionnaire": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -325,8 +317,8 @@
       "tree": "136b9651747cfccbfbb7c50a6b0dfb757e7547d2"
     },
     "to-tickets": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "b32c94e5a51c24ee9c41fcb7fe9ea9fff9af6369"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "2dee20ad722a31c04ededf9f2d83842473573045"
     },
     "triage": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -341,12 +333,12 @@
       "tree": "c8b050e6b8c711be1a9008ceacb2126914f0763e"
     },
     "wayfinder": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "8ec0462658381bd1606d3f9db14ffc67df6a2a43"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "32b0ce970b1394ede47116e1d3e07f9ccc87591f"
     },
     "wizard": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "0a163daf092c6f361158ca9627e81f2cb5230574"
+      "commit": "49dd158d1076134a641b33efb035946536778336",
+      "tree": "e396d3ba97c723a78ffd350fb14a3c409137b306"
     },
     "writing-beats": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",

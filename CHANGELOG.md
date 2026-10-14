@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Skills refreshed from upstream: `ask-matt`, `claude-handoff`, `code-review`, `diagnosing-bugs`,
+  `grilling`, `handoff`, `implement`, `managed-deep-agents`, `setup-matt-pocock-skills`, `tdd`,
+  `teach`, `to-tickets`, `wayfinder`, `wizard`.
+- Skills removed (gone upstream): `langsmith-online-eval-engineering`, `resolving-merge-conflicts`.
+
 ## 0.5.1 - 2026-10-14
 
 - `update --packs-only --pack <name>` adopts a repository that isn't Python/uv for its skill packs
