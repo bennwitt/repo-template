@@ -1,259 +1,141 @@
 # How to update a machine and its repositories
 
-Three jobs, in this order:
+1. [Set up or update the machine](#1-set-up-or-update-the-machine): one script, on macOS or Linux.
+2. [Update or adopt a repository](#2-update-or-adopt-a-repository): one question decides what
+   to run.
 
-1. [Update the machine](#1-update-the-machine): bring the standards repository, the CLI, and
-   the global skills, settings and MCP servers up to date.
-2. [Update a repository that is already templated](#2-update-a-repository-that-is-already-templated).
-3. [Template a repository that wasn't created from the template](#3-template-a-repository-that-wasnt-created-from-the-template).
+`repo-template check` never writes anything: run it whenever you're unsure what `update` would do.
 
-The commands assume a Mac with the standards repository at `~/aiDevStandards`, named by
-`$AI_DEV_STANDARDS` (on the Linux workstation it is `/ai/Moore/repo-template`). macOS doesn't let
-you create a folder at the top of the disk (the system volume is read-only), so keep it in your
-home folder. `check` never writes anything, so run it whenever you're unsure what `update` would
-do.
+## 1. Set up or update the machine
 
-## 1. Update the machine
+**You need** Git, Claude Code (installed and signed in once) and Node 22 or 24 LTS. The script
+installs `uv` if it's missing.
 
-### The quick way: one script
-
-`setup-machine.sh` sets up a Mac or a Linux machine, the first time or any time after. Download
-it, read it, then run it:
-
-```bash
-curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
-less setup-machine.sh
-bash setup-machine.sh
-```
-
-It asks where the standards repository goes. The default is `~/aiDevStandards`, or, on a
-machine already set up, the checkout it uses. Then it does steps 1.2 to 1.5 below:
-
-- clone or pull the standards repository;
-- install the `repo-template` command;
-- show what `globals` would change, and apply it if you say yes;
-- copy the Git ignore lines where Git reads them;
-- offer each optional tool, with "no" as the default.
-
-It installs `uv` if it's missing (it asks first), and it never runs as root. Run it again
-whenever you like: it changes only what is missing or out of date. `--yes --dir PATH` runs it
-without questions (skipping the optional tools), and `--help` lists the options.
-
-The steps below are what it does, for reference, or to do by hand.
-
-### 1.1 Check the prerequisites
-
-```bash
-git --version        # any recent Git (Xcode's command line tools have one)
-uv --version         # https://docs.astral.sh/uv/
-node --version       # 22 or 24 LTS (20 works for most things, but is past its end of life)
-claude --version     # Claude Code CLI: needed to install the MCP servers
-codex --version      # optional: only if you use Codex
-```
-
-On a new Mac, install what is missing:
-
-```bash
-xcode-select --install                     # Git, if `git --version` asks for it
-brew install uv node@24                    # or uv's installer: https://docs.astral.sh/uv/
-echo 'export PATH="$(brew --prefix node@24)/bin:$PATH"' >> ~/.zshrc   # node@24 isn't linked
-uv tool update-shell                       # puts ~/.local/bin (where repo-template goes) on PATH
-```
-
-Install Claude Code and open it once (`claude`), so `~/.claude` exists. Then open a new terminal.
-
-### 1.2 Get the latest repo-template
-
-**First time on this machine** (no checkout yet; on a Mac, `readlink ~/.agents` prints
-nothing): skip to "First time on this machine" below.
-
-**This machine was set up before 0.4.2** if `~/.claude/settings.json` is a link:
-
-```bash
-ls -l ~/.claude/settings.json      # "-> <checkout>/.claude/settings.json" means a link
-```
-
-If it is a link, migrate once, so this machine's settings carry over:
-
-```bash
-cd "$AI_DEV_STANDARDS"                     # the checkout the link points into
-cp .claude/settings.json ~/claude-settings-before-0.4.2.json   # this machine's view
-git checkout -- .claude/settings.json      # changes Claude Code wrote through the link
-git pull                                   # removes .claude/settings.json; the link now dangles
-cp ~/claude-settings-before-0.4.2.json .claude/settings.json   # Git ignores it now
-repo-template globals
-rm .claude/settings.json
-```
-
-Then continue at [1.3](#13-check-your-global-git-ignore).
-
-**Otherwise**, pull:
-
-```bash
-cd "$AI_DEV_STANDARDS"
-git status                 # should be clean; commit or stash anything that isn't
-git switch main
-git pull
-grep -m1 '^version' pyproject.toml          # 0.5.3 or later
-```
-
-The CLI is an editable install, so the pull updates it too. Check that it did:
-
-```bash
-repo-template update --help | grep -- --personal   # prints the --personal option
-```
-
-If that prints nothing, the CLI was installed another way. Install it again from the checkout:
-
-```bash
-uv tool install --editable --force "$AI_DEV_STANDARDS"
-```
-
-**First time on this machine:**
-
-```bash
-echo 'export AI_DEV_STANDARDS="$HOME/aiDevStandards"' >> ~/.zshrc && source ~/.zshrc
-git clone https://github.com/bennwitt/repo-template.git "$AI_DEV_STANDARDS"
-cd "$AI_DEV_STANDARDS"
-uv tool install --editable .
-repo-template --help                       # the CLI is on PATH
-```
-
-The repository is public, so the HTTPS clone needs no key. To push from this machine later, use
-`git@github.com:bennwitt/repo-template.git` with an SSH key for that account.
-
-On a machine set up earlier, set `AI_DEV_STANDARDS` in `~/.zshrc` the same way (to wherever
-its checkout is), so `globals` never needs `--standards-root`.
-
-### 1.3 Check your global Git ignore
-
-`globals` adds `.agents/`, `.claude/`, `.codex/`, `.playwright-cli/` and `.playwright-mcp/` to
-`~/.config/git/ignore`. Git reads that file only when `core.excludesFile` isn't set to another
-one, and many Macs set it to `~/.gitignore_global`:
-
-```bash
-git config --global --get core.excludesFile
-```
-
-- **No output:** nothing to do.
-- **A path:** Git reads that file instead. After step 1.4, copy the repo-template block from
-  `~/.config/git/ignore` into it. Or stop using it with
-  `git config --global --unset core.excludesFile`, after moving its lines into
-  `~/.config/git/ignore`.
-
-Without this, skill links in packs-only repositories show up in `git status`, and `update`
-refuses to make them. Personal adoption doesn't depend on it.
-
-### 1.4 Preview, then apply, the global standards
-
-```bash
-repo-template globals --check      # what would change; writes nothing
-repo-template globals              # apply
-```
-
-The run:
-
-- links `~/.agents` to the catalog;
-- links each global skill into `~/.claude/skills/`;
-- merges the portable settings into `~/.claude/settings.json`;
-- installs the global MCP servers:
-  - Claude Code's user scope gets `playwright` and `huggingface`;
-  - Codex gets those two and `microsoft-learn`, in `~/.codex/config.toml`;
-- writes the global Git ignore.
-
-Anything it replaces goes to `~/.repo-template/backups/<timestamp>/` first.
-
-| Exit | Meaning | What to do |
+| | macOS | Linux |
 | --- | --- | --- |
-| `0` | applied cleanly | nothing |
-| `2` | something was kept: a setting changed on this machine, a file it didn't create | read the `!` lines; they're reported once, and you can leave them |
-| `1` | an error | fix what it says and run it again |
+| Git | `xcode-select --install` | your package manager, e.g. `sudo apt install git` |
+| Node 24 LTS | the installer from [nodejs.org](https://nodejs.org), or `brew install node@24` (then add `$(brew --prefix node@24)/bin` to `PATH`) | [nvm](https://github.com/nvm-sh/nvm): `nvm install 24` |
+| Google Chrome, for the `playwright` MCP server | [google.com/chrome](https://www.google.com/chrome/), or `brew install --cask google-chrome` | Google's `.deb` or `.rpm` |
 
-Then check the result:
+1. **Get the script.**
+   - A new machine:
+     ```bash
+     curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
+     ```
+   - A machine already set up has it in its checkout. Find the checkout and pull it:
+     ```bash
+     checkout=$(dirname "$(readlink ~/.agents)") && git -C "$checkout" pull --ff-only
+     ```
+     The script is then `"$checkout/setup-machine.sh"`.
+2. **Run it**, and answer its questions (the defaults are safe):
+   ```bash
+   bash setup-machine.sh
+   ```
+   It asks where the standards repository goes: `~/aiDevStandards` on a new machine, otherwise
+   the checkout the machine uses. Then it:
+   - clones or pulls that repository, and installs the `repo-template` command;
+   - writes `AI_DEV_STANDARDS` into a marked block of your shell profile (on a Mac, once you
+     store a GitHub token in the Keychain ([1.1](#11-optional-tools)), also a line that reads it);
+   - shows what `repo-template globals` would change (skill links, Claude Code settings, the
+     global MCP servers, the Git ignore), and applies it when you say yes;
+   - copies the Git ignore lines to the file your Git actually reads, if that's another one;
+   - offers each optional tool in [1.1](#11-optional-tools), with "no" as the default.
 
-```bash
-repo-template globals --check      # "Standards are current."
-claude mcp list                    # playwright and huggingface show as connected
-ls ~/.claude/skills | wc -l        # the global skills
-```
+   Every file it changes is backed up to `~/.repo-template/backups/<time>/` first. A step that
+   fails is reported, the rest still runs, and the script exits 1. Run it again any time: it
+   changes only what is missing or out of date. `--yes --dir PATH` answers every question with
+   its default (so it installs `uv` if needed, creates the folder and applies `globals`, but no
+   optional tools); `--help` lists the options.
+3. **Check it worked.** Open a new terminal, then:
+   ```bash
+   repo-template --help           # the command is on PATH
+   claude mcp list                # playwright and huggingface: connected
+   ```
+   Restart Claude Code (and Codex) so they pick up the new settings and servers.
 
-Restart Claude Code (and Codex) so they pick up the new settings and servers.
+To do these steps by hand instead, see [Appendix A](#appendix-a-setting-up-a-machine-by-hand).
 
-### 1.5 Per-machine tools (as you need them)
+### 1.1 Optional tools
 
-The skills and plugins expect some CLIs on each machine. Pin each one to its newest release
-at least 7 days old. These versions were current on 2026-10-13:
+The script offers each of these. Versions are the newest releases at least 7 days old on
+2026-10-13.
 
-```bash
-# language servers for the typescript-lsp and pyright-lsp plugins
-npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414
-# Playwright CLI, in step with the playwright-cli skill, and its browser
-npm install -g --ignore-scripts @playwright/cli@0.1.22
-playwright-cli install-browser chromium
-# only for the azure and foundry packs: sign in, then fetch the Azure MCP server once
-az login
-uvx --exclude-newer 2026-10-13T00:00:00Z --from msmcp-azure==3.0.0 azmcp --version
-```
+| Tool | For | macOS | Linux |
+| --- | --- | --- | --- |
+| Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill | `npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
+| Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
+| Azure Developer CLI (`azd`) 1.35.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
+| GitHub token | the `github` plugin | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
+| Codex CLI | Codex | `npm install -g @openai/codex@<version>` | the same |
 
-- **Azure Developer CLI (`azd`), for the Azure packs:**
-  - download the macOS asset for your chip from its GitHub release;
-  - check its SHA-256 against the release's digest, and put `azd` on your PATH;
-  - run `azd config set auth.useAzCliAuth true`.
-- **The `github` plugin:** set `GITHUB_PERSONAL_ACCESS_TOKEN` in the environment Claude Code
-  starts in. A fine-grained, read-only token is enough. It never goes in a repository.
-- **Node 20:** `typescript-language-server` 6 needs Node 22.22 or later. On Node 20, keep 5.3.
+- **Azure:** after installing `az`, run `az login` and pick the subscription with
+  `az account set --subscription "<name>"`. For `azd`, check the asset's SHA-256 against the
+  release's digest (`shasum -a 256` on a Mac, `sha256sum` on Linux), put `azd` on your `PATH`,
+  then run `azd config set auth.useAzCliAuth true`. On a Mac the script installs both with
+  Homebrew, which takes the current release: the one exception to the 7-day rule.
+- **GitHub token on Linux:**
+  ```bash
+  install -m 600 /dev/null ~/.config/github-token        # then put this line in it:
+  #   export GITHUB_PERSONAL_ACCESS_TOKEN=<your token>
+  echo '[ -f ~/.config/github-token ] && . ~/.config/github-token' >> ~/.bashrc   # or ~/.zshrc
+  ```
+- **Codex:** pick a release at least 7 days old: `npm view @openai/codex time --json | tail -5`.
+- **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
+  (authorize it in `/mcp`).
 
-## 2. Update a repository that is already templated
+## 2. Update or adopt a repository
 
-Do this after updating the machine. A repository written by a newer repo-template than yours
-stops `check` and `update` with "newer than this repo-template": pull the standards repository
-first.
+Update the machine first: a repository written by a newer repo-template stops `check` and
+`update` with "newer than this repo-template".
 
-### 2.1 Find out how it was templated
+**Which kind of repository is it?**
 
 ```bash
 cd /path/to/repo
-grep '"profile"' .repo-template.json .git/repo-template.json 2>/dev/null
+grep -h '"profile"' .repo-template.json .git/repo-template.json 2>/dev/null
 ```
 
-| Shows | Kind | What `update` touches |
-| --- | --- | --- |
-| `.repo-template.json: "profile": "python-uv"` | full baseline | baseline files, `pyproject.toml`, hook path, `uv.lock`, skill packs |
-| `.repo-template.json: "profile": "packs-only"` | packs only | skill links, `.mcp.json`, the manifest |
-| `.git/repo-template.json: "profile": "personal"` | personal (a repository you don't manage) | only files on your machine; nothing to commit |
-
-### 2.2 Full baseline or packs only
-
-```bash
-git switch main && git pull
-git switch -c chore/repo-template-<version>     # e.g. chore/repo-template-0.5.3
-repo-template check .                           # what would change
-repo-template update .                          # apply; asks about each file that differs
-```
-
-For each file that differs from the baseline, `update` shows a diff and asks:
-
-| Key | Choice |
+| It prints | Go to |
 | --- | --- |
-| `o` | use the baseline |
-| `k` | keep yours (asked again only when the baseline changes) |
-| `m` | merge change by change |
-| `a` | always keep yours (never managed again) |
-| `s` | skip for now |
+| `"profile": "python-uv"` or `"profile": "packs-only"` | [2.1 Update a templated repository](#21-update-a-templated-repository) |
+| `"profile": "personal"` | [2.2 Update a personal repository](#22-update-a-personal-repository) |
+| nothing | [2.3 Adopt a repository](#23-adopt-a-repository) |
 
-Then check and commit:
+To see which of your repositories need updating, check several at once; each gets one line
+(`current`, what it would change, or `no manifest`):
 
 ```bash
-repo-template check .            # "Standards are current."
-uv run pytest && uv run ruff check . && uv run mypy src      # full baseline only
-git add -A && git commit -m "chore: update to repo-template <version>"
-git push -u origin HEAD          # then open a pull request
+repo-template check ~/code/service-a ~/code/web-b ~/code/tool-c
 ```
 
-Exit `2` from `update` means files were kept for you to decide. Run `update` again in a terminal
-to decide them, or leave them for later.
+### 2.1 Update a templated repository
 
-### 2.3 Personal
+1. Start a branch from an up-to-date `main`:
+   ```bash
+   git switch main && git pull && git switch -c chore/repo-template-update
+   ```
+2. Preview: `repo-template check .`
+3. Apply: `repo-template update .` In a terminal it shows a diff for each file that differs from
+   the baseline and asks:
+
+   | Key | Choice |
+   | --- | --- |
+   | `o` | use the baseline |
+   | `k` | keep yours (asked again only when the baseline's version changes) |
+   | `m` | merge change by change |
+   | `a` | always keep yours (never managed again) |
+   | `s` | skip for now |
+
+   Exit 2 means files are still waiting for a decision: run it again until it exits 0.
+4. Check:
+   - every repository: `repo-template check .` prints "Standards are current.";
+   - the full baseline also: `uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy src`.
+5. Commit and push, then open a pull request:
+   ```bash
+   git add -A && git commit -m "chore: update repo-template" && git push -u origin HEAD
+   ```
+
+### 2.2 Update a personal repository
 
 ```bash
 git status --short > /tmp/before.txt
@@ -261,112 +143,137 @@ repo-template update .
 git status --short | diff /tmp/before.txt - && echo "nothing the team sees changed"
 ```
 
-There is nothing to commit. To add a pack, run `repo-template update . --pack <name>`. To drop
-one, edit `skill_packs` in `.git/repo-template.json` and run `update`.
+There is nothing to commit. To add a pack: `repo-template update . --pack <name>`. To drop one,
+edit `skill_packs` in `.git/repo-template.json`, then run `update`.
 
-## 3. Template a repository that wasn't created from the template
+### 2.3 Adopt a repository
 
-### 3.1 Choose how to adopt it
+**Choose how.** Find out who commits to it:
+
+```bash
+git log --format='%an' | sort | uniq -c | sort -rn | head
+```
 
 | The repository is… | Use | What gets committed |
 | --- | --- | --- |
-| yours, Python with uv (or ready to move to uv) | full baseline: `update` | baseline files, `.repo-template.json`, `.mcp.json` if a pack has servers |
-| yours, but not Python/uv (TypeScript, say) | `update --packs-only --pack …` | `.repo-template.json`, `.mcp.json` |
-| someone else's, or a team's you're one member of | `update --personal --pack …` | nothing |
+| also other people's (a team's) | personal | nothing |
+| yours, Python with uv | the full baseline | the baseline files, `.repo-template.json`, `.mcp.json` if a pack has servers |
+| yours, another stack (TypeScript, say) | packs only | `.repo-template.json`, `.mcp.json` if a pack has servers |
 
-Whose is it? `git log --format='%an' | sort | uniq -c | sort -rn | head` shows who commits.
-When others do, use `--personal`: your skills and servers stay yours, and teammates are never
-asked to approve your MCP servers.
+Pick packs from the [pack table](README.md#catalog-every-skill-where-it-applies-and-where-it-comes-from).
 
-To pick packs, list them:
+**Personal** (also other people's repository):
 
-```bash
-python3 -c "import json; [print(f'{k:16} {v[\"description\"]}') for k, v in json.load(open('$AI_DEV_STANDARDS/.agents/skill-packs.json')).items()]"
-```
+1. `git status --short > /tmp/before.txt`
+2. Preview: `repo-template check . --personal --pack <name>`
+3. Apply: `repo-template update . --personal --pack <name>`
+4. Check: `git status --short | diff /tmp/before.txt -` prints nothing, and `claude mcp list`
+   shows the packs' servers.
 
-### 3.2 Full baseline (yours, Python/uv)
+It refuses a subfolder (run it at the top of the checkout), a linked worktree, a sparse checkout,
+and a repository that has a `.repo-template.json` of its own. To undo it: set `skill_packs` to
+`[]` in `.git/repo-template.json`, run `repo-template update .`, then delete
+`.git/repo-template.json` (deleting it first leaves the links, the ignore block and the servers
+behind).
 
-The baseline adds a pre-commit hook and CI that run `ruff`, `mypy` and `pytest`. On a codebase
-that doesn't pass them, every commit is blocked. Look first:
+**The full baseline** (yours, Python with uv):
 
-```bash
-cd /path/to/repo
-uvx ruff check --select E,F,I,B,UP,SIM --line-length 100 . --statistics | tail -3
-uv run pytest -q | tail -1
-```
+1. Look first. The baseline adds a pre-commit hook and CI that block every commit until these
+   pass:
+   ```bash
+   uv lock --check
+   uvx ruff check --select E,F,I,B,UP,SIM --line-length 100 . --statistics | tail -3
+   uvx ruff format --check --line-length 100 . | tail -1
+   uv run --with mypy mypy --strict src | tail -1
+   uv run pytest -q | tail -1
+   ```
+   With hundreds of findings, clean up first, or adopt it packs-only for now.
+2. Start a branch: `git switch main && git pull && git switch -c chore/adopt-repo-template`
+3. Preview: `repo-template check . --pack <name>` (`--pack` is optional and repeatable).
+4. Apply: `repo-template update . --pack <name>`, and decide each file that differs (the keys in
+   [2.1](#21-update-a-templated-repository)).
+   - **Adds:** `AGENTS.md`, `CLAUDE.md`, `GLOSSARY.md`, `docs/adr/`, the CI workflow,
+     Dependabot, the PR template and the pre-commit hook (`core.hooksPath .githooks`).
+   - **Merges:** `pyproject.toml` and `.gitignore`, then refreshes `uv.lock`.
+   - **Leaves alone:** a tool the project already configures keeps its settings, and code in
+     `src/` but not in `src/<package>/` keeps its layout.
+5. Fill in the Purpose and Boundaries sections of `AGENTS.md`.
+6. Check: `uv sync --dev && uv run pytest`, and `repo-template check .` prints "Standards are
+   current."
+7. `git add -A && git commit -m "chore: adopt repo-template" && git push -u origin HEAD`, then
+   open a pull request.
 
-If there are hundreds of findings, clean up first, or adopt it packs-only for now (3.3).
+**Packs only** (yours, another stack):
 
-```bash
-git switch main && git pull
-git switch -c chore/adopt-repo-template
-repo-template check . --pack <name>            # preview: every file it would create or change
-repo-template update . --pack <name>           # apply; decide each file that differs
-```
-
-`--pack` is optional, and you can repeat it. It infers the name, description and Python version
-from `pyproject.toml`.
-
-- **What it adds:** `AGENTS.md`, `CLAUDE.md`, `GLOSSARY.md`, `docs/adr/`, the CI workflow,
-  Dependabot, the PR template and the pre-commit hook (`core.hooksPath .githooks`).
-- **What it merges:** `pyproject.toml` and `.gitignore`; it then refreshes `uv.lock`.
-- **What it leaves alone:** a tool the project already configures keeps its settings, and code
-  in `src/` but not in `src/<package>/` keeps its layout.
-
-Then:
-
-```bash
-uv sync --dev && uv run pytest
-repo-template check .                           # "Standards are current."
-git add -A && git commit -m "chore: adopt repo-template"
-git push -u origin HEAD                         # then open a pull request
-```
-
-Fill in the Purpose and Boundaries sections of the new `AGENTS.md` before the pull request.
-
-### 3.3 Packs only (yours, not Python/uv)
-
-```bash
-git switch -c chore/repo-template-packs
-repo-template check . --packs-only --pack react --pack playwright
-repo-template update . --packs-only --pack react --pack playwright
-git add .repo-template.json .mcp.json
-git commit -m "chore: adopt repo-template skill packs"
-```
+1. `git switch main && git pull && git switch -c chore/repo-template-packs`
+2. Preview: `repo-template check . --packs-only --pack <name>`
+3. Apply: `repo-template update . --packs-only --pack <name>`
+4. `git add -A && git commit -m "chore: adopt repo-template skill packs" && git push -u origin HEAD`
+   (the skill links are ignored, so this commits only `.repo-template.json` and any `.mcp.json`).
 
 Later runs need no flag: `repo-template update .`
-
-### 3.4 Personal (someone else's repository)
-
-```bash
-git status --short > /tmp/before.txt
-repo-template check . --personal --pack react --pack playwright   # preview
-repo-template update . --personal --pack react --pack playwright
-git status --short | diff /tmp/before.txt - && echo "nothing the team sees changed"
-claude mcp list                    # the packs' servers, local to this checkout
-```
-
-It refuses:
-
-- a subfolder (run it at the top of the checkout);
-- a linked worktree;
-- a sparse checkout;
-- a repository that already has a `.repo-template.json`.
-
-To undo it:
-
-1. Set `skill_packs` to `[]` in `.git/repo-template.json`.
-2. Run `repo-template update .`.
-3. Delete `.git/repo-template.json`.
 
 ## Troubleshooting
 
 | You see | Do |
 | --- | --- |
-| `was written by repo-template X, newer than this repo-template` | `cd "$AI_DEV_STANDARDS" && git pull`, then run it again |
-| `Git wouldn't ignore this link` | fix the global ignore (1.3), or add `.claude/` and `.agents/` to the repository's `.gitignore` |
-| exit `2` and `! …` lines | files kept for you to decide: run `update` in a terminal |
-| Claude Code asks to approve MCP servers | the repository's `.mcp.json`; approve the ones you want (personal adoption never asks) |
+| `newer than this repo-template` | pull the standards repository: `git -C "$(dirname "$(readlink ~/.agents)")" pull --ff-only`, then run it again |
+| `Git wouldn't ignore this link` | run `setup-machine.sh` again (it copies the ignore lines to the file Git reads), or add `.claude/` and `.agents/` to the repository's `.gitignore` |
+| exit 2 and `!` lines | files or entries kept for you to decide: run `update` in a terminal |
+| Claude Code asks to approve MCP servers | they're from the repository's `.mcp.json`: approve the ones you want (a personal repository never asks) |
+| `playwright` isn't connected in `claude mcp list` | install Google Chrome (section 1), then restart Claude Code |
 | Codex doesn't see a repository's servers | Codex reads `.codex/config.toml` only in a project you trust |
-| a commit is blocked by the pre-commit hook | it runs the checks; fix what it reports (never skip it with `--no-verify` without a reason) |
-| `globals` says a setting was `changed on this machine; kept` | yours wins; set it back to the value in `.agents/claude-settings.json` to follow the standard again |
+| the pre-commit hook blocks a commit | it runs the checks: fix what it reports |
+| `globals` reports `changed on this machine; kept` or `configured by hand; kept` | yours wins; set it back to the standard's value to follow the standard again |
+
+## Appendix A: setting up a machine by hand
+
+What `setup-machine.sh` does, step by step. On a Mac the standards repository goes in your home
+folder (`~/aiDevStandards`): macOS keeps the top of the disk read-only.
+
+1. **A machine set up before 0.4.2:** check whether `~/.claude/settings.json` is a link into a
+   standards checkout:
+   ```bash
+   readlink ~/.claude/settings.json    # ".../.claude/settings.json" inside a repo-template checkout
+   ```
+   If it is, migrate once, so this machine's settings carry over (a link into your own dotfiles
+   isn't this case: skip it):
+   ```bash
+   link=$(readlink ~/.claude/settings.json) && cd "${link%/.claude/settings.json}" &&
+     cp .claude/settings.json ~/claude-settings-before-0.4.2.json &&
+     git checkout -- .claude/settings.json && git pull &&
+     cp ~/claude-settings-before-0.4.2.json .claude/settings.json &&
+     repo-template globals && rm .claude/settings.json
+   ```
+2. **Get the standards repository.**
+   - A new machine:
+     ```bash
+     git clone https://github.com/bennwitt/repo-template.git ~/aiDevStandards
+     ```
+   - A checkout that exists: `checkout=$(dirname "$(readlink ~/.agents)")`, then
+     `git -C "$checkout" pull --ff-only` (on `main`, with no uncommitted changes).
+3. **Install the command:** `uv tool install --editable --force <checkout>`, then
+   `uv tool update-shell` (puts `~/.local/bin` on `PATH`). Being editable, a later `git pull`
+   updates it.
+4. **Set `AI_DEV_STANDARDS`** in your shell profile (`~/.zshrc`, or `~/.bashrc` for bash on
+   Linux): `export AI_DEV_STANDARDS="<checkout>"`. Then `globals` needs no `--standards-root`.
+5. **Apply the globals:** `repo-template globals --check` (what would change), then
+   `repo-template globals`.
+   - **What it does:** links `~/.agents` and the global skills, merges the portable settings
+     into `~/.claude/settings.json`, installs the global MCP servers (Claude Code: `playwright`
+     and `huggingface`; Codex: those and `microsoft-learn`), and writes the Git ignore.
+   - **Exit 0:** applied.
+   - **Exit 2:** something on this machine was kept (a setting or MCP server you changed, a
+     file it didn't create): read the `!` lines.
+   - **Exit 1:** an error; fix it and run it again.
+6. **Make Git read the ignore lines.** `globals` writes `.agents/`, `.claude/`, `.codex/`,
+   `.playwright-cli/` and `.playwright-mcp/` to `~/.config/git/ignore`. Git reads another file
+   when `core.excludesFile` names one, or when `XDG_CONFIG_HOME` is set:
+   ```bash
+   git config --global --includes --get core.excludesFile; echo "${XDG_CONFIG_HOME:-}"
+   ```
+   If the first prints a path, Git reads that file; if it prints nothing and the second prints a
+   folder other than `~/.config`, Git reads `<that folder>/git/ignore`. Copy the
+   `# >>> repo-template personal AI directories` block from `~/.config/git/ignore` into that
+   file. Without it, `update` reports a packs-only repository's skill links as "Git wouldn't
+   ignore this link" and doesn't make them.

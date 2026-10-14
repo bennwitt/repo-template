@@ -22,13 +22,21 @@ block in `.git/info/exclude`). Only
 `--upgrade` records the files it vendors (skills and license copies) with `git add -N` and
 leaves committing to you.
 
+`setup-machine.sh` (macOS and Linux) sets up a machine in one run: it clones or pulls the standards
+repository (only a clean `main`), installs the CLI with `uv tool install --editable`, previews
+`globals` before applying it, and copies the global ignore block into the file Git reads. Every
+install it offers asks first, with optional tools defaulting to no. In a shell profile or an
+ignore file it writes only its marked block, after a backup in `~/.repo-template/backups/`.
+
 ## Commands
 
 - Install: `uv sync --dev`
 - Test: `uv run pytest`
 - Lint: `uv run ruff check .`
+- Format: `uv run ruff format .` (CI and the pre-commit hook run `ruff format --check .`)
 - Type-check: `uv run mypy src`
-- Exercise the CLI: `uv run repo-template --help`
+- Self-check: `uv run repo-template check .` prints "Standards are current."
+- Catalog, read-only: `uv run repo-template globals --check`
 
 ## Design rules
 
@@ -37,7 +45,16 @@ leaves committing to you.
 - A clean `check` means `update` has nothing to do.
 - Keep project-specific instructions in generated `AGENTS.md`; keep reusable workflows in global skills.
 - Never copy Claude credentials, history, caches, or machine state into this repository.
-- Add tests for any change to rendering, update conflict handling, or symlink behavior.
+- Add tests for any change to rendering, update conflict handling, symlink behavior, personal
+  adoption, or `setup-machine.sh` (`tests/test_setup_machine.py`, with stand-ins for `uv` and
+  `repo-template` and a temporary HOME).
+- Try commands against temporary folders: `check` and `update` on a repository made in
+  `mktemp -d`, and `HOME=$(mktemp -d) uv run repo-template globals --check --standards-root .`.
+  A plain `globals` or a real `setup-machine.sh` run changes this machine: run one only when the
+  user asks.
+- A change users can see goes into `CHANGELOG.md` (Unreleased) and into every document that
+  shows it: `README.md`, `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md`, the `repo-template` skill, and
+  `GLOSSARY.md` for a new term.
 - Every skill is recorded and licensed: vendored ones in the lock (and byte-identical to it,
   except the frontmatter fields an override changes), local ones in
   `.agents/skill-sources.json`. Run `repo-template globals` after catalog changes; it records

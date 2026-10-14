@@ -37,6 +37,25 @@ each file as generated. A personal repository's is `.git/repo-template.json`, wi
 records (those are in `~/.repo-template/globals-state.json`).
 _Avoid_: lock, state file
 
+**Profile**:
+What a manifest says repo-template manages: `python-uv` (the full project baseline),
+`packs-only` (skill packs and their MCP servers) or `personal` (the same, for one person). It is
+recorded on adoption, and later runs follow it.
+
+**Adoption**:
+The first `update` of a repository the baseline didn't create; it records the profile.
+_Avoid_: onboarding, migration
+
+**Preserved file**:
+A file `update` (or `globals`) leaves for a decision instead of changing it: a `!` line under
+"Preserved for manual review", and exit 2.
+_Avoid_: conflict, kept file
+
+**Project-owned file**:
+A path in the manifest's `project_owned`: `update` never changes or recreates it. A seed file
+belongs to the project too, but isn't project-owned until listed.
+_Avoid_: owned file
+
 **Accepted difference**:
 A managed file the project keeps in its own form, recorded in the manifest with its hash and the
 baseline's hash, so `update` stays quiet until either one changes.
@@ -119,7 +138,8 @@ text of each field it replaces and the upstream SKILL.md's blob SHA, marked in t
 re-applied by `globals` after the skill is vendored again.
 
 **Skill mirror**:
-`.claude/skills/` in the standards repository: one relative link per catalog skill.
+`.claude/skills/` in the standards repository: one relative link per global skill (pack skills
+aren't mirrored).
 
 **Receipt policy**:
 `.ai/receipt-policy.json`: whether a repository records skill receipts, and where.

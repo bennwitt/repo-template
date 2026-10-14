@@ -2,7 +2,9 @@
 # Set up a Mac or a Linux machine for repo-template: clone (or update) the standards repository,
 # install the repo-template command, link the global skills, settings and MCP servers, and, if
 # you want them, the tools the skills use. Safe to run again: each step checks first and changes
-# only what is missing or out of date. Nothing is installed without asking.
+# only what is missing or out of date. Nothing is installed without asking, unless you pass
+# --yes: then each question takes its default (uv is installed if missing, the folder created and
+# globals applied; the optional tools, whose default is no, are skipped).
 #
 # Usage:
 #   bash setup-machine.sh                        asks where the standards repository goes
@@ -31,7 +33,7 @@ run_globals=1
 run_tools=1
 status=0 # 1 once a step reported an error; the run goes on, and exits 1 at the end
 
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; }
 
 say() { printf '\n==> %s\n' "$*"; }
 note() { printf '    %s\n' "$*"; }
@@ -130,13 +132,14 @@ optional() {
 }
 
 is_standards() { [ -f "$1/pyproject.toml" ] && grep -q '^name = "repo-template"' "$1/pyproject.toml"; }
+version_of() { sed -n 's/^version = "\(.*\)"$/\1/p' "$1/pyproject.toml" | head -n 1; }
 
-# put_block FILE START END BLOCK: FILE with its START..END lines replaced by BLOCK, or BLOCK
-# added at the end. A file whose markers aren't one START before one END is left alone. The file
-# is backed up before it changes, and written in place (through a symlink, keeping the target).
-# Succeeds when the file holds BLOCK afterwards.
+# put_block FILE START END BLOCK [HEADING]: FILE with its START..END lines replaced by BLOCK, or
+# BLOCK added at the end. A file whose markers aren't one START before one END is left alone. The
+# file is backed up before it changes, and written in place (through a symlink, keeping the
+# target); HEADING is shown only then. Succeeds when the file holds BLOCK afterwards.
 put_block() {
-  local file=$1 start=$2 end=$3 block=$4 starts ends first last new
+  local file=$1 start=$2 end=$3 block=$4 heading=${5:-} starts ends first last new
   starts=$(grep -cxF -- "$start" "$file" 2>/dev/null || true)
   ends=$(grep -cxF -- "$end" "$file" 2>/dev/null || true)
   starts=${starts:-0}
@@ -168,6 +171,7 @@ put_block() {
     rm -f "$new"
     return 0
   fi
+  if [ -n "$heading" ]; then say "$heading"; fi
   if [ -f "$file" ]; then
     mkdir -p "$HOME/.repo-template/backups/$STAMP"
     cp "$file" "$HOME/.repo-template/backups/$STAMP/$(basename "$file")"
@@ -265,6 +269,7 @@ fi
 say "Standards repository: $dir"
 if [ -d "$dir/.git" ]; then
   is_standards "$dir" || die "$dir is a Git repository, but not repo-template; choose another folder"
+  was=$(version_of "$dir")
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD)
   if [ -n "$(git -C "$dir" status --porcelain --untracked-files=no)" ]; then
     warn "it has uncommitted changes, so it wasn't pulled; commit or stash them, then run this again"
@@ -272,6 +277,10 @@ if [ -d "$dir/.git" ]; then
     warn "it is on branch $branch, not main, so it wasn't pulled"
   elif git -C "$dir" pull --ff-only --quiet; then
     note "up to date with origin/main: $(git -C "$dir" log -1 --format='%h %s')"
+    if [ "$(version_of "$dir")" != "$was" ]; then
+      note "repo-template $was -> $(version_of "$dir"): what changed is in $dir/CHANGELOG.md"
+      note "to see which repositories to update: repo-template check <repo> <repo> ..."
+    fi
   else
     warn "git pull failed (above); continuing with what is there"
   fi
@@ -287,7 +296,7 @@ else
   git clone --quiet "$REPO_URL" "$dir"
   note "cloned $REPO_URL"
 fi
-note "repo-template $(sed -n 's/^version = "\(.*\)"$/\1/p' "$dir/pyproject.toml" | head -n 1)"
+note "repo-template $(version_of "$dir")"
 
 # 3. The repo-template command.
 
@@ -359,37 +368,49 @@ $PROFILE_END"
     printf '%s\n' "$block"
     return
   fi
-  put_block "$profile" "$PROFILE_START" "$PROFILE_END" "$block" || status=1
+  put_block "$profile" "$PROFILE_START" "$PROFILE_END" "$block" "Shell profile" || status=1
 }
-say "Shell profile"
 write_profile
 
 # 5. Global skills, settings and MCP servers.
 
 if [ "$run_globals" = 1 ]; then
-  say "Global skills, settings and MCP servers: what would change"
+  say "Global skills, settings and MCP servers (repo-template globals)"
+  output=$(mktemp)
   set +e
-  "$bin/repo-template" globals --standards-root "$dir" --check
+  "$bin/repo-template" globals --standards-root "$dir" --check >"$output" 2>&1
   checked=$?
   set -e
   if [ "$checked" = 0 ]; then
     note "already current"
-  elif confirm "Apply these changes?" y; then
-    set +e
-    "$bin/repo-template" globals --standards-root "$dir"
-    applied=$?
-    set -e
-    case "$applied" in
-      0) note "applied" ;;
-      2) note "applied; the ! lines above are kept for you to review (reported once)" ;;
-      *)
-        warn "repo-template globals reported errors (above); fix them, then run this again"
-        status=1
-        ;;
-    esac
   else
-    note "skipped: run 'repo-template globals' when you're ready"
+    if [ -f "$HOME/.repo-template/globals-state.json" ]; then
+      sed 's/^/    /' "$output" # a machine set up before: the list is short
+    else
+      count() { grep -c "^  $1 " "$output" || true; }
+      note "a first run: $(count '[+]') to create, $(count '~') to update, $(count -) to remove, $(count !) to review"
+      note "anything it replaces is backed up to ~/.repo-template/backups/ first"
+      if confirm "Show the full list?" n; then sed 's/^/    /' "$output"; fi
+    fi
+    if confirm "Apply these changes?" y; then
+      set +e
+      "$bin/repo-template" globals --standards-root "$dir" >"$output" 2>&1
+      applied=$?
+      set -e
+      grep -E '^  [!x] ' "$output" | sed 's/^/  /' || true # only what needs your attention
+      case "$applied" in
+        0) note "applied" ;;
+        2) note "applied; the ! lines above are kept for you to review (reported once)" ;;
+        *)
+          warn "repo-template globals reported errors (the x lines above); fix them, then run this again"
+          status=1
+          ;;
+      esac
+    else
+      note "skipped: run 'repo-template globals' when you're ready"
+    fi
   fi
+  rm -f "$output"
 fi
 
 # globals writes the personal ignores to ~/.config/git/ignore. Git reads the file core.excludesFile
@@ -402,8 +423,7 @@ if [ "$reads" != "$written" ] && grep -qxF "$IGNORE_START" "$written" 2>/dev/nul
   ignores=$(sed -n "/^$IGNORE_START\$/,/^$IGNORE_END\$/p" "$written")
   if grep -qxF "$IGNORE_START" "$reads" 2>/dev/null \
     || confirm "Git reads ignores from $reads, not $written: copy repo-template's lines there?" y; then
-    say "Git ignores"
-    put_block "$reads" "$IGNORE_START" "$IGNORE_END" "$ignores" || status=1
+    put_block "$reads" "$IGNORE_START" "$IGNORE_END" "$ignores" "Git ignores" || status=1
   fi
 fi
 

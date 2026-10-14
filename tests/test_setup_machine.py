@@ -32,7 +32,8 @@ REPO_TEMPLATE = """#!/bin/sh
 echo "repo-template $*" >>"$HOME/calls.log"
 case "$*" in
   --help) exit 0 ;;
-  *--check*) exit "${CHECK_EXIT:-1}" ;;
+  *--check*) printf 'Would create (2):\\n  + first-link\\n  + second-link\\n'
+    exit "${CHECK_EXIT:-1}" ;;
   globals*) mkdir -p "$HOME/.config/git"; printf '%s' "$IGNORE" >"$HOME/.config/git/ignore"
     exit "${APPLY_EXIT:-0}" ;;
 esac
@@ -242,6 +243,7 @@ def test_a_second_run_leaves_the_profile_byte_for_byte(machine: dict[str, Path])
     result = _run(machine, "--yes", "--no-globals", "--no-tools")
 
     assert result.returncode == 0 and "updated" not in result.stdout
+    assert "Shell profile" not in result.stdout  # a heading only when it changes something
     assert (home / ".zshrc").read_bytes() == before
 
 
@@ -352,3 +354,31 @@ def test_the_ignore_copy_is_kept_current_even_without_globals(machine: dict[str,
 
     assert result.returncode == 0, result.stderr
     assert mine.read_text() == ".DS_Store\n\n" + IGNORE
+
+
+def test_a_first_run_summarizes_the_globals_plan_and_a_later_one_lists_it(
+    machine: dict[str, Path],
+) -> None:
+    home = machine["home"]
+
+    first = _run(machine, "--yes", "--no-tools")
+    (home / ".repo-template").mkdir(exist_ok=True)
+    (home / ".repo-template/globals-state.json").write_text("{}")  # set up before
+    later = _run(machine, "--yes", "--no-tools")
+
+    assert "a first run: 2 to create, 0 to update, 0 to remove, 0 to review" in first.stdout
+    assert "+ first-link" not in first.stdout
+    assert "+ first-link" in later.stdout and "a first run" not in later.stdout
+
+
+def test_a_pull_that_brings_a_new_version_says_so(machine: dict[str, Path]) -> None:
+    origin = machine["origin"]
+    _run(machine, "--yes", "--no-globals", "--no-tools")
+    (origin / "pyproject.toml").write_text(
+        '[project]\nname = "repo-template"\nversion = "9.9.10"\n'
+    )
+    _git(origin, "commit", "-q", "-am", "release")
+
+    result = _run(machine, "--yes", "--no-globals", "--no-tools")
+
+    assert "repo-template 9.9.9 -> 9.9.10" in result.stdout

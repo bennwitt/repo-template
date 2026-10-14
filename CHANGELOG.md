@@ -2,16 +2,26 @@
 
 ## Unreleased
 
-- `setup-machine.sh` sets up a Mac or a Linux machine in one run.
-  - It asks where the standards repository goes (default `~/aiDevStandards`).
-  - It clones or pulls it, installs the CLI, and shows `globals` before applying it.
-  - It copies the ignore lines to the file `core.excludesFile` names, and offers each optional
-    tool.
-  - It is safe to run again, and refuses rather than guesses (no terminal without `--yes`, a
-    folder that isn't repo-template, a machine still on the pre-0.4.2 settings link).
-- `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md` covers updating a machine, updating a templated
-  repository, and adopting one.
-- The README's Mac location is `~/aiDevStandards`: macOS keeps the top of the disk read-only.
+- `setup-machine.sh` sets up a Mac or a Linux machine in one run, and runs again safely.
+  - It asks where the standards repository goes (default `~/aiDevStandards`, or the checkout the
+    machine already uses), clones or pulls it, installs the CLI, and writes `AI_DEV_STANDARDS` in
+    a marked block of the shell profile (the one the shell reads: `ZDOTDIR`, bash's login file on
+    a Mac, fish's `conf.d`).
+  - It previews `globals` (a summary on a first run) and applies it once you agree, keeps the
+    Git ignore lines current in the file Git reads (`core.excludesFile`, through includes, or
+    `XDG_CONFIG_HOME`), and offers each optional tool, defaulting to no.
+  - Every file it changes is backed up to `~/.repo-template/backups/` first; a broken marked
+    block is left alone. A failed step is reported and the rest still runs (exit 1 at the end).
+  - It refuses rather than guesses: no terminal without `--yes`, a folder that isn't empty or
+    holds another repository, a Git that doesn't run (a new Mac's stand-in), root, or a machine
+    still on the pre-0.4.2 settings link.
+- `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md`: set up a machine in three steps (or by hand, in an
+  appendix), with the prerequisites and optional tools for macOS and Linux; then one question
+  decides how to update or adopt each repository.
+- The README's Mac location is `~/aiDevStandards` (macOS keeps the top of the disk read-only),
+  and its install section points to the script and the guide instead of repeating them.
+- The `repo-template` skill chooses the path first (full, packs-only, or personal for a team's
+  repository) and verifies each one its own way; `AGENTS.md` and `GLOSSARY.md` follow.
 
 ## 0.5.3 - 2026-10-14
 

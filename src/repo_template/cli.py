@@ -45,7 +45,9 @@ def _parser() -> argparse.ArgumentParser:
         help="parent directory (default: current directory)",
     )
     create.add_argument("--description", help="one-line project description")
-    create.add_argument("--python", type=_python_version, default="3.12")
+    create.add_argument(
+        "--python", type=_python_version, default="3.12", help="Python version (default: 3.12)"
+    )
     create.add_argument("--no-git", action="store_true", help="do not initialize Git")
     create.add_argument("--no-lock", action="store_true", help="do not create uv.lock")
     create.add_argument(
@@ -57,7 +59,13 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     update = subparsers.add_parser("update", help="add missing standards safely")
-    update.add_argument("path", type=Path, nargs="?", default=Path.cwd())
+    update.add_argument(
+        "path",
+        type=Path,
+        nargs="?",
+        default=Path.cwd(),
+        help="the repository (default: the current directory)",
+    )
     update.add_argument(
         "--no-hooks", action="store_true", help="do not configure the repository hook path"
     )
@@ -122,13 +130,19 @@ def _parser() -> argparse.ArgumentParser:
     globals_parser = subparsers.add_parser(
         "globals", help="connect global Codex and Claude configuration to this standards repo"
     )
-    globals_parser.add_argument("--standards-root", type=Path)
+    globals_parser.add_argument(
+        "--standards-root",
+        type=Path,
+        help="the standards repository (default: $AI_DEV_STANDARDS, else the checkout this CLI "
+        "is installed from)",
+    )
     mode = globals_parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="report changes without applying them")
     mode.add_argument(
         "--upstream",
         action="store_true",
-        help="compare the vendored skills and license texts with upstream (network; read-only)",
+        help="compare the vendored skills, license texts and MCP pins with upstream (GitHub, npm "
+        "and PyPI; read-only)",
     )
     mode.add_argument(
         "--upgrade",
