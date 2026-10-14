@@ -1340,9 +1340,12 @@ def _prepare(
             f"{target.name}: this repository's .gitignore would hide "
             f"{clean(', '.join(ignored[:5]))}, so they couldn't be tracked or checked"
         )
-    source_license = records.sources.get("sources", {}).get(target.source, {})
-    spdx = source_license.get("license", "") if isinstance(source_license, dict) else ""
-    own = own_license(staged.path, text, str(spdx))
+    source_license = records.sources.get("sources", {}).get(target.source)
+    if isinstance(source_license, dict):
+        spdx = str(source_license.get("license", ""))
+    else:  # a new source: what GitHub detects is what the addition will record for it
+        spdx = github.license(target.source) or ""
+    own = own_license(staged.path, text, spdx)
     if own and not records.sources.get("skills", {}).get(target.name, {}).get("license"):
         raise ValueError(
             f"{target.name}: carries its own license ({clean(', '.join(own))}); record it as "

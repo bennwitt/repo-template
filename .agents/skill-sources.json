@@ -9,6 +9,22 @@
       },
       "discover": "none"
     },
+    "docker/skills": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright 2026 Docker, Inc.",
+      "licenseFiles": {
+        "LICENSE": "34f4d2496fa7340441d0b70900bcae0646a0a643"
+      },
+      "discover": "none"
+    },
+    "fastapi/fastapi": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2018 Sebastián Ramírez",
+      "licenseFiles": {
+        "LICENSE": "3e92463e6bd522a2a21e5f0a80d8089d6c4be20d"
+      },
+      "discover": "none"
+    },
     "getsentry/skills": {
       "license": "Apache-2.0",
       "copyright": "Copyright 2025 Functional Software, Inc. dba Sentry",
@@ -49,6 +65,14 @@
       },
       "discover": "all"
     },
+    "microsoft/playwright-cli": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) Microsoft Corporation.",
+      "licenseFiles": {
+        "LICENSE": "cefe596afef12e19a8e5e923f1a04c7da3188760"
+      },
+      "discover": "none"
+    },
     "trailofbits/skills": {
       "license": "CC-BY-SA-4.0",
       "copyright": "Not stated upstream; the README says \"Made by Trail of Bits\"",
@@ -67,6 +91,9 @@
     }
   },
   "local": {
+    "compose-gpu-serving": {
+      "license": "MIT"
+    },
     "knowledge-graph-extraction": {
       "license": "MIT",
       "derivedFrom": {
@@ -125,6 +152,18 @@
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "5fdd6cc53385395441910b026c72d71768e993d4"
     },
+    "docker-build-strategies": {
+      "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
+      "tree": "550661626e962557558052ae594b0e16cb076df4"
+    },
+    "docker-compose-patterns": {
+      "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
+      "tree": "d602abc2459830dbc66a8aae7c91d80820584f25"
+    },
+    "docker-destructive-guardrails": {
+      "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
+      "tree": "7a2acb5897ea48a3ff3299783574819e61fd24f7"
+    },
     "domain-modeling": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
       "tree": "ea30ee454ba264543dbe40737973b1a5afb9f0e6"
@@ -136,6 +175,11 @@
     "eval-engineering": {
       "commit": "fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7",
       "tree": "171e0b69b291d65553bdcb89f59f085e22770e09"
+    },
+    "fastapi": {
+      "commit": "f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007",
+      "tree": "34ece4801c3efb15889c30835d58511da031796f",
+      "ref": "0.143.0"
     },
     "find-skills": {
       "commit": "773fb2c7bbf16781670a3520affc4abd0c6151ae",
@@ -244,6 +288,11 @@
     "migrate-to-shoehorn": {
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
       "tree": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23"
+    },
+    "playwright-cli": {
+      "commit": "b85c7a736bb473bf55b584e54a09ffa698d6d871",
+      "tree": "6b746b43751be277378e0ee04fe0db69f24da045",
+      "ref": "v0.1.22"
     },
     "pr": {
       "commit": "e484a8095543718ced436b9b49a8160ed4554000",

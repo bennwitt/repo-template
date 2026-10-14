@@ -546,6 +546,25 @@ def test_adding_a_skill_from_a_new_source_records_its_license(tmp_path: Path) ->
     assert check_integrity(root, skill_names(root)) == []
 
 
+@pytest.mark.parametrize(("stated", "added"), [("Apache-2.0", True), ("MIT", False)])
+def test_a_new_sources_skill_may_state_the_license_github_detects(
+    tmp_path: Path, stated: str, added: bool
+) -> None:
+    """docker/skills states `license: Apache-2.0` in each SKILL.md, as its repository is."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    text = _skill("new-skill").replace(b"---\nBody", f"license: {stated}\n---\nBody".encode())
+    github.publish("x/y", {"LICENSE": b"Apache License\n", "new-skill/SKILL.md": text})
+    github.licenses["x/y"] = "Apache-2.0"
+
+    outcome = _run(root, github, ["x/y@new-skill"], "a")
+
+    assert (outcome.added == ["new-skill"]) is added, outcome
+    assert added or "carries its own license (license: MIT)" in outcome.refused[0]
+    if added:
+        assert check_integrity(root, skill_names(root)) == []
+
+
 def test_an_unidentified_license_refuses_the_addition(tmp_path: Path) -> None:
     github = FakeGitHub()
     root = _catalog(tmp_path, github, V1)

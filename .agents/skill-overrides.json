@@ -1,4 +1,44 @@
 {
+  "docker-build-strategies": {
+    "why": "Shorter, same triggers.",
+    "frontmatter": {
+      "description": "Dockerfiles: multi-stage builds, layer caching and cache mounts, .dockerignore, non-root users and smaller images. Use when writing, reviewing or optimizing a Dockerfile, or when an image is too large or a build too slow."
+    },
+    "upstream": "31892527582a736c05d0be76f1be93d3dc470aef",
+    "base": {
+      "description": "description: Use this skill when writing, reviewing, or optimizing Dockerfiles, even if the user just says their image is too large, their build is slow, or they need to harden a container for production. Covers multi-stage builds, layer caching, .dockerignore, non-root users, and image size optimization.\n"
+    }
+  },
+  "docker-compose-patterns": {
+    "why": "Upstream adds 'even if the user just says…' trigger lists; keep the triggers, shorter.",
+    "frontmatter": {
+      "description": "Docker Compose files (compose.yaml and overrides): service definitions, health checks and depends_on ordering, volumes, networks, environment variables and development overrides. Use when creating, changing or debugging a Compose setup, wiring services together or adding a database to a stack."
+    },
+    "upstream": "f6b9c40fe3d94c41ebcf319ef15a1a189ebf2e22",
+    "base": {
+      "description": "description: Use this skill when creating, modifying, or debugging Docker Compose configurations, even if the user just says they need to wire services together, add a database to their stack, or set up a local development environment with multiple containers. Covers service definitions, health checks, dependency ordering, volumes, networks, environment variables, and development overrides.\n"
+    }
+  },
+  "docker-destructive-guardrails": {
+    "why": "Upstream is ~1,000 characters listing every command; keep the rule and the trigger.",
+    "frontmatter": {
+      "description": "Before running or recommending a Docker command that deletes or irreversibly resets state (rm -f, prune, rmi, volume rm, network rm, builder prune, compose down -v), or on a request to clean up, wipe, reset or start fresh: say exactly what will be lost and get explicit confirmation first."
+    },
+    "upstream": "1586243aa99713b85a35e1e2e4a8a0d8f0b37eda",
+    "base": {
+      "description": "description: Use this skill before running, or recommending, any Docker command that deletes, wipes, resets, or otherwise irreversibly changes state — even if the user just says to \"clean up\", \"clear the cache\", \"start fresh\", \"wipe everything\", \"nuke it\", \"reset\", \"force remove\", or \"tear down\" Docker resources. Covers generic Docker CLI destructive operations not owned by a more specific skill — `docker rm`, `docker rm -f`, `docker container prune`, `docker kill`, `docker system prune`, `docker rmi`/`docker image rm`, `docker image prune -a`, `docker network rm`, `docker network prune`, `docker builder prune`, `docker buildx rm`, `docker context rm`, and standalone (non-Compose) `docker volume rm`/`docker volume prune`. Also indexes destructive commands owned by other Docker skills (Compose, sandbox, Desktop). Core rule — state exactly what will be lost and get explicit confirmation first, except narrow, low-friction Tier 1 container cleanup.\n"
+    }
+  },
+  "fastapi": {
+    "why": "Upstream triggers on any Pydantic model; scope it to FastAPI code, and say which features need which release.",
+    "frontmatter": {
+      "description": "FastAPI best practices: path operations, Annotated dependencies, response models, routers, streaming and Server-Sent Events, serving frontend apps, OpenTelemetry. Use when writing or reviewing FastAPI code. Check the installed version first: SSE needs 0.135+, frontend() 0.138+, native OpenTelemetry 0.142+."
+    },
+    "upstream": "cd15ec9b62547824da01fe8590a6407412bbe188",
+    "base": {
+      "description": "description: FastAPI best practices and conventions. Use when working with FastAPI APIs, Pydantic models, dependencies, streaming responses including Server-Sent Events (SSE), and serving frontend apps. Keeps FastAPI code clean and up to date with the latest features and patterns.\n"
+    }
+  },
   "find-skills": {
     "why": "Upstream triggers on any \"how do I do X\" question; fire only on explicit requests for a skill.",
     "frontmatter": {

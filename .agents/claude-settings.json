@@ -44,7 +44,9 @@
         "Bash(docker *rmi *)",
         "Bash(docker *image rm *)",
         "Bash(docker compose *down*-v*)",
-        "Bash(docker compose *rm *-v*)"
+        "Bash(docker compose *rm *-v*)",
+        "Bash(playwright-cli *run-code*)",
+        "Bash(npx playwright cli *run-code*)"
       ]
     },
     "hooks": {

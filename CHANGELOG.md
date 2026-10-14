@@ -6,6 +6,16 @@
   `grilling`, `handoff`, `implement`, `managed-deep-agents`, `setup-matt-pocock-skills`, `tdd`,
   `teach`, `to-tickets`, `wayfinder`, `wizard`.
 - Skills removed (gone upstream): `langsmith-online-eval-engineering`, `resolving-merge-conflicts`.
+- Skills added from upstream: `docker-build-strategies`, `docker-compose-patterns`,
+  `docker-destructive-guardrails`, `fastapi`, `playwright-cli`. The Docker and FastAPI
+  descriptions are overridden to stay short (FastAPI no longer triggers on any Pydantic model).
+- New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
+  healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
+- Portable settings ask before `playwright-cli run-code` (it runs code outside the page).
+- `globals --upgrade` accepts a new source's skill whose `license` field states the license
+  GitHub detects for the repository (docker/skills does), instead of refusing it.
+- Codex 0.160.1 shows about 40,000 characters of skills before it truncates; a test keeps the
+  global skills to half of that.
 
 ## 0.5.1 - 2026-10-14
 

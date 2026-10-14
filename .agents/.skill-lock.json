@@ -594,6 +594,51 @@
       "skillFolderHash": "cf152b8708e94e97902eb340d24e17fc2a746694",
       "installedAt": "2026-10-01T20:51:28.311Z",
       "updatedAt": "2026-10-01T20:51:28.311Z"
+    },
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/microsoft/playwright-cli.git",
+      "skillPath": "skills/playwright-cli/SKILL.md",
+      "skillFolderHash": "6b746b43751be277378e0ee04fe0db69f24da045",
+      "installedAt": "2026-10-14T05:55:03.570Z",
+      "updatedAt": "2026-10-14T05:55:03.570Z"
+    },
+    "docker-compose-patterns": {
+      "source": "docker/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/docker/skills.git",
+      "skillPath": "skills/docker-compose-patterns/SKILL.md",
+      "skillFolderHash": "d602abc2459830dbc66a8aae7c91d80820584f25",
+      "installedAt": "2026-10-14T05:55:11.331Z",
+      "updatedAt": "2026-10-14T05:55:11.331Z"
+    },
+    "docker-build-strategies": {
+      "source": "docker/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/docker/skills.git",
+      "skillPath": "skills/docker-build-strategies/SKILL.md",
+      "skillFolderHash": "550661626e962557558052ae594b0e16cb076df4",
+      "installedAt": "2026-10-14T05:55:17.429Z",
+      "updatedAt": "2026-10-14T05:55:17.429Z"
+    },
+    "docker-destructive-guardrails": {
+      "source": "docker/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/docker/skills.git",
+      "skillPath": "skills/docker-destructive-guardrails/SKILL.md",
+      "skillFolderHash": "7a2acb5897ea48a3ff3299783574819e61fd24f7",
+      "installedAt": "2026-10-14T05:55:20.975Z",
+      "updatedAt": "2026-10-14T05:55:20.975Z"
+    },
+    "fastapi": {
+      "source": "fastapi/fastapi",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/fastapi/fastapi.git",
+      "skillPath": "fastapi/.agents/skills/fastapi/SKILL.md",
+      "skillFolderHash": "34ece4801c3efb15889c30835d58511da031796f",
+      "installedAt": "2026-10-14T05:55:26.608Z",
+      "updatedAt": "2026-10-14T05:55:26.608Z"
     }
   },
   "dismissed": {
