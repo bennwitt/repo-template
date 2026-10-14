@@ -151,7 +151,7 @@ so Claude Code wrote `/model`, `/effort` and `/plugin` changes from every machin
 file. That file is gone in 0.4.2. On each machine:
 
 ```bash
-cd /aiDevStandards
+cd "$AI_DEV_STANDARDS"                     # this repository's checkout
 cp .claude/settings.json ~/claude-settings-before-0.4.2.json   # this machine's view
 git checkout -- .claude/settings.json      # changes Claude Code wrote through the link block the pull
 git pull                                   # removes .claude/settings.json: the link now dangles
@@ -172,19 +172,32 @@ Code on that machine has no user settings: no deny rules, plugins or receipt hoo
 
 ### Install (once per machine)
 
-Keep this repository at a stable path. On a Mac, `/aiDevStandards` is the recommended
-location; on the Linux workstation it lives at `/ai/Moore/repo-template`.
+Keep this repository at a stable path. On a Mac, `~/aiDevStandards` is the recommended location
+(macOS doesn't let you create a folder at the top of the disk); on the Linux workstation it lives
+at `/ai/Moore/repo-template`. [HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md)
+walks through a machine and its repositories step by step.
+
+The quick way is [`setup-machine.sh`](setup-machine.sh): download it, read it, run it.
+It asks where the repository goes, then does the steps below, and you can run it again any
+time:
 
 ```bash
-git clone git@github.com:bennwitt/repo-template.git /aiDevStandards
-cd /aiDevStandards
+curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
+less setup-machine.sh && bash setup-machine.sh
+```
+
+By hand:
+
+```bash
+git clone https://github.com/bennwitt/repo-template.git ~/aiDevStandards
+cd ~/aiDevStandards
 uv tool install --editable .
-repo-template globals --standards-root /aiDevStandards --check   # preview
-repo-template globals --standards-root /aiDevStandards           # apply
+repo-template globals --standards-root ~/aiDevStandards --check   # preview
+repo-template globals --standards-root ~/aiDevStandards           # apply
 ```
 
 Because the install is editable, a `git pull` updates the CLI and its templates without a
-reinstall. Set `AI_DEV_STANDARDS=/aiDevStandards` in your shell profile to omit
+reinstall. Set `AI_DEV_STANDARDS="$HOME/aiDevStandards"` in your shell profile to omit
 `--standards-root`. A root named either way must be a standards repository, or the command stops
 with an error. Without either, `globals` uses the checkout the CLI is installed from, so running
 it inside some other repository (which may well have `.agents/skills/` of its own, from
