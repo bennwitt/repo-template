@@ -14,15 +14,22 @@ installs `uv` if it's missing.
 | | macOS | Linux |
 | --- | --- | --- |
 | Git | `xcode-select --install` | your package manager, e.g. `sudo apt install git` |
-| Node 24 LTS | the installer from [nodejs.org](https://nodejs.org), or `brew install node@24` (then add `$(brew --prefix node@24)/bin` to `PATH`) | [nvm](https://github.com/nvm-sh/nvm): `nvm install 24` |
-| Google Chrome, for the `playwright` MCP server | [google.com/chrome](https://www.google.com/chrome/), or `brew install --cask google-chrome` | Google's `.deb` or `.rpm` |
+| Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash`, then run `claude` once to sign in ([setup](https://docs.claude.com/en/docs/claude-code/setup)) | the same |
+| Node 24 LTS | [nvm](https://github.com/nvm-sh/nvm): `nvm install 24`, or `brew install node@24` (then add `$(brew --prefix node@24)/bin` to `PATH`) | nvm: `nvm install 24` |
+| Google Chrome, for the `playwright` MCP server's browser | [google.com/chrome](https://www.google.com/chrome/), or `brew install --cask google-chrome` | Google's `.deb` or `.rpm` |
+
+Use nvm or Homebrew for Node: with the nodejs.org installer, `npm install -g` needs `sudo`.
 
 1. **Get the script.**
    - A new machine:
      ```bash
      curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
      ```
-   - A machine already set up has it in its checkout. Find the checkout and pull it:
+   - A machine already set up has it in its checkout. First, if
+     `readlink ~/.claude/settings.json` prints a path ending in `/.claude/settings.json` inside
+     that checkout, the machine was set up before 0.4.2: do
+     [Appendix A, step 1](#appendix-a-setting-up-a-machine-by-hand) first (it pulls for you).
+     Otherwise find the checkout and pull it:
      ```bash
      checkout=$(dirname "$(readlink ~/.agents)") && git -C "$checkout" pull --ff-only
      ```
@@ -41,11 +48,15 @@ installs `uv` if it's missing.
    - copies the Git ignore lines to the file your Git actually reads, if that's another one;
    - offers each optional tool in [1.1](#11-optional-tools), with "no" as the default.
 
-   Every file it changes is backed up to `~/.repo-template/backups/<time>/` first. A step that
-   fails is reported, the rest still runs, and the script exits 1. Run it again any time: it
-   changes only what is missing or out of date. `--yes --dir PATH` answers every question with
-   its default (so it installs `uv` if needed, creates the folder and applies `globals`, but no
-   optional tools); `--help` lists the options.
+   - **Backups:** its blocks in your shell profile and ignore file, and the settings and MCP
+     files `globals` changes, are backed up to `~/.repo-template/backups/<time>/` first. (`uv`'s
+     own setup adds a `PATH` line to your shell's startup files.)
+   - **When something fails:** a failed clone or install stops it with a message and exit 1. A
+     failed `globals`, profile or optional step is reported, the rest still runs, and it exits 1
+     at the end.
+   - **Again any time:** it changes only what is missing or out of date. `--yes --dir PATH`
+     answers every question with its default (it installs `uv` if needed, creates the folder and
+     applies `globals`, but installs no optional tool); `--help` lists the options.
 3. **Check it worked.** Open a new terminal, then:
    ```bash
    repo-template --help           # the command is on PATH
@@ -57,8 +68,9 @@ To do these steps by hand instead, see [Appendix A](#appendix-a-setting-up-a-mac
 
 ### 1.1 Optional tools
 
-The script offers each of these. Versions are the newest releases at least 7 days old on
-2026-10-13.
+The script offers each of these. Each version is at least 7 days old (2026-10-13);
+`typescript-language-server` 5.3 and TypeScript 6 are held back on purpose (6 needs Node 22.22,
+and TypeScript 7 has no `tsserver`; see the README's Per-machine tools).
 
 | Tool | For | macOS | Linux |
 | --- | --- | --- | --- |
@@ -66,20 +78,24 @@ The script offers each of these. Versions are the newest releases at least 7 day
 | Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
 | Azure Developer CLI (`azd`) 1.35.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
 | GitHub token | the `github` plugin | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
-| Codex CLI | Codex | `npm install -g @openai/codex@<version>` | the same |
+| Codex CLI | Codex | `npm install -g --ignore-scripts @openai/codex@<version>` | the same |
 
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
   `az account set --subscription "<name>"`. For `azd`, check the asset's SHA-256 against the
   release's digest (`shasum -a 256` on a Mac, `sha256sum` on Linux), put `azd` on your `PATH`,
   then run `azd config set auth.useAzCliAuth true`. On a Mac the script installs both with
-  Homebrew, which takes the current release: the one exception to the 7-day rule.
+  Homebrew (install it first from [brew.sh](https://brew.sh)), which takes the current release:
+  the one exception to the 7-day rule.
 - **GitHub token on Linux:**
   ```bash
   install -m 600 /dev/null ~/.config/github-token        # then put this line in it:
   #   export GITHUB_PERSONAL_ACCESS_TOKEN=<your token>
   echo '[ -f ~/.config/github-token ] && . ~/.config/github-token' >> ~/.bashrc   # or ~/.zshrc
   ```
-- **Codex:** pick a release at least 7 days old: `npm view @openai/codex time --json | tail -5`.
+- **Codex:** pick a release at least 7 days old from the final ones:
+  `npm view @openai/codex time --json | grep -E '^  "[0-9]+\.[0-9]+\.[0-9]+":' | tail -5`.
+  After installing it, run `codex` once, then the setup script again, so Codex gets its MCP
+  servers.
 - **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
   (authorize it in `/mcp`).
 
@@ -110,11 +126,11 @@ repo-template check ~/code/service-a ~/code/web-b ~/code/tool-c
 
 ### 2.1 Update a templated repository
 
-1. Start a branch from an up-to-date `main`:
+1. Preview: `repo-template check .` If it prints "Standards are current.", you're done.
+2. Start a branch from an up-to-date `main`:
    ```bash
    git switch main && git pull && git switch -c chore/repo-template-update
    ```
-2. Preview: `repo-template check .`
 3. Apply: `repo-template update .` In a terminal it shows a diff for each file that differs from
    the baseline and asks:
 
@@ -126,7 +142,8 @@ repo-template check ~/code/service-a ~/code/web-b ~/code/tool-c
    | `a` | always keep yours (never managed again) |
    | `s` | skip for now |
 
-   Exit 2 means files are still waiting for a decision: run it again until it exits 0.
+   Exit 2 means something is still waiting: a baseline file you haven't decided (run `update`
+   again in a terminal), or another `!` line, which says its own fix.
 4. Check:
    - every repository: `repo-template check .` prints "Standards are current.";
    - the full baseline also: `uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy src`.
@@ -181,11 +198,11 @@ behind).
 1. Look first. The baseline adds a pre-commit hook and CI that block every commit until these
    pass:
    ```bash
-   uv lock --check
+   uv lock --check                 # no uv.lock yet is fine: update creates it
    uvx ruff check --select E,F,I,B,UP,SIM --line-length 100 . --statistics | tail -3
    uvx ruff format --check --line-length 100 . | tail -1
    uv run --with mypy mypy --strict src | tail -1
-   uv run pytest -q | tail -1
+   uv run --with pytest pytest -q | tail -1
    ```
    With hundreds of findings, clean up first, or adopt it packs-only for now.
 2. Start a branch: `git switch main && git pull && git switch -c chore/adopt-repo-template`
@@ -193,7 +210,9 @@ behind).
 4. Apply: `repo-template update . --pack <name>`, and decide each file that differs (the keys in
    [2.1](#21-update-a-templated-repository)).
    - **Adds:** `AGENTS.md`, `CLAUDE.md`, `GLOSSARY.md`, `docs/adr/`, the CI workflow,
-     Dependabot, the PR template and the pre-commit hook (`core.hooksPath .githooks`).
+     Dependabot, the PR template, the pre-commit hook (`core.hooksPath .githooks`), and
+     `tests/test_smoke.py`, which expects `__version__` in `src/<package>/__init__.py`, equal to
+     the project's version (`uv init --package` doesn't define it: add it, or delete the test).
    - **Merges:** `pyproject.toml` and `.gitignore`, then refreshes `uv.lock`.
    - **Leaves alone:** a tool the project already configures keeps its settings, and code in
      `src/` but not in `src/<package>/` keeps its layout.
@@ -218,10 +237,11 @@ Later runs need no flag: `repo-template update .`
 | You see | Do |
 | --- | --- |
 | `newer than this repo-template` | pull the standards repository: `git -C "$(dirname "$(readlink ~/.agents)")" pull --ff-only`, then run it again |
-| `Git wouldn't ignore this link` | run `setup-machine.sh` again (it copies the ignore lines to the file Git reads), or add `.claude/` and `.agents/` to the repository's `.gitignore` |
-| exit 2 and `!` lines | files or entries kept for you to decide: run `update` in a terminal |
+| `Git wouldn't ignore this link` | run `setup-machine.sh` again (it copies the ignore lines to the file Git reads), or add `.claude/`, `.agents/` and `.codex/` to the repository's `.gitignore` |
+| exit 2 and `!` lines | a baseline file waiting for a decision: run `update` in a terminal; any other `!` line says its own fix (for `globals`, see the last row) |
 | Claude Code asks to approve MCP servers | they're from the repository's `.mcp.json`: approve the ones you want (a personal repository never asks) |
-| `playwright` isn't connected in `claude mcp list` | install Google Chrome (section 1), then restart Claude Code |
+| `playwright` isn't connected in `claude mcp list` | check `node --version` (22 or 24) and that `npx` is on the `PATH` Claude Code starts with, then restart Claude Code |
+| a browser tool fails with `Chromium distribution 'chrome' is not found` | install Google Chrome (section 1) |
 | Codex doesn't see a repository's servers | Codex reads `.codex/config.toml` only in a project you trust |
 | the pre-commit hook blocks a commit | it runs the checks: fix what it reports |
 | `globals` reports `changed on this machine; kept` or `configured by hand; kept` | yours wins; set it back to the standard's value to follow the standard again |

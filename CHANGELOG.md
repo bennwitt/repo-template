@@ -10,8 +10,12 @@
   - It previews `globals` (a summary on a first run) and applies it once you agree, keeps the
     Git ignore lines current in the file Git reads (`core.excludesFile`, through includes, or
     `XDG_CONFIG_HOME`), and offers each optional tool, defaulting to no.
-  - Every file it changes is backed up to `~/.repo-template/backups/` first; a broken marked
-    block is left alone. A failed step is reported and the rest still runs (exit 1 at the end).
+  - Its blocks in the shell profile and ignore file are backed up to `~/.repo-template/backups/`
+    before they change, and a broken marked block is left alone. A failed clone or install stops
+    it with a message (exit 1); a failed `globals`, profile or optional step is reported and the
+    rest still runs (exit 1 at the end). A settings link left from before 0.4.2 is migrated
+    first, or, when a pull already removed its file, reported while `globals` writes fresh
+    settings.
   - It refuses rather than guesses: no terminal without `--yes`, a folder that isn't empty or
     holds another repository, a Git that doesn't run (a new Mac's stand-in), root, or a machine
     still on the pre-0.4.2 settings link.

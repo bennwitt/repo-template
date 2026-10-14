@@ -164,6 +164,8 @@ def test_it_refuses_before_changing_anything(machine: dict[str, Path], case: str
     else:  # a pre-0.4.2 machine: the settings link into an older standards checkout
         old = home / "old-standards"
         _git(home, "clone", "-q", str(machine["origin"]), str(old))
+        (old / ".claude").mkdir()
+        (old / ".claude/settings.json").write_text("{}\n")
         (home / ".claude").mkdir()
         (home / ".claude/settings.json").symlink_to(old / ".claude/settings.json")
         message = "set up before 0.4.2"
@@ -387,3 +389,18 @@ def test_a_pull_that_brings_a_new_version_says_so(machine: dict[str, Path]) -> N
     result = _run(machine, "--yes", "--no-globals", "--no-tools")
 
     assert "repo-template 9.9.9 -> 9.9.10" in result.stdout
+
+
+def test_a_settings_link_whose_file_a_pull_removed_is_reported_and_passed(
+    machine: dict[str, Path],
+) -> None:
+    home = machine["home"]
+    old = home / "old-standards"
+    _git(home, "clone", "-q", str(machine["origin"]), str(old))
+    (home / ".claude").mkdir()
+    (home / ".claude/settings.json").symlink_to(old / ".claude/settings.json")  # dangles
+
+    result = _run(machine, "--yes", "--no-tools")
+
+    assert result.returncode == 0, result.stderr
+    assert "globals writes fresh settings in its place" in result.stderr

@@ -36,7 +36,7 @@ ignore file it writes only its marked block, after a backup in `~/.repo-template
 - Format: `uv run ruff format .` (CI and the pre-commit hook run `ruff format --check .`)
 - Type-check: `uv run mypy src`
 - Self-check: `uv run repo-template check .` prints "Standards are current."
-- Catalog, read-only: `uv run repo-template globals --check`
+- Catalog, read-only: `uv run repo-template globals --check --standards-root .`
 
 ## Design rules
 
@@ -57,8 +57,9 @@ ignore file it writes only its marked block, after a backup in `~/.repo-template
   `GLOSSARY.md` for a new term.
 - Every skill is recorded and licensed: vendored ones in the lock (and byte-identical to it,
   except the frontmatter fields an override changes), local ones in
-  `.agents/skill-sources.json`. Run `repo-template globals` after catalog changes; it records
-  overrides and, once the catalog is clean, regenerates the README catalog and notices.
+  `.agents/skill-sources.json`. Run `repo-template globals --standards-root .` after catalog
+  changes; it records overrides and, once the catalog is clean, regenerates the README catalog
+  and notices.
 
 ## Safety invariants
 
