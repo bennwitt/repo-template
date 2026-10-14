@@ -111,6 +111,16 @@ Upstream skill revisions don't wait; they are reviewed and scanned instead.
 `.agents/mcp-servers.json`: each MCP server once, with what it runs, its pin, its denied tools
 and why. A global server is installed on every machine; a pack server comes with a pack.
 
+**Tool pins**:
+`.agents/machine-tools.json`: the CLIs the skills and plugins drive on each machine, each pinned
+once (npm by version, a GitHub release by version and each platform's asset SHA-256).
+`setup-machine.sh` installs from it; `globals --upstream` reports newer releases.
+_Avoid_: machine tools list, tool versions file
+
+**Re-pin**:
+`globals --upgrade mcp:<name>`: moving an MCP server's pin to its newest final release past the
+cooldown, its args, version and `publishedAt` together.
+
 **Kept entry**:
 An MCP entry repo-template would manage but leaves alone, because it was changed or removed by
 hand: reported once, then recorded (in `globals-state.json`, or a repository's `mcp_kept`).

@@ -44,33 +44,36 @@ Use nvm or Homebrew for Node: with the nodejs.org installer, `npm install -g` ne
    - writes `AI_DEV_STANDARDS` into a marked block of your shell profile (on a Mac, once you
      store a GitHub token in the Keychain ([1.1](#11-optional-tools)), also a line that reads it);
    - shows what `repo-template globals` would change (skill links, Claude Code settings, the
-     global MCP servers, the Git ignore), and applies it when you say yes;
-   - copies the Git ignore lines to the file your Git actually reads, if that's another one;
+     global MCP servers, the Git ignore lines in the file your Git reads), and applies it when
+     you say yes;
    - offers each optional tool in [1.1](#11-optional-tools), with "no" as the default.
 
-   - **Backups:** its blocks in your shell profile and ignore file, and the settings and MCP
-     files `globals` changes, are backed up to `~/.repo-template/backups/<time>/` first. (`uv`'s
-     own setup adds a `PATH` line to your shell's startup files.)
+   - **Backups:** its block in your shell profile, and the settings, MCP and ignore files
+     `globals` changes, are backed up to `~/.repo-template/backups/<time>/` first. (`uv`'s own
+     setup adds a `PATH` line to your shell's startup files.)
    - **When something fails:** a failed clone or install stops it with a message and exit 1. A
-     failed `globals`, profile or optional step is reported, the rest still runs, and it exits 1
-     at the end.
+     failed `globals` or profile step is reported, the rest still runs, and it exits 1 at the
+     end. A failed optional tool is reported with the command to run later.
    - **Again any time:** it changes only what is missing or out of date. `--yes --dir PATH`
      answers every question with its default (it installs `uv` if needed, creates the folder and
      applies `globals`, but installs no optional tool); `--help` lists the options.
 3. **Check it worked.** Open a new terminal, then:
    ```bash
-   repo-template --help           # the command is on PATH
-   claude mcp list                # playwright and huggingface: connected
+   bash "$AI_DEV_STANDARDS/setup-machine.sh" --check   # each part: ok, or ! and what to do
+   claude mcp list                                    # playwright and huggingface: connected
    ```
-   Restart Claude Code (and Codex) so they pick up the new settings and servers.
+   `--check` changes nothing and exits 1 while a `!` line is left (`--offline` skips asking
+   GitHub whether the checkout is current). Restart Claude Code (and Codex) so they pick up the
+   new settings and servers.
 
 To do these steps by hand instead, see [Appendix A](#appendix-a-setting-up-a-machine-by-hand).
 
 ### 1.1 Optional tools
 
-The script offers each of these. Each version is at least 7 days old (2026-10-13);
-`typescript-language-server` 5.3 and TypeScript 6 are held back on purpose (6 needs Node 22.22,
-and TypeScript 7 has no `tsserver`; see the README's Per-machine tools).
+The script offers each of these, at the versions `.agents/machine-tools.json` pins: each the
+newest release at least 7 days old, except `typescript-language-server` 5.3 and TypeScript 6,
+held back on purpose (6 needs Node 22.22, and TypeScript 7 has no `tsserver`; see the README's
+Per-machine tools). The commands below are for installing one by hand.
 
 | Tool | For | macOS | Linux |
 | --- | --- | --- | --- |
@@ -78,24 +81,23 @@ and TypeScript 7 has no `tsserver`; see the README's Per-machine tools).
 | Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
 | Azure Developer CLI (`azd`) 1.35.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
 | GitHub token | the `github` plugin | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
-| Codex CLI | Codex | `npm install -g --ignore-scripts @openai/codex@<version>` | the same |
+| Codex CLI | Codex | `npm install -g --ignore-scripts @openai/codex@0.161.0` | the same |
 
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
-  `az account set --subscription "<name>"`. For `azd`, check the asset's SHA-256 against the
-  release's digest (`shasum -a 256` on a Mac, `sha256sum` on Linux), put `azd` on your `PATH`,
-  then run `azd config set auth.useAzCliAuth true`. On a Mac the script installs both with
-  Homebrew (install it first from [brew.sh](https://brew.sh)), which takes the current release:
-  the one exception to the 7-day rule.
+  `az account set --subscription "<name>"`. On a Mac the script installs `az` with Homebrew
+  (install it first from [brew.sh](https://brew.sh)), which takes the current release: the one
+  exception to the 7-day rule. It installs `azd` as `~/.local/bin/azd`, only once the
+  download's SHA-256 matches the pin, then runs `azd config set auth.useAzCliAuth true`. By
+  hand, compare the asset's SHA-256 (`shasum -a 256` on a Mac, `sha256sum` on Linux) with its
+  `sha256` in `.agents/machine-tools.json` before you put `azd` on your `PATH`.
 - **GitHub token on Linux:**
   ```bash
   install -m 600 /dev/null ~/.config/github-token        # then put this line in it:
   #   export GITHUB_PERSONAL_ACCESS_TOKEN=<your token>
   echo '[ -f ~/.config/github-token ] && . ~/.config/github-token' >> ~/.bashrc   # or ~/.zshrc
   ```
-- **Codex:** pick a release at least 7 days old from the final ones:
-  `npm view @openai/codex time --json | grep -E '^  "[0-9]+\.[0-9]+\.[0-9]+":' | tail -5`.
-  After installing it, run `codex` once, then the setup script again, so Codex gets its MCP
-  servers.
+- **Codex:** after installing it, run `codex` once, then the setup script again, so Codex gets
+  its MCP servers.
 - **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
   (authorize it in `/mcp`).
 
@@ -123,6 +125,10 @@ To see which of your repositories need updating, check several at once; each get
 ```bash
 repo-template check ~/code/service-a ~/code/web-b ~/code/tool-c
 ```
+
+Or ask Claude Code to "update every repository on this machine": the `repo-template` skill finds
+the adopted ones, checks them together, and updates each by its kind (on a branch, with a commit,
+for the templated ones), then asks you about each push.
 
 ### 2.1 Update a templated repository
 
@@ -237,7 +243,7 @@ Later runs need no flag: `repo-template update .`
 | You see | Do |
 | --- | --- |
 | `newer than this repo-template` | pull the standards repository: `git -C "$(dirname "$(readlink ~/.agents)")" pull --ff-only`, then run it again |
-| `Git wouldn't ignore this link` | run `setup-machine.sh` again (it copies the ignore lines to the file Git reads), or add `.claude/`, `.agents/` and `.codex/` to the repository's `.gitignore` |
+| `Git wouldn't ignore this link` | run `repo-template globals` (it writes the ignore lines into the file Git reads), or add `.claude/`, `.agents/` and `.codex/` to the repository's `.gitignore` |
 | exit 2 and `!` lines | a baseline file waiting for a decision: run `update` in a terminal; any other `!` line says its own fix (for `globals`, see the last row) |
 | Claude Code asks to approve MCP servers | they're from the repository's `.mcp.json`: approve the ones you want (a personal repository never asks) |
 | `playwright` isn't connected in `claude mcp list` | check `node --version` (22 or 24) and that `npx` is on the `PATH` Claude Code starts with, then restart Claude Code |
@@ -281,19 +287,12 @@ folder (`~/aiDevStandards`): macOS keeps the top of the disk read-only.
    `repo-template globals`.
    - **What it does:** links `~/.agents` and the global skills, merges the portable settings
      into `~/.claude/settings.json`, installs the global MCP servers (Claude Code: `playwright`
-     and `huggingface`; Codex: those and `microsoft-learn`), and writes the Git ignore.
+     and `huggingface`; Codex: those and `microsoft-learn`), and writes `.agents/`, `.claude/`,
+     `.codex/`, `.playwright-cli/` and `.playwright-mcp/` into the file Git reads for ignores
+     (`core.excludesFile` when set, else `$XDG_CONFIG_HOME/git/ignore`, else
+     `~/.config/git/ignore`).
    - **Exit 0:** applied.
    - **Exit 2:** something on this machine was kept (a setting or MCP server you changed, a
      file it didn't create): read the `!` lines.
    - **Exit 1:** an error; fix it and run it again.
-6. **Make Git read the ignore lines.** `globals` writes `.agents/`, `.claude/`, `.codex/`,
-   `.playwright-cli/` and `.playwright-mcp/` to `~/.config/git/ignore`. Git reads another file
-   when `core.excludesFile` names one, or when `XDG_CONFIG_HOME` is set:
-   ```bash
-   git config --global --includes --get core.excludesFile; echo "${XDG_CONFIG_HOME:-}"
-   ```
-   If the first prints a path, Git reads that file; if it prints nothing and the second prints a
-   folder other than `~/.config`, Git reads `<that folder>/git/ignore`. Copy the
-   `# >>> repo-template personal AI directories` block from `~/.config/git/ignore` into that
-   file. Without it, `update` reports a packs-only repository's skill links as "Git wouldn't
-   ignore this link" and doesn't make them.
+6. **The optional tools:** [1.1](#11-optional-tools).

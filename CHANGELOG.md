@@ -1,31 +1,55 @@
 # Changelog
 
-## Unreleased
+## 0.5.4 - 2026-10-14
 
 - `setup-machine.sh` sets up a Mac or a Linux machine in one run, and runs again safely.
   - It asks where the standards repository goes (default `~/aiDevStandards`, or the checkout the
     machine already uses), clones or pulls it, installs the CLI, and writes `AI_DEV_STANDARDS` in
     a marked block of the shell profile (the one the shell reads: `ZDOTDIR`, bash's login file on
     a Mac, fish's `conf.d`).
-  - It previews `globals` (a summary on a first run) and applies it once you agree, keeps the
-    Git ignore lines current in the file Git reads (`core.excludesFile`, through includes, or
-    `XDG_CONFIG_HOME`), and offers each optional tool, defaulting to no.
-  - Its blocks in the shell profile and ignore file are backed up to `~/.repo-template/backups/`
-    before they change, and a broken marked block is left alone. A failed clone or install stops
-    it with a message (exit 1); a failed `globals`, profile or optional step is reported and the
-    rest still runs (exit 1 at the end). A settings link left from before 0.4.2 is migrated
-    first, or, when a pull already removed its file, reported while `globals` writes fresh
-    settings.
+  - It previews `globals` (a summary on a first run), applies it once you agree, and offers each
+    optional tool, defaulting to no, at the versions `.agents/machine-tools.json` pins: the npm
+    packages by version, and `azd` from its GitHub release only once the download's SHA-256
+    matches.
+  - `--check` (with `--offline`) reports what is set up and what isn't, one line each, and
+    changes nothing; it exits 1 while something needs fixing.
+  - Its block in the shell profile is backed up to `~/.repo-template/backups/` before it
+    changes, and a broken marked block is left alone. A failed clone or install stops it with a
+    message (exit 1); a failed `globals` or profile step is reported and the rest still runs
+    (exit 1 at the end); a failed optional tool is reported with the command to run later. A
+    settings link left from before 0.4.2 is migrated first, or, when a pull already removed its
+    file, reported while `globals` writes fresh settings.
   - It refuses rather than guesses: no terminal without `--yes`, a folder that isn't empty or
     holds another repository, a Git that doesn't run (a new Mac's stand-in), root, or a machine
     still on the pre-0.4.2 settings link.
+- `globals` writes its ignore block to the file Git reads: `core.excludesFile` (through
+  includes, `~` expanded), else `$XDG_CONFIG_HOME/git/ignore`, else `~/.config/git/ignore`. It
+  writes through a link, backs the file up first, and leaves a block that lost a marker line
+  alone. Before, it always wrote `~/.config/git/ignore`, which Git doesn't read when
+  `core.excludesFile` names another file.
+- `.agents/machine-tools.json` pins the per-machine CLIs once (the TypeScript and Python language
+  servers, the Playwright CLI and Codex from npm; `azd` from its GitHub release, with each
+  platform's asset and SHA-256), each to its newest final release at least 7 days old; `below`
+  holds TypeScript under 7 and `typescript-language-server` under 6. `globals --upstream`
+  checks them beside the MCP pins, and compares each recorded `azd` digest with GitHub's.
+- `globals --upgrade mcp:<name>` (or the bare name, when no skill has it) re-pins an MCP server
+  to its newest final release past the cooldown: its args, version and `publishedAt` together,
+  a `pinException` dropped, shown and asked first, noted here. `--upstream`'s pin lines name
+  the command.
+- `repo-template --version` prints the version and the standards repository the CLI runs from;
+  an unknown `--pack` lists the packs there are.
+- The `repo-template` skill updates every repository on a machine: it finds the adopted ones,
+  checks them together, updates each by its kind, and leaves each push to you. It chooses the
+  path first (full, packs-only, or personal for a team's repository) and verifies each one its
+  own way.
+- CI also runs the tests on macOS, under `/bin/bash` 3.2 and BSD tools; `shellcheck` (a dev
+  dependency) checks `setup-machine.sh`; the weekly catalog-drift run writes its report to the
+  run's summary page.
 - `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md`: set up a machine in three steps (or by hand, in an
   appendix), with the prerequisites and optional tools for macOS and Linux; then one question
-  decides how to update or adopt each repository.
-- The README's Mac location is `~/aiDevStandards` (macOS keeps the top of the disk read-only),
-  and its install section points to the script and the guide instead of repeating them.
-- The `repo-template` skill chooses the path first (full, packs-only, or personal for a team's
-  repository) and verifies each one its own way; `AGENTS.md` and `GLOSSARY.md` follow.
+  decides how to update or adopt each repository. The README's Mac location is
+  `~/aiDevStandards` (macOS keeps the top of the disk read-only), and its install section
+  points to the script and the guide. `AGENTS.md` and `GLOSSARY.md` follow.
 
 ## 0.5.3 - 2026-10-14
 

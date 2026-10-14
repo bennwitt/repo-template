@@ -1,6 +1,6 @@
 ---
 name: repo-template
-description: "Apply and maintain the repo-template baseline in a repository: choose full, packs-only or personal, plan with `repo-template check`, apply with `update`, resolve preserved files (exit 2), add skill packs, or start one with `new`. Use when bringing a repository up to standard, adopting a team's repository, or adding a pack."
+description: "Apply and maintain the repo-template baseline: choose full, packs-only or personal, plan with `repo-template check`, apply with `update`, resolve preserved files (exit 2), add skill packs, or start one with `new`. Use when bringing a repository up to standard, updating every repository on a machine, adopting a team's repository, or adding a pack."
 ---
 
 # repo-template
@@ -75,7 +75,7 @@ Read the profile: `grep -h '"profile"' <repo>/.repo-template.json <repo>/.git/re
      Boundaries sections into `AGENTS.md`, and keep only terms in the glossary, in the format the
      `domain-modeling` skill describes. Then repoint every reference: `git grep -n CONTEXT.md`.
    - **`(Git wouldn't ignore this link; …)`**: the machine's global Git ignore doesn't reach this
-     repository. Ask the user to run `setup-machine.sh` again (it copies the ignore lines to the
+     repository. Ask the user to run `repo-template globals` (it writes the ignore block into the
      file Git reads), or add `.claude/`, `.agents/` and `.codex/` to the repository's `.gitignore`.
    - **`(not a link …)`, `(a link this tool didn't make …)`, `(edited in this repository; kept)`**:
      something of the project's sits where repo-template would write. Ask the user before
@@ -92,6 +92,24 @@ Read the profile: `grep -h '"profile"' <repo>/.repo-template.json <repo>/.git/re
 
 Keep the default hook and lockfile steps. `--no-hooks` and `--no-lock` exist for repositories
 where another system owns the Git hooks or the lockfile.
+
+## Every repository on this machine
+
+1. **Find them.** Ask which folders hold the user's repositories, unless they said. Then list the
+   adopted ones:
+   `find <folder>... -maxdepth 6 \( -name node_modules -o -name .venv \) -prune -o \( -name .repo-template.json -o -path '*/.git/repo-template.json' \) -print 2>/dev/null`.
+   Each repository is the folder holding `.repo-template.json`, or the one above `.git`. A
+   repository with neither isn't adopted: leave it out unless the user asks to adopt it.
+2. **Plan.** `repo-template check <repo> <repo> ...` prints one line each: `current`, or what
+   `update` would do there. Show the user the lines that aren't current; this step is done when
+   they have said which to update (all of them, unless they say otherwise).
+3. **Update them one at a time**, each by the path its profile picks (**Choose the path
+   first**): a personal repository in place, the others on a branch, verified and committed as
+   step 4 of **Bring a repository to standard** says. A repository that stops on something only
+   the user can decide waits for the end; go on with the next.
+4. **Report** one row per repository: its profile, and the outcome (current; updated, with the
+   branch and commit; or waiting, with the decision it needs). Pushing and opening pull requests
+   stay with the user: offer them one repository at a time.
 
 ## A team's repository
 

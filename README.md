@@ -92,9 +92,11 @@ Running `update` a second time changes nothing.
   that were deleted or moved into a pack;
 - keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
   they work on every machine);
-- adds `.agents/`, `.claude/`, `.codex/`, `.playwright-cli/` and `.playwright-mcp/` to your
-  global Git ignore (`~/.config/git/ignore`), so personal agent configuration never leaks into
-  project repositories.
+- adds `.agents/`, `.claude/`, `.codex/`, `.playwright-cli/` and `.playwright-mcp/` to the
+  global ignore file Git reads (`core.excludesFile` when set, through includes, else
+  `$XDG_CONFIG_HOME/git/ignore`, else `~/.config/git/ignore`), in a marked block, so personal
+  agent configuration never leaks into project repositories. A linked file is written through,
+  and a block that lost one of its marker lines is left alone.
 
 It never links `~/.claude` itself, so credentials, sessions, history, caches and Claude's
 `synced` directory stay on the machine. Anything it replaces is first moved to
@@ -175,12 +177,15 @@ Code on that machine has no user settings: no deny rules, plugins or receipt hoo
 
 Run [`setup-machine.sh`](setup-machine.sh) on macOS or Linux: download it, read it, run it. It
 asks where this repository goes (`~/aiDevStandards` on a new machine), installs the CLI, applies
-`globals` once you agree, and offers the per-machine tools. Run it again any time to update.
+`globals` once you agree, and offers the per-machine tools. Run it again any time to update;
+`--check` reports what is set up and what isn't, and changes nothing.
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
 less setup-machine.sh && bash setup-machine.sh
 ```
+
+`repo-template --version` prints the version and the standards repository the CLI runs from.
 
 [HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md) has the
 prerequisites, the per-machine tools for each OS, the same setup by hand, and how to update or
@@ -199,9 +204,16 @@ checkout of this repository, name it: `repo-template globals --standards-root .`
 
 The portable settings turn on plugins that need tools on each machine (language servers, the
 Playwright CLI, `az` and `azd`, a GitHub token for the `github` plugin), and some skills drive
-CLIs. Each is pinned to its newest release at least 7 days old (a short supply-chain cooldown).
-The setup script offers each one; [section 1.1 of the guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#11-optional-tools)
-lists them with the macOS and Linux commands.
+CLIs. `.agents/machine-tools.json` pins each one once, to its newest final release at least 7
+days old (a short supply-chain cooldown); `below` keeps one under a major version the machines
+can't run yet, and `azd`'s entry records each platform's release asset with its SHA-256. The
+setup script offers each tool at its pin, and installs `azd` only once the download's SHA-256
+matches; [section 1.1 of the guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#11-optional-tools)
+lists them with the macOS and Linux commands. `globals --upstream` reports a newer release past
+the cooldown, and an `azd` asset whose digest on GitHub differs from the recorded one; move a
+pin by editing its `version` and `publishedAt` (and each asset's `sha256`), in the same commit
+as the guide's commands. The Azure CLI is the exception: Homebrew and Microsoft's packages
+install the current release.
 
 - `typescript-language-server` 6 needs Node 22.22 or later; 5.3 is the newest that runs on Node
   20, which is past its end of life. TypeScript 7 is the native compiler and has no `tsserver`,
@@ -746,6 +758,7 @@ repo-template globals --upgrade                     # one of: review each change
 repo-template globals --upgrade tdd wizard          #   or only these,
 repo-template globals --upgrade owner/repo@a-skill  #   or add one (a folder path, if it isn't
                                                     #   named after the skill; #v1.2 pins a tag)
+repo-template globals --upgrade mcp:shadcn          # re-pin an MCP server (see below)
 uv run pytest
 git add .agents README.md THIRD_PARTY_NOTICES.md CHANGELOG.md .claude/skills
 git commit -m "Upgrade skills: tdd, wizard"
@@ -799,10 +812,15 @@ newer release is out, with the command that re-pins it. A repository that is its
 (`SKILL.md` at its root) can't be vendored yet.
 
 It also checks each MCP server's pin (`.agents/mcp-servers.json`) against npm or PyPI. A newer
-final release at least 7 days old is reported as a change, to re-pin with its `publishedAt`; a
-younger one is a note with the day its cooldown ends. Pre-releases, and releases yanked or
-deprecated, are never offered. A pin younger than 7 days needs a `pinException` giving the
-reason, and `--upstream` says when it no longer does.
+final release at least 7 days old is reported as a change; a younger one is a note with the day
+its cooldown ends. Pre-releases, and releases yanked or deprecated, are never offered. A pin
+younger than 7 days needs a `pinException` giving the reason, and `--upstream` says when it no
+longer does. `globals --upgrade mcp:<name>` (or the bare name, when no skill has it) re-pins a
+server to its newest final release past the cooldown: the version in its args, its `version`
+and `publishedAt` move together and a `pinException` goes, after it shows the change and asks
+(`--no-input` applies it: you named it). It notes the server in `CHANGELOG.md`, and names any
+catalog file still holding the old version (a skill from the same package) for you to update.
+The per-machine tools in `.agents/machine-tools.json` are checked the same way.
 
 A weekly workflow (`.github/workflows/catalog-drift.yml`) runs `globals --upstream` with a
 read-only token and fails when something changed, so drift shows up without anyone looking.
@@ -874,6 +892,10 @@ uv run ruff check .
 uv run mypy src
 uv run repo-template --help
 ```
+
+CI runs the tests on Linux, and on macOS under its `/bin/bash` 3.2 and BSD tools, which is what
+`setup-machine.sh` meets on a Mac; `tests/test_setup_machine.py` also runs `shellcheck` (a dev
+dependency) on it.
 
 - Template content: `src/repo_template/templates.py`, one `add()` call per file with its policy.
 - What each policy may do to a file (managed, seed, merged): `src/repo_template/policies.py`,
