@@ -48,7 +48,9 @@ class FakeGitHub:
         self.blobs: dict[str, bytes] = {}
         self.trees: dict[str, list[Entry]] = {}
         self.commits: dict[tuple[str, str], tuple[str, str]] = {}
-        self.licenses: dict[str, str] = {}
+        self.licenses: dict[str, str] = {}  # what GitHub detects at any ref
+        self.licenses_at: dict[tuple[str, str], str] = {}  # at one commit, where it differs
+        self.license_refs: list[tuple[str, str]] = []
         self.releases: dict[str, str] = {}
         self.tags: set[tuple[str, str]] = set()
         self.tampered: set[str] = set()
@@ -123,8 +125,9 @@ class FakeGitHub:
         self._call()
         return self.blobs[sha] + (b"tampered" if sha in self.tampered else b"")
 
-    def license(self, source: str) -> str | None:
-        return self.licenses.get(source)
+    def license(self, source: str, ref: str) -> str | None:
+        self.license_refs.append((source, ref))
+        return self.licenses_at.get((source, ref), self.licenses.get(source))
 
     def latest_release(self, source: str) -> str | None:
         return self.releases.get(source)
@@ -563,6 +566,22 @@ def test_a_new_sources_skill_may_state_the_license_github_detects(
     assert added or "carries its own license (license: MIT)" in outcome.refused[0]
     if added:
         assert check_integrity(root, skill_names(root)) == []
+
+
+def test_a_new_sources_license_is_the_one_at_the_vendored_commit(tmp_path: Path) -> None:
+    """A skill from an old tag states the license the repository had then; GitHub's answer for
+    the default branch doesn't count for it, and isn't what the record says."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    text = _skill("new-skill").replace(b"---\nBody", b"license: MIT\n---\nBody")
+    commit = github.publish("x/y", {"LICENSE": b"Apache License\n", "new-skill/SKILL.md": text})
+    github.licenses["x/y"] = "MIT"  # today's default branch
+    github.licenses_at[("x/y", commit)] = "Apache-2.0"  # the vendored commit
+
+    outcome = _run(root, github, ["x/y@new-skill"], "a")
+
+    assert outcome.added == [] and "carries its own license (license: MIT)" in outcome.refused[0]
+    assert ("x/y", commit) in github.license_refs
 
 
 def test_an_unidentified_license_refuses_the_addition(tmp_path: Path) -> None:

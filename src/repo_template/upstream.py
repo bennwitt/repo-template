@@ -127,8 +127,9 @@ class GitHub(Protocol):
 
     def blob(self, source: str, sha: str) -> bytes: ...
 
-    def license(self, source: str) -> str | None:
-        """The SPDX id GitHub detects for the repository's license; None if it has none."""
+    def license(self, source: str, ref: str) -> str | None:
+        """The SPDX id GitHub detects for the repository's license at a ref (the commit being
+        vendored, not the default branch); None if it has none."""
         ...
 
     def latest_release(self, source: str) -> str | None:
@@ -198,9 +199,9 @@ class GhApi:
             raise NetworkError(f"blob {sha} of {source} didn't come back base64-encoded")
         return base64.b64decode(data["content"])
 
-    def license(self, source: str) -> str | None:
+    def license(self, source: str, ref: str) -> str | None:
         try:
-            data = self._get(f"repos/{source}/license")
+            data = self._get(f"repos/{source}/license?ref={urllib.parse.quote(ref, safe='')}")
         except NotFound:
             return None
         spdx = (data.get("license") or {}).get("spdx_id")
@@ -1111,7 +1112,7 @@ def _fetch_license(
 ) -> _License:
     """A new source: the SPDX license GitHub detects, each license or notice file at its root,
     pinned, and the copyright line it states. Refuses when GitHub can't name the license."""
-    detected = github.license(source)
+    detected = github.license(source, upstream.commit)
     if detected in {None, "NOASSERTION", "NONE", "OTHER"}:
         raise ValueError(f"{source}: GitHub can't name its license; record it in {SOURCES_NAME}")
     entries = upstream.github.tree(source, upstream.root, recursive=False)[0]
@@ -1343,8 +1344,8 @@ def _prepare(
     source_license = records.sources.get("sources", {}).get(target.source)
     if isinstance(source_license, dict):
         spdx = str(source_license.get("license", ""))
-    else:  # a new source: what GitHub detects is what the addition will record for it
-        spdx = github.license(target.source) or ""
+    else:  # a new source: what GitHub detects there is what the addition will record for it
+        spdx = github.license(target.source, upstream.commit) or ""
     own = own_license(staged.path, text, spdx)
     if own and not records.sources.get("skills", {}).get(target.name, {}).get("license"):
         raise ValueError(
