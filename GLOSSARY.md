@@ -71,6 +71,15 @@ A named group of catalog skills, defined in `.agents/skill-packs.json` and kept 
 `.claude/skills/` for Claude Code and `.agents/skills/` for Codex), not into every machine.
 _Avoid_: skill bundle, plugin
 
+**Packs-only repository**:
+A repository adopted with `update --packs-only`: its manifest's profile is `packs-only`, and
+repo-template manages only its skill packs and their MCP servers, never baseline files.
+_Avoid_: partial adoption
+
+**Cooldown**:
+The 7 days a package release must be public before repo-template pins it (MCP servers, tools).
+Upstream skill revisions don't wait; they are reviewed and scanned instead.
+
 **MCP catalog**:
 `.agents/mcp-servers.json`: each MCP server once, with what it runs, its pin, its denied tools
 and why. A global server is installed on every machine; a pack server comes with a pack.

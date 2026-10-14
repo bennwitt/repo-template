@@ -293,6 +293,23 @@ what is already there:
 - every managed file that differs comes up for a decision, because there's no generation hash
   to prove it unedited.
 
+#### Packs only: a repository that isn't Python/uv
+
+A repository with other tooling (a TypeScript app, say) can take just the skill packs and their
+MCP servers:
+
+```bash
+repo-template update /path/to/web-app --packs-only --pack react
+```
+
+That writes a `.repo-template.json` whose `profile` is `packs-only`, the pack links, and the
+packs' MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`): no baseline file, hook path
+or lockfile. Later `update` and `check` follow the recorded profile, so the flag is needed only
+the first time, and `--pack` adds more. It is refused for a repository on the Python/uv baseline.
+Links are made only where Git ignores them: on a machine where `globals` ran, its global excludes
+ignore `.agents/`, `.claude/` and `.codex/` in every repository; elsewhere the repository's own
+`.gitignore` needs them, and `update` reports each link it couldn't make.
+
 ### Exit codes
 
 | Command | `0` | `1` | `2` |
@@ -302,14 +319,15 @@ what is already there:
 | `check` | current (every path, when given several) | something would change, or an error was reported | n/a |
 | `globals` | applied cleanly | an error was reported (for example an override for a missing skill, or settings that aren't valid JSON) | something was preserved: a portable setting changed on this machine (reported once), a link at `~/.claude/settings.json` that repo-template didn't create, or a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
 | `globals --check` | current | a link or setting would change, or something is reported for review (once: a setting changed on this machine, a link repo-template didn't create) | n/a |
-| `globals --upstream` | every vendored skill is current | a skill changed upstream | something needs review: a skill removed or moved upstream, a license text changed, a recorded commit that doesn't hold the vendored folder |
+| `globals --upstream` | every vendored skill and MCP pin is current | a skill changed upstream, or an MCP pin has a newer release past its cooldown | something needs review: a skill removed or moved upstream, a license text changed, a recorded commit that doesn't hold the vendored folder, or an MCP pin that was yanked, is recorded with the wrong time, or is younger than the cooldown without a `pinException` (or no longer needs one) |
 | `globals --upgrade` (`130` if interrupted, after listing what it applied) | applied, or nothing to do | a skill was refused (it failed verification or the scan, or runs commands when it loads), or an error was reported | a skill was left as it is (skipped, kept though gone upstream, or with `--no-input` not named or not ready to apply unattended), or something was preserved while linking |
 
 Every command also exits `1` with a `repo-template: error: …` line when it can't run at all: an
 unknown pack, an unreadable manifest, a non-empty target for `new`, or a manifest from a newer
-version. `globals --upstream` and `--upgrade` exit `3` when GitHub can't be reached or refuses a
-request; a repository, ref or folder that is gone (404) is reported for that skill instead. Exit `2` otherwise means only "preserved for manual review" (and command-line usage
-errors, which print the usage). When a run has both errors and preserved files, errors win and
+version. `globals --upstream` and `--upgrade` exit `3` when GitHub (or, for `--upstream`, npm or
+PyPI) can't be reached or refuses a request; a repository, ref or folder that is gone (404) is
+reported for that skill instead. Exit `2` otherwise means only "preserved for manual review" (and
+command-line usage errors, which print the usage). When a run has both errors and preserved files, errors win and
 the exit is `1`: fix what failed, rerun, then decide the preserved files.
 
 With several paths, `check` prints one line per repository on stdout, such as
@@ -687,7 +705,14 @@ For each skill, `--upgrade`:
 
 `--upstream` also confirms each recorded commit holds the vendored folder, says when upstream
 changed a field an override replaces, and, for a skill pinned to a tag (not a branch), when a
-newer release is out, with the command that re-pins it. A repository that is itself one skill (`SKILL.md` at its root) can't be vendored yet.
+newer release is out, with the command that re-pins it. A repository that is itself one skill
+(`SKILL.md` at its root) can't be vendored yet.
+
+It also checks each MCP server's pin (`.agents/mcp-servers.json`) against npm or PyPI. A newer
+final release at least 7 days old is reported as a change, to re-pin with its `publishedAt`; a
+younger one is a note with the day its cooldown ends. Pre-releases, and releases yanked or
+deprecated, are never offered. A pin younger than 7 days needs a `pinException` giving the
+reason, and `--upstream` says when it no longer does.
 
 A weekly workflow (`.github/workflows/catalog-drift.yml`) runs `globals --upstream` with a
 read-only token and fails when something changed, so drift shows up without anyone looking.
@@ -727,14 +752,16 @@ and follow `writing-for-agents`.
 - `~/.claude` is never linked wholesale: individual skills are linked, and the portable settings
   are merged into `~/.claude/settings.json`, entry by entry, keeping changes made on the machine.
 - Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/` and
-  `.codex/`; a repository's `.codex/config.toml` is written only where Git ignores it. The pre-commit hook blocks staged private keys and AWS- or OpenAI-style keys.
+  `.codex/`; a repository's `.codex/config.toml` is written only where Git ignores it. The
+  pre-commit hook blocks staged private keys and AWS- or OpenAI-style keys.
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
 
 ## Current limitations
 
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
-- Python/uv is the only project profile.
+- Python/uv is the only full project profile; any other repository can take packs only
+  (`update --packs-only`).
 
 ## License
 

@@ -353,6 +353,7 @@ class Report:
     review: list[str] = field(default_factory=list)  # removed, moved, licenses, stale records
     new: list[str] = field(default_factory=list)  # informational
     notes: list[str] = field(default_factory=list)
+    pins: list[str] = field(default_factory=list)  # MCP pins with nothing newer to offer
 
     @property
     def exit_code(self) -> int:

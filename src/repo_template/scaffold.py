@@ -32,6 +32,7 @@ def package_name(project_name: str) -> str:
 
 
 MCP_KEYS = ("mcp_servers", "mcp_kept")  # the pack MCP records: what was written, what was kept
+PACKS_ONLY = "packs-only"  # the profile of a repository that takes only skill packs
 
 
 def _read_manifest(root: Path) -> dict[str, Any]:
@@ -367,6 +368,70 @@ def read_manifest(root: Path) -> dict[str, Any]:
     return _read_manifest(root.resolve())
 
 
+def _finish_manifest(
+    root: Path, manifest: dict[str, Any], proposed: dict[str, Any], result: Result, *, check: bool
+) -> Result:
+    if proposed == manifest:
+        result.unchanged.append(MANIFEST_NAME)
+        return result
+    # In check mode the records come from the files as they are now. When no file changes,
+    # that is exactly what update would write, so a clean check still means nothing to do.
+    (result.updated if (root / MANIFEST_NAME).exists() else result.created).append(MANIFEST_NAME)
+    if not check:
+        _write_manifest(root, proposed)
+    return result
+
+
+def _carried(
+    manifest: dict[str, Any], mcp: Mapping[str, Mapping[str, str]] | None
+) -> Mapping[str, Mapping[str, str]]:
+    """The pack MCP records to write: `mcp`, or the manifest's carried forward."""
+    if mcp is not None:
+        return mcp
+    return {key: manifest[key] for key in MCP_KEYS if isinstance(manifest.get(key), dict)}
+
+
+def update_packs_only(
+    root: Path,
+    *,
+    check: bool = False,
+    add_packs: Sequence[str] = (),
+    mcp: Mapping[str, Mapping[str, str]] | None = None,
+) -> Result:
+    """A repository that takes only skill packs, and their MCP servers, from repo-template: its
+    manifest records those and nothing else, and no baseline file is written."""
+    root = root.resolve()
+    if not root.is_dir():
+        raise ValueError(f"repository directory does not exist: {root}")
+    manifest = _read_manifest(root)
+    if manifest and manifest.get("profile") != PACKS_ONLY:
+        raise ValueError(
+            f"{root / MANIFEST_NAME} has the {manifest.get('profile')} baseline; update it "
+            f"without --packs-only"
+        )
+    if not manifest and not add_packs:
+        raise ValueError(
+            "--packs-only adopts a repository for its skill packs; name one with --pack"
+        )
+    _refuse_downgrade(root, manifest)
+    proposed: dict[str, Any] = {
+        "schema": 1,
+        "template_version": __version__,
+        "profile": PACKS_ONLY,
+    }
+    packs = sorted({*skill_packs(root), *add_packs})
+    if packs:
+        proposed["skill_packs"] = packs
+    owned = sorted(_project_owned(manifest))
+    if owned:
+        proposed["project_owned"] = owned
+    records = _carried(manifest, mcp)
+    for key in MCP_KEYS:
+        if records.get(key):
+            proposed[key] = dict(sorted(records[key].items()))
+    return _finish_manifest(root, manifest, proposed, Result(root), check=check)
+
+
 def update_project(
     root: Path,
     *,
@@ -380,6 +445,8 @@ def update_project(
     if not root.is_dir():
         raise ValueError(f"repository directory does not exist: {root}")
     manifest = _read_manifest(root)
+    if manifest.get("profile") == PACKS_ONLY:
+        raise ValueError(f"{root / MANIFEST_NAME} takes only skill packs; no baseline to apply")
     _refuse_downgrade(root, manifest)
     context = _context_from_manifest(root, manifest)
     specs = project_files(context, package=_uses_package_layout(root, context))
@@ -389,15 +456,7 @@ def update_project(
         _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
     packs = [*skill_packs(root), *add_packs]
     owned = sorted(_project_owned(manifest))
-    if mcp is None:
-        mcp = {key: manifest[key] for key in MCP_KEYS if isinstance(manifest.get(key), dict)}
-    proposed = _build_manifest(root, context, specs, packs, owned, manifest, mcp)
-    if proposed == manifest:
-        result.unchanged.append(MANIFEST_NAME)
-        return result
-    # In check mode the records come from the files as they are now. When no file changes,
-    # that is exactly what update would write, so a clean check still means nothing to do.
-    (result.updated if (root / MANIFEST_NAME).exists() else result.created).append(MANIFEST_NAME)
-    if not check:
-        _write_manifest(root, proposed)
-    return result
+    proposed = _build_manifest(
+        root, context, specs, packs, owned, manifest, _carried(manifest, mcp)
+    )
+    return _finish_manifest(root, manifest, proposed, result, check=check)

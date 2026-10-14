@@ -3,9 +3,12 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
+from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
+from repo_template.pins import HttpRegistry, check_pins
 from repo_template.repository import SUBPROCESS, create_repository, update_repository
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import manifest_version, normalize_project_name
@@ -70,6 +73,12 @@ def _parser() -> argparse.ArgumentParser:
         "--no-input",
         action="store_true",
         help="list files that differ from the baseline instead of asking about each one",
+    )
+    update.add_argument(
+        "--packs-only",
+        action="store_true",
+        help="adopt a repository for its skill packs (and their MCP servers) alone: no baseline "
+        "files, hook path or lockfile; recorded, so later runs need no flag",
     )
 
     check = subparsers.add_parser(
@@ -179,7 +188,9 @@ def _interactive(args: argparse.Namespace) -> bool:
 
 def _update(args: argparse.Namespace) -> int:
     hooks, lock = not args.no_hooks, not args.no_lock
-    result = update_repository(args.path, hooks=hooks, lock=lock, packs=args.pack)
+    result = update_repository(
+        args.path, hooks=hooks, lock=lock, packs=args.pack, packs_only=args.packs_only
+    )
     if result.conflicts and _interactive(args):
         _print_result(result, preserved=False)
         print()
@@ -254,6 +265,9 @@ def _summary(result: Result) -> str:
 def _upstream(root: Path) -> int:
     try:
         report = upstream_report(root, GhApi())
+        if (root / ".agents" / MCP_SERVERS_NAME).is_file():
+            servers = load_mcp_servers(root / ".agents")
+            check_pins(servers, HttpRegistry(), datetime.now(UTC), report)
     except NetworkError as exc:
         print(f"repo-template: error: {exc}", file=sys.stderr)
         return 3
@@ -268,7 +282,8 @@ def _upstream(root: Path) -> int:
             for line in lines:
                 print(f"  {clean(line)}")
     if report.exit_code == 0:
-        print(f"All {len(report.current)} vendored skills are current.")
+        pins = f" and {len(report.pins)} MCP pins" if report.pins else ""
+        print(f"All {len(report.current)} vendored skills{pins} are current.")
     elif report.changed:
         print("Run `repo-template globals --upgrade` to review and apply them.")
     return report.exit_code

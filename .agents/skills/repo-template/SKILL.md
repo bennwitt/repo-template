@@ -83,7 +83,8 @@ that framework: `repo-template update <repo> --pack <name>` records it under `sk
 `.repo-template.json` and links its skills into the repository's `.claude/skills/` (Claude Code)
 and `.agents/skills/` (Codex), where Git ignores them. To remove a pack, delete it from
 `skill_packs` and run `update`. Read what `update` preserves: a link it can't own is reported,
-not replaced.
+not replaced. A repository that isn't Python/uv takes packs alone with
+`repo-template update <repo> --packs-only --pack <name>` (once; later runs follow its manifest).
 
 ## New repositories
 

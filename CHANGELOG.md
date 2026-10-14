@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.1 - 2026-10-14
+
+- `update --packs-only --pack <name>` adopts a repository that isn't Python/uv for its skill packs
+  and their MCP servers alone: its manifest records the `packs-only` profile, which later `update`
+  and `check` follow, and no baseline file, hook path or lockfile is written.
+- `globals --upstream` checks each MCP pin against npm or PyPI: a newer final release past the
+  7-day cooldown is a change, a younger one a note; a yanked pin, a wrong `publishedAt`, a pin
+  inside its cooldown without a `pinException`, and an exception no longer needed are for review.
+
 ## 0.5.0 - 2026-10-14
 
 - MCP servers: `.agents/mcp-servers.json` defines each server once (pinned `npx`/`uvx` package or

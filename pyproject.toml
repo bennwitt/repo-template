@@ -1,6 +1,6 @@
 [project]
 name = "repo-template"
-version = "0.5.0"
+version = "0.5.1"
 description = "Create and safely update opinionated Python repositories and shared AI development standards."
 readme = "README.md"
 license = "MIT"

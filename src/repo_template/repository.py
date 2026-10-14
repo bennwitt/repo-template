@@ -23,7 +23,14 @@ from repo_template.mcp_project import (
 )
 from repo_template.model import Result
 from repo_template.runner import SUBPROCESS, Completed, Runner, SubprocessRunner
-from repo_template.scaffold import new_project, read_manifest, skill_packs, update_project
+from repo_template.scaffold import (
+    PACKS_ONLY,
+    new_project,
+    read_manifest,
+    skill_packs,
+    update_packs_only,
+    update_project,
+)
 from repo_template.standards import load_skill_packs, sync_project_packs, unknown_packs
 
 AGENTS_DIR = Path.home() / ".agents"
@@ -200,25 +207,32 @@ def update_repository(
     packs: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
     agents_dir: Path = AGENTS_DIR,
+    packs_only: bool = False,
 ) -> Result:
     """Plan (check=True) or apply every change that brings `root` to the baseline.
 
     `packs` adds skill packs to the repository's manifest; every listed pack is then linked.
+    `packs_only` adopts a repository for its packs alone (its manifest then says so, and later
+    runs follow it): no baseline file, hook path or lockfile.
     """
     _require_known_packs(packs, agents_dir)
     manifest = read_manifest(root)
+    packs_only = packs_only or manifest.get("profile") == PACKS_ONLY
     wanted = sorted({*skill_packs(root.resolve()), *packs})
     mcp = _mcp(root.resolve(), wanted, agents_dir, manifest)
     plan = _plan_claude(root.resolve(), mcp, manifest)
     first = Result(root.resolve())
     if plan:  # .mcp.json first: the manifest written next records only what was written
         apply_project_mcp(root.resolve(), plan, first, check=check)
-    result = update_project(root, check=check, add_packs=packs, mcp=plan.manifest if plan else None)
+    update = update_packs_only if packs_only else update_project
+    result = update(root, check=check, add_packs=packs, mcp=plan.manifest if plan else None)
     _merge(first, result)
     if mcp:
         result.errors.extend(mcp.errors)
     _sync_codex(result.root, mcp, result, check=check)
     sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
+    if packs_only:
+        return result
     if hooks:
         _reconcile_hooks(result.root, result, runner, check=check)
     if lock:
