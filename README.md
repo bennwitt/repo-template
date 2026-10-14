@@ -321,6 +321,45 @@ Links are made only where Git ignores them: on a machine where `globals` ran, it
 ignore `.agents/`, `.claude/` and `.codex/` in every repository; elsewhere the repository's own
 `.gitignore` needs them, and `update` reports each link it couldn't make.
 
+#### Personal: a repository you don't manage
+
+In a team's repository, your skill packs and MCP servers are yours alone. `--personal` adopts it
+without changing anything the team sees: nothing is committed, and `git status` stays as it was.
+
+```bash
+repo-template update /path/to/team-app --personal --pack react --pack playwright
+```
+
+- The manifest is `.git/repo-template.json`, inside the clone's own `.git` folder.
+- The links it makes are listed in a repo-template block in `.git/info/exclude`, the clone's own
+  ignore file, so they don't depend on the global excludes. Each line ignores only the link: a
+  folder of the team's that replaces it after a pull shows as usual.
+- The packs' servers go to Claude Code's local scope for this checkout (`~/.claude.json`, used
+  only by you), never to `.mcp.json`, and to Codex in `.codex/config.toml`, which the block
+  ignores. It goes only into a `.codex/config.toml` that holds nothing else, or one the
+  repository's `.gitignore` ignores: never into one the repository tracks, or one with settings
+  of your own that only your own rules might hide. If you add settings to the file later, the
+  block comes out, and the file shows in `git status` like any file of yours.
+- A path the repository tracks is never linked, listed or removed: a team skill with a pack
+  skill's name is noted and left alone. A server the repository's `.mcp.json` defines is the
+  team's, so the pack's isn't added.
+- Every run checks again: a link or Codex block that Git would no longer ignore (the team
+  changed its `.gitignore`) is taken out and reported.
+
+Later runs follow the recorded profile, as with packs only. To drop packs, edit `skill_packs` in
+`.git/repo-template.json` and run `update`. To undo it entirely, set `skill_packs` to `[]`, run
+`update` (it removes the links, the block, the Codex block and your local-scope servers), then
+delete `.git/repo-template.json`; deleting it first leaves all of those behind.
+
+It needs the top folder of a main checkout, and any run in a linked worktree of one is refused:
+Git shares `info/exclude` with linked worktrees (so the Codex line applies there too), and
+Claude Code keys local scope by the main checkout, so its servers show there as well, while the
+skill links don't. It is refused too once the repository has a `.repo-template.json` of its own;
+the error says how to undo the personal adoption first; in a sparse checkout, where a team
+file outside the checkout can land on a link or the Codex file; and in a subfolder of a personal
+checkout, unless that subfolder has a `.repo-template.json` of its own. `git clean -fdx` deletes
+the links and the Codex file like any ignored file; `update` puts them back.
+
 ### Exit codes
 
 | Command | `0` | `1` | `2` |
@@ -477,6 +516,7 @@ The catalog refuses what it can't vouch for:
 | --- | --- | --- |
 | global | user scope (`~/.claude.json`), through `claude mcp add-json --scope user` | `~/.codex/config.toml` |
 | pack | the repository's `.mcp.json` (committed; Claude Code asks before it starts one) | the repository's `.codex/config.toml` (ignored by Git; Codex reads it only in a project you trust) |
+| pack, personal repository | local scope for that checkout (`~/.claude.json`), through `claude mcp add-json --scope local` | the repository's `.codex/config.toml`, as above |
 
 - Each client gets its own rendering. Claude Code gets `${NAME:-default}` for each default, so
   a machine can override it by exporting `NAME`; Codex expands nothing, so it gets the value.
@@ -485,13 +525,15 @@ The catalog refuses what it can't vouch for:
 - A denied tool is denied in both clients: as `mcp__*__<tool>` in the portable settings (the
   catalog check fails if one is missing) and as `disabled_tools` in Codex.
 - repo-template owns each entry by name and by a digest of what it wrote, recorded in
-  `~/.repo-template/globals-state.json` for global servers and under `mcp_servers` in a
+  `~/.repo-template/globals-state.json` for global servers (and, under
+  `claude_mcp:local:<checkout>`, a personal repository's) and under `mcp_servers` in a
   repository's `.repo-template.json` for pack servers. An entry changed by hand is kept and
   reported once, one removed stays removed, and one no longer in the catalog (or that no pack
   uses) is removed only if it is unchanged. In a repository the kept and removed entries are
-  recorded under `mcp_kept`; delete a name there to have repo-template manage it again. A
-  config file that is gone (a new machine, a reset) starts fresh. `--check` reads the configs
-  and runs nothing.
+  recorded under `mcp_kept`; delete a name there to have repo-template manage it again (for a
+  personal repository, delete `.git/repo-template.json` and adopt it again with `--personal`:
+  a new adoption starts its record afresh). A config file that is gone
+  (a new machine, a reset) starts fresh. `--check` reads the configs and runs nothing.
 - In Codex's file, only a `[mcp_servers.<name>]` table is taken over; the same server written
   as an inline table or dotted keys is left as it is. A symlinked `~/.codex/config.toml` is
   written through. With `CLAUDE_CONFIG_DIR` set elsewhere, Claude Code's servers are skipped:
@@ -529,7 +571,7 @@ itself.
 | `mcp` | Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations. | `mcp-servers`, `python-mcp-server-generator` |
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
 | `playwright` | Playwright end-to-end tests: best practices and reading traces. | `playwright-best-practices`, `playwright-trace` |
-| `react` | React and shadcn/ui front ends, including LangGraph useStream chat UIs. | `frontend-design`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
+| `react` | React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs. | `frontend-design`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
 | `typescript` | TypeScript repositories (deep-module boundaries, shoehorn test data) | `migrate-to-shoehorn`, `setup-ts-deep-modules` |
 | `vision` | Computer vision in Python: OpenCV, and Meta SAM 3 segmentation. | `opencv-python`, `sam3` |
 
@@ -644,13 +686,13 @@ itself.
 | MCP server | Where | Clients | Runs | Denied tools | Why |
 | --- | --- | --- | --- | --- | --- |
 | `azure` | pack `azure`, pack `foundry` | claude, codex | `uvx msmcp-azure@3.0.0` |  | Read-only Azure tools through az login; each pack picks its namespaces (no Key Vault). App Service settings, which can hold connection strings, are returned only after a consent prompt. The foundry and arm namespaces proxy Microsoft's hosted servers, so which of their tools count as read-only comes from those services at run time, and foundryextensions can call deployed models, which spends tokens. The first start downloads about 62 MB. |
-| `docs-langchain` | pack `langchain`, pack `react` | claude, codex | https://docs.langchain.com/mcp | `submit_feedback` | Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers. |
+| `docs-langchain` | pack `langchain` | claude, codex | https://docs.langchain.com/mcp | `submit_feedback` | Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers. |
 | `fastmcp-docs` | pack `mcp` | claude, codex | https://gofastmcp.com/mcp | `submit_feedback` | Searches the FastMCP docs (two read-only tools); its feedback tool is denied. |
 | `gradio-docs` | pack `gradio` | claude, codex | https://gradio-docs-mcp.hf.space/gradio_api/mcp/ |  | Searches and loads the Gradio docs for the gradio pack. |
 | `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |
 | `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |
 | `playwright` | global | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. |
-| `reference-langchain` | pack `langchain`, pack `react` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
+| `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
 | `shadcn` | pack `react` | claude, codex | `npx shadcn@4.21.3` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
 <!-- <<< repo-template catalog -->
 

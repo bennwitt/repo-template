@@ -33,10 +33,70 @@ def package_name(project_name: str) -> str:
 
 MCP_KEYS = ("mcp_servers", "mcp_kept")  # the pack MCP records: what was written, what was kept
 PACKS_ONLY = "packs-only"  # the profile of a repository that takes only skill packs
+PERSONAL = "personal"  # skill packs for one person, in a repository that otherwise doesn't change
+PERSONAL_NAME = "repo-template.json"  # a personal manifest: in the checkout's .git folder
+
+
+def _personal_file(root: Path) -> Path | None:
+    """Where a personal manifest lives: in the .git folder of a main checkout. A subfolder has
+    no .git, and a linked worktree's .git is a file, so neither can have one."""
+    git = root / ".git"
+    return git / PERSONAL_NAME if git.is_dir() else None
+
+
+def _linked_personal(root: Path) -> Path | None:
+    """The personal manifest of the main checkout, when `root` is a linked worktree of one (its
+    .git is a file naming a folder in the main checkout's .git, which holds `commondir`)."""
+    git = root / ".git"
+    try:
+        line = git.read_text().strip() if git.is_file() else ""
+    except (OSError, UnicodeDecodeError):
+        return None
+    if not line.startswith("gitdir:"):
+        return None
+    folder = (root / line.removeprefix("gitdir:").strip()).resolve()
+    try:
+        common = (folder / (folder / "commondir").read_text().strip()).resolve()
+    except (OSError, UnicodeDecodeError):
+        common = folder
+    found = common / PERSONAL_NAME
+    return found if found.is_file() else None
+
+
+def _enclosing_personal(root: Path) -> Path | None:
+    """The personal manifest of the checkout `root` is a subfolder of, if it has one: run there,
+    repo-template couldn't see it and would take the subfolder for a repository of its own."""
+    if (root / ".git").exists():
+        return None
+    for parent in root.parents:
+        if (parent / ".git").exists():
+            private = _personal_file(parent)
+            if private is not None and private.is_file():
+                return private
+            return _linked_personal(parent)
+    return None
+
+
+def manifest_file(root: Path) -> Path:
+    """The repository's manifest: .repo-template.json, else a personal one in .git."""
+    private = _personal_file(root)
+    if private is not None and private.is_file() and not (root / MANIFEST_NAME).exists():
+        return private
+    return root / MANIFEST_NAME
+
+
+def _file_for(root: Path, manifest: Mapping[str, Any]) -> Path:
+    """Where `manifest` is written: a personal one in .git, any other in the repository."""
+    if manifest.get("profile") != PERSONAL:
+        return root / MANIFEST_NAME
+    private = _personal_file(root)
+    if private is None:  # preflight refuses this first; never write a personal one for everyone
+        raise ValueError(f"{root} has no .git folder for a personal manifest")
+    return private
 
 
 def _read_manifest(root: Path) -> dict[str, Any]:
-    path = root / MANIFEST_NAME
+    path = manifest_file(root)
     if not path.exists():
         return {}
     try:
@@ -59,7 +119,7 @@ def _refuse_downgrade(root: Path, manifest: dict[str, Any]) -> None:
     recorded = manifest.get("template_version")
     if isinstance(recorded, str) and _version_key(recorded) > _version_key(__version__):
         raise ValueError(
-            f"{root / MANIFEST_NAME} was written by repo-template {recorded}, newer than this "
+            f"{manifest_file(root)} was written by repo-template {recorded}, newer than this "
             f"repo-template {__version__}; pull the standards repository (git pull) and run "
             "the command again"
         )
@@ -330,7 +390,7 @@ def own_file(root: Path, relative_path: str) -> None:
 
 def _write_manifest(root: Path, manifest: dict[str, Any]) -> None:
     content = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
-    _write(root / MANIFEST_NAME, content, False)
+    _write(_file_for(root, manifest), content, False)
 
 
 def new_project(
@@ -364,19 +424,22 @@ def _uses_package_layout(root: Path, context: ProjectContext) -> bool:
 
 
 def read_manifest(root: Path) -> dict[str, Any]:
-    """The repository's .repo-template.json, or {} when it has none."""
+    """The repository's manifest (.repo-template.json, or a personal one in .git), or {} when it
+    has none."""
     return _read_manifest(root.resolve())
 
 
 def _finish_manifest(
     root: Path, manifest: dict[str, Any], proposed: dict[str, Any], result: Result, *, check: bool
 ) -> Result:
+    path = _file_for(root, proposed)
+    label = path.relative_to(root).as_posix()
     if proposed == manifest:
-        result.unchanged.append(MANIFEST_NAME)
+        result.unchanged.append(label)
         return result
     # In check mode the records come from the files as they are now. When no file changes,
     # that is exactly what update would write, so a clean check still means nothing to do.
-    (result.updated if (root / MANIFEST_NAME).exists() else result.created).append(MANIFEST_NAME)
+    (result.updated if path.exists() else result.created).append(label)
     if not check:
         _write_manifest(root, proposed)
     return result
@@ -391,30 +454,70 @@ def _carried(
     return {key: manifest[key] for key in MCP_KEYS if isinstance(manifest.get(key), dict)}
 
 
-PROFILES = ("python-uv", PACKS_ONLY)
+PROFILES = ("python-uv", PACKS_ONLY, PERSONAL)
 
 
-def preflight(root: Path, *, packs_only: bool, add_packs: Sequence[str]) -> dict[str, Any]:
+def preflight(
+    root: Path, *, packs_only: bool, add_packs: Sequence[str], personal: bool = False
+) -> dict[str, Any]:
     """Every reason `update` (or `check`) can't run, checked before anything is written; the
-    manifest, read once. A packs-only manifest makes the run packs-only."""
+    manifest, read once. A packs-only or personal manifest makes the run one too."""
     root = root.resolve()
     if not root.is_dir():
         raise ValueError(f"repository directory does not exist: {root}")
+    shared, private = root / MANIFEST_NAME, _personal_file(root)
+    linked = _linked_personal(root)
+    if linked is not None:  # it can't see the record, so it would take this for a new repository
+        raise ValueError(
+            f"{root} is a linked worktree of a checkout adopted personally ({linked}); run "
+            f"repo-template in that checkout"
+        )
+    enclosing = _enclosing_personal(root)
+    if enclosing is not None and not shared.exists():  # a sub-project with a manifest is its own
+        raise ValueError(
+            f"{root} is inside a checkout adopted personally ({enclosing}); run repo-template "
+            f"at that checkout's top folder"
+        )
+    if shared.exists() and private is not None and private.is_file():
+        raise ValueError(
+            f"{shared} adopts this repository for everyone, so your personal adoption has to go: "
+            f"move {MANIFEST_NAME} aside, set skill_packs to [] in {private} and run "
+            f"`repo-template update {root}` (it removes the links, the exclude block, the Codex "
+            f"block and your local-scope servers), then delete {private} and put "
+            f"{MANIFEST_NAME} back"
+        )
+    if personal and packs_only:
+        raise ValueError("--personal and --packs-only adopt a repository differently; choose one")
     manifest = _read_manifest(root)
+    found = manifest_file(root)
     profile = manifest.get("profile")
     if manifest and profile not in PROFILES:
         raise ValueError(
-            f"{root / MANIFEST_NAME} isn't a repo-template manifest (no known profile); "
+            f"{found} isn't a repo-template manifest (no known profile); "
             f"repo-template won't overwrite it, so move it aside first"
         )
+    if found == shared and profile == PERSONAL:
+        raise ValueError(
+            f"{shared} says it is personal, but a personal manifest lives in .git, where no one "
+            f"else sees it; move it aside first"
+        )
+    if personal and private is None:
+        raise ValueError(
+            f"--personal needs the top folder of a Git checkout: {root} has no .git folder (a "
+            f"subfolder has none; a linked worktree's or a submodule's is a file)"
+        )
+    if personal and shared.exists():
+        raise ValueError(
+            f"{shared} adopts this repository for everyone; personal adoption is for a "
+            f"repository you don't manage, so update it without --personal"
+        )
     if packs_only and profile == "python-uv":
-        raise ValueError(
-            f"{root / MANIFEST_NAME} has the Python/uv baseline; update it without --packs-only"
-        )
-    if packs_only and not manifest and not add_packs:
-        raise ValueError(
-            "--packs-only adopts a repository for its skill packs; name one with --pack"
-        )
+        raise ValueError(f"{shared} has the Python/uv baseline; update it without --packs-only")
+    if packs_only and profile == PERSONAL:
+        raise ValueError(f"{found} adopts this repository for you alone; drop --packs-only")
+    if (packs_only or personal) and not manifest and not add_packs:
+        flag = "--personal" if personal else "--packs-only"
+        raise ValueError(f"{flag} adopts a repository for its skill packs; name one with --pack")
     _refuse_downgrade(root, manifest)
     return manifest
 
@@ -425,15 +528,22 @@ def update_packs_only(
     check: bool = False,
     add_packs: Sequence[str] = (),
     mcp: Mapping[str, Mapping[str, str]] | None = None,
+    profile: str = PACKS_ONLY,
 ) -> Result:
     """A repository that takes only skill packs, and their MCP servers, from repo-template: its
-    manifest records those and nothing else, and no baseline file is written."""
+    manifest records those and nothing else, and no baseline file is written. `profile`
+    PERSONAL keeps the manifest in .git."""
     root = root.resolve()
-    manifest = preflight(root, packs_only=True, add_packs=add_packs)
+    manifest = preflight(
+        root,
+        packs_only=profile == PACKS_ONLY,
+        personal=profile == PERSONAL,
+        add_packs=add_packs,
+    )
     proposed: dict[str, Any] = {
         "schema": 1,
         "template_version": __version__,
-        "profile": PACKS_ONLY,
+        "profile": profile,
     }
     packs = sorted({*skill_packs(root), *add_packs})
     if packs:
@@ -459,9 +569,9 @@ def update_project(
     manifest's forward."""
     root = root.resolve()
     manifest = preflight(root, packs_only=False, add_packs=add_packs)
-    if manifest.get("profile") == PACKS_ONLY:
+    if manifest.get("profile") in (PACKS_ONLY, PERSONAL):
         raise ValueError(
-            f"{root / MANIFEST_NAME} takes only skill packs; to take the Python/uv baseline, "
+            f"{manifest_file(root)} takes only skill packs; to take the Python/uv baseline, "
             f"delete it and run update"
         )
     context = _context_from_manifest(root, manifest)

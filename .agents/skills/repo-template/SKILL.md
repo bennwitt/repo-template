@@ -89,6 +89,13 @@ and `.agents/skills/` (Codex), where Git ignores them. To remove a pack, delete 
 `skill_packs` and run `update`. Read what `update` preserves: a link it can't own is reported,
 not replaced.
 
+In a repository the user doesn't manage (a team's), never commit packs or `.mcp.json` there: use
+`repo-template update <repo> --personal --pack <name>` (preview with `check`). It changes nothing
+the team sees: the manifest is `.git/repo-template.json`, the links are listed in
+`.git/info/exclude`, and the MCP servers go to Claude Code's local scope. `git status` must show
+nothing new afterwards. To remove a pack, edit `skill_packs` in `.git/repo-template.json`
+and run `update`; to undo it, set it to `[]`, run `update`, then delete that file.
+
 ## New repositories
 
 `repo-template new <name> --parent <dir> --description "<one line>"`, plus `--pack <name>` for

@@ -10,11 +10,14 @@ AI-development configuration across machines. Domain terms are defined in `GLOSS
 ## Boundaries
 
 The CLI creates and updates Python/uv repository scaffolding (or, with `--packs-only`, only a
-repository's skill packs and their MCP servers) and installs global symlinks. It does
-not create GitHub repositories, commit or push, copy secrets, or overwrite conflicting
+repository's skill packs and their MCP servers; with `--personal`, those for one person, in
+a repository whose tracked and visible files it never changes) and installs global symlinks. It
+does not create GitHub repositories, commit or push, copy secrets, or overwrite conflicting
 project-owned files. `globals` also installs the global MCP servers, through
 `claude mcp add-json --scope user` and into `~/.codex/config.toml`, and `update` writes a
-repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`). Only
+repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`; for a personal
+repository Claude Code's local scope instead of `.mcp.json`, plus `.git/repo-template.json` and a
+block in `.git/info/exclude`). Only
 `globals --upstream` (read-only: GitHub, npm and PyPI) and `globals --upgrade` use the network;
 `--upgrade` records the files it vendors (skills and license copies) with `git add -N` and
 leaves committing to you.

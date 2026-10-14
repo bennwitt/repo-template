@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -32,6 +33,7 @@ from repo_template.mcp import load_mcp_servers, usable
 from repo_template.mcp_globals import (
     ClaudeCli,
     ClaudeMcp,
+    claude_config_elsewhere,
     codex_config,
     sync_claude_mcp,
     sync_codex_mcp,
@@ -49,8 +51,8 @@ GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/\n**/.playwright-cli/\n
 SKILL_MIRROR_TARGET = Path("../../.agents/skills")
 SKILL_PACKS_NAME = "skill-packs.json"
 SKILL_OVERRIDES_NAME = "skill-overrides.json"
-MANIFEST_LABEL = ".repo-template.json"
 FIELD_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
+Paths = Callable[[list[Path]], set[Path]]
 
 
 def _is_standards_root(path: Path) -> bool:
@@ -252,15 +254,19 @@ def _prune_links(
     *,
     check: bool,
     base: Path | None = None,
+    tracked: Callable[[Path], bool] | None = None,
 ) -> None:
     """Remove links this tool owns whose skill is no longer wanted.
 
-    Real directories, links this tool didn't create, and wanted skills are never touched.
+    Real directories, links this tool didn't create, links the repository tracks, and wanted
+    skills are never touched.
     """
     if not directory.is_dir():
         return
     for entry in sorted(directory.iterdir(), key=lambda item: item.name.casefold()):
         if not entry.is_symlink() or entry.name in keep or not owned(entry):
+            continue
+        if tracked is not None and tracked(entry):
             continue
         result.removed.append(str(entry.relative_to(base)) if base else str(entry))
         if not check:
@@ -300,14 +306,24 @@ def _sync_links(
     check: bool,
     stop: Path,
     base: Path | None = None,
-    ignored: Callable[[list[Path]], set[Path]] | None = None,
+    ignored: Paths | None = None,
+    tracked: Callable[[Path], bool] | None = None,
+    owned_paths: set[Path] | None = None,
+    recheck: bool = False,
 ) -> None:
     """Make directory/<name> a symlink to targets[name] for every name. Real files and folders,
     and links this tool didn't make, are kept and reported; so is a new link that `ignored`
-    says Git wouldn't ignore."""
+    says Git wouldn't ignore. With `recheck`, a link already in place that Git wouldn't ignore
+    any more is removed and reported too. A path the repository `tracked` is left alone, with
+    a note. `owned_paths` collects the links this tool has afterwards."""
 
     def label(path: Path) -> str:
         return str(path.relative_to(base)) if base else str(path)
+
+    def refused(path: Path) -> None:
+        result.preserved.append(
+            f"{label(path)} (Git wouldn't ignore this link; ignore it so the skill can be linked)"
+        )
 
     blocked = _blocked(directory, stop)
     if blocked is not None:
@@ -315,10 +331,15 @@ def _sync_links(
             result.preserved.append(f"{label(blocked)} (not a folder; skill links skipped)")
         return
     changes: list[Path] = []
+    current: list[Path] = []
     for name, target in targets.items():
         link = directory / name
-        if link.is_symlink() and Path(os.readlink(link)) == target:
-            result.unchanged.append(label(link))
+        if tracked is not None and tracked(link):
+            result.notes.append(
+                f"{label(link)}: the repository has its own; the pack's skill isn't linked there"
+            )
+        elif link.is_symlink() and Path(os.readlink(link)) == target:
+            current.append(link)
         elif link.is_symlink() and not owned(link):
             result.preserved.append(
                 f"{label(link)} (a link this tool didn't make; remove it so the skill can be "
@@ -330,15 +351,29 @@ def _sync_links(
             )
         else:
             changes.append(link)
-    tracked = set(changes) - ignored(changes) if ignored and changes else set()
+    asked = changes + (current if recheck else [])
+    visible = set(asked) - ignored(asked) if ignored and asked else set()
+    for link in current:
+        if link in visible:  # Git's rules changed since it was made: take it out again
+            result.removed.append(label(link))
+            refused(link)
+            if not check:
+                link.unlink()
+            continue
+        result.unchanged.append(label(link))
+        if owned_paths is not None:
+            owned_paths.add(link)
     for link in changes:
-        if link in tracked:
-            result.preserved.append(
-                f"{label(link)} (Git wouldn't ignore this link; ignore it so the skill can be "
-                f"linked)"
-            )
+        if link in visible:
+            if recheck and link.is_symlink():  # this tool's, to an old target: Git shows it
+                result.removed.append(label(link))
+                if not check:
+                    link.unlink()
+            refused(link)
             continue
         (result.updated if link.is_symlink() else result.created).append(label(link))
+        if owned_paths is not None:
+            owned_paths.add(link)
         if check:
             continue
         directory.mkdir(parents=True, exist_ok=True)
@@ -356,23 +391,48 @@ def _sync_mirror(standards_root: Path, names: list[str], result: Result, *, chec
     _prune_links(mirror, owned, set(names), result, check=check)
 
 
-def git_ignores(root: Path) -> Callable[[list[Path]], set[Path]]:
+@functools.cache
+def _repository_variables() -> frozenset[str]:
+    try:
+        done = subprocess.run(
+            ["git", "rev-parse", "--local-env-vars"], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return frozenset()
+    return frozenset(done.stdout.split())
+
+
+CONFIG_VARIABLES = {"GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT"}  # `git -c`: settings, kept
+
+
+def git_env() -> dict[str, str]:
+    """The environment without the variables that tie Git to one repository (GIT_DIR,
+    GIT_INDEX_FILE...): run from a hook or an alias, `git -C <root>` would act on another.
+    Settings passed with `git -c` stay."""
+    tied = _repository_variables() - CONFIG_VARIABLES
+    return {name: value for name, value in os.environ.items() if name not in tied}
+
+
+def repository_path(root: Path, path: Path) -> str:
+    """`path` relative to the repository root, through any symlinked folder above it."""
+    return (path.parent.resolve() / path.name).relative_to(root.resolve()).as_posix()
+
+
+def git_ignores(root: Path) -> Paths:
     """Which of the given paths under root Git would ignore. Without a .git folder (or Git)
     there is nothing to commit them to, so all of them."""
 
     def ignored(paths: list[Path]) -> set[Path]:
         if not (root / ".git").exists():
             return set(paths)
-        real = root.resolve()
-        relative = {
-            (path.parent.resolve() / path.name).relative_to(real).as_posix(): path for path in paths
-        }
+        relative = {repository_path(root, path): path for path in paths}
         try:
             done = subprocess.run(
                 ["git", "-C", str(root), "check-ignore", "--stdin", "-z"],
                 input="\0".join(relative).encode(),
                 capture_output=True,
                 check=False,
+                env=git_env(),
             )
         except FileNotFoundError:
             return set(paths)
@@ -389,9 +449,16 @@ def sync_project_packs(
     *,
     check: bool,
     agents_dir: Path,
+    ignored: Paths | None = None,
+    tracked: Callable[[Path], bool] | None = None,
+    owned_paths: set[Path] | None = None,
+    recheck: bool = False,
 ) -> None:
     """Link each skill of the repository's packs into <root>/.claude/skills, for Claude Code, and
-    <root>/.agents/skills, for Codex. A new link is made only where Git would ignore it.
+    <root>/.agents/skills, for Codex. A new link is made only where Git would ignore it
+    (`ignored`, by default Git's answer now), and with `recheck` a link in place that Git
+    wouldn't ignore is removed; a path the repository `tracked` is never linked or removed.
+    `owned_paths` collects the links this tool has afterwards.
 
     Links point at <agents_dir>/packs/<name>, normally ~/.agents/packs, so they follow the
     standards repository wherever it lives. Pack skills live there, outside every folder Codex
@@ -408,7 +475,7 @@ def sync_project_packs(
     undefined = [pack for pack in packs if pack not in definitions]
     for pack in undefined:
         result.errors.append(
-            f"skill pack {pack!r} is listed in {MANIFEST_LABEL} but not defined in "
+            f"skill pack {pack!r} is listed in the repository's manifest but not defined in "
             f"{agents_dir / SKILL_PACKS_NAME}; its links were left in place"
         )
     for pack in packs:
@@ -455,10 +522,32 @@ def sync_project_packs(
             check=check,
             stop=root,
             base=root,
-            ignored=git_ignores(root),
+            ignored=ignored or git_ignores(root),
+            tracked=tracked,
+            owned_paths=owned_paths,
+            recheck=recheck,
         )
         if not undefined:
-            _prune_links(target_dir, owned, set(wanted), result, check=check, base=root)
+            _prune_links(
+                target_dir, owned, set(wanted), result, check=check, base=root, tracked=tracked
+            )
+        elif target_dir.is_dir():  # an undefined pack's links are kept: still this tool's
+            kept = [
+                entry
+                for entry in sorted(target_dir.iterdir())
+                if entry.is_symlink()
+                and entry.name not in wanted
+                and owned(entry)
+                and not (tracked and tracked(entry))
+            ]
+            shown = set(kept) - (ignored or git_ignores(root))(kept) if recheck and kept else set()
+            for entry in kept:
+                if entry in shown:  # Git would show it now: take it out
+                    result.removed.append(str(entry.relative_to(root)))
+                    if not check:
+                        entry.unlink()
+                elif owned_paths is not None:
+                    owned_paths.add(entry)
 
 
 def unknown_packs(packs: Sequence[str], agents_dir: Path) -> list[str]:
@@ -516,8 +605,7 @@ def _sync_global_mcp(
         result.errors.append(str(exc))
         return
     real = home == Path.home().expanduser().resolve()
-    configured = os.environ.get("CLAUDE_CONFIG_DIR")
-    if real and configured and Path(configured).expanduser().resolve() != home / ".claude":
+    if real and claude_config_elsewhere(home):
         # the portable settings, and so the deny rules, go to ~/.claude/settings.json
         result.notes.append(
             "Claude Code's user-scope MCP servers: skipped (CLAUDE_CONFIG_DIR is set, so Claude "

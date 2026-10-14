@@ -57,6 +57,17 @@ def merge_marked_block(existing: str, content: str, start: str, end: str) -> str
     return f"{prefix}\n\n{block}" if prefix else block
 
 
+def remove_marked_block(existing: str, start: str, end: str) -> str:
+    """`existing` without the block between `start` and `end`, nor the blank lines before it
+    (merge_marked_block puts one there)."""
+    pattern = re.compile(r"\n*" + re.escape(start) + r".*?" + re.escape(end) + r"\n?", re.DOTALL)
+    found = pattern.search(existing)
+    if not found:
+        return existing
+    before, after = existing[: found.start()], existing[found.end() :]
+    return (before + "\n" if before else "") + after
+
+
 def _merge_gitignore(existing: str, desired: str) -> str:
     return merge_marked_block(existing, desired, GITIGNORE_START, GITIGNORE_END)
 

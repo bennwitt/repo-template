@@ -1,4 +1,5 @@
-"""Global MCP servers: Claude Code's user scope (~/.claude.json) and ~/.codex/config.toml.
+"""Global MCP servers: Claude Code's user scope (~/.claude.json) and ~/.codex/config.toml; and,
+for a personal repository, its packs' servers in Claude Code's local scope for that checkout.
 
 Each server repo-template installs is owned by name and by a digest of the entry as written,
 recorded in ~/.repo-template/globals-state.json, never by markers: Codex rewrites comments and
@@ -91,9 +92,12 @@ class _Plan:
         label: str,
         result: Result,
         adoptable: set[str] | None = None,
+        removals: bool = True,
     ) -> None:
         """`adoptable`: the entries repo-template could rewrite, if not all of them (Codex: only
-        a [mcp_servers.<name>] table, not an inline table or dotted keys)."""
+        a [mcp_servers.<name>] table, not an inline table or dotted keys). Without `removals`
+        (a listed pack isn't defined, so its servers can't be known) entries not wanted are
+        kept, and their records carried."""
         self.add: dict[str, dict[str, Any]] = {}
         self.replace: dict[str, tuple[dict[str, Any], Any]] = {}
         self.remove: dict[str, Any] = {}
@@ -132,10 +136,18 @@ class _Plan:
                 result.preserved.append(f"{label}.{name} (configured by hand; kept)")
             new_kept[name] = marker
         for name, mine in owned.items():
-            if name in wanted or name not in current:
+            if name in wanted:
+                continue
+            if not removals:
+                self.owned[name] = mine
+                continue
+            if name not in current:
                 continue
             if isinstance(mine, dict) and digest(current[name]) == mine.get("stored"):
                 self.remove[name] = current[name]  # dropped from the catalog
+        if not removals:
+            new_kept.update({n: value for n, value in kept.items() if n not in wanted})
+            new_removed.update({n: value for n, value in removed.items() if n not in wanted})
         self.kept, self.removed = new_kept, new_removed
 
     @property
@@ -163,6 +175,13 @@ class ClaudeMcp(Protocol):
     def remove(self, name: str) -> Completed: ...
 
 
+def claude_config_elsewhere(home: Path) -> bool:
+    """CLAUDE_CONFIG_DIR points away from ~/.claude: Claude Code then doesn't read
+    ~/.claude/settings.json, where the portable deny rules for MCP tools go."""
+    configured = os.environ.get("CLAUDE_CONFIG_DIR")
+    return bool(configured) and Path(str(configured)).expanduser().resolve() != home / ".claude"
+
+
 def claude_config(home: Path) -> Path:
     """The file Claude Code keeps its user-scope servers in: <config dir>/.config.json when that
     legacy file exists, else ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json)."""
@@ -172,8 +191,14 @@ def claude_config(home: Path) -> Path:
 
 
 class ClaudeCli:
-    def __init__(self, home: Path, runner: Runner | None = None) -> None:
-        self.home = home
+    """User scope, or with `project` (a checkout's resolved top folder, which Claude Code keys
+    them by) that checkout's local scope: ~/.claude.json projects[<project>].mcpServers."""
+
+    def __init__(
+        self, home: Path, runner: Runner | None = None, *, project: Path | None = None
+    ) -> None:
+        self.home, self.project = home, project
+        self.scope = "user" if project is None else "local"
         self.path = claude_config(home)
         self.runner = runner or SubprocessRunner(env={"HOME": str(home)}, timeout=120)
 
@@ -190,18 +215,25 @@ class ClaudeCli:
             data = json.loads(self.path.read_text())
         except (OSError, json.JSONDecodeError):
             return None
+        if isinstance(data, dict) and self.project is not None:
+            projects = data.get("projects", {})
+            data = projects.get(str(self.project), {}) if isinstance(projects, dict) else None
         servers = data.get("mcpServers", {}) if isinstance(data, dict) else None
         return servers if isinstance(servers, dict) else None
 
     def add(self, name: str, entry: Mapping[str, Any]) -> Completed:
         payload = json.dumps(entry, separators=(",", ":"))
-        # cwd=home, so no project .mcp.json or local-scope entry can get in the way
+        # user scope runs in home, so no project .mcp.json or local-scope entry gets in the way;
+        # local scope runs in the checkout, the project it belongs to
         return self.runner.run(
-            ["claude", "mcp", "add-json", "--scope", "user", name, payload], self.home
+            ["claude", "mcp", "add-json", "--scope", self.scope, name, payload],
+            self.project or self.home,
         )
 
     def remove(self, name: str) -> Completed:
-        return self.runner.run(["claude", "mcp", "remove", "--scope", "user", name], self.home)
+        return self.runner.run(
+            ["claude", "mcp", "remove", "--scope", self.scope, name], self.project or self.home
+        )
 
 
 def sync_claude_mcp(
@@ -213,29 +245,38 @@ def sync_claude_mcp(
     check: bool,
     cache: str,
     stamp: str = "",
+    scope: str = "user",
+    state_key: str = CLAUDE_STATE,
+    label: str | None = None,
+    removals: bool = True,
+    fresh: bool = False,
 ) -> None:
-    """Keep Claude Code's user-scope servers in step with the global servers for Claude. The
-    config file is backed up under ~/.repo-template/backups/<stamp> before the first change."""
+    """Keep Claude Code's user-scope servers in step with the global servers for Claude (or,
+    with scope "local", a checkout's local-scope servers with its packs'; recorded under
+    `state_key`; `fresh` forgets that record, for a new adoption). The config file is backed up
+    under ~/.repo-template/backups/<stamp> before the first change."""
     if claude is None:
         result.notes.append(
-            "Claude Code's user-scope MCP servers: skipped (not this machine's home)"
+            f"Claude Code's {scope}-scope MCP servers: skipped (not this machine's home)"
         )
         return
     if not claude.available():  # which, not a run: check and update agree
-        result.notes.append("Claude Code's user-scope MCP servers: skipped (no `claude` on PATH)")
+        result.notes.append(
+            f"Claude Code's {scope}-scope MCP servers: skipped (no `claude` on PATH)"
+        )
         return
-    label = f"{claude.path} mcpServers"
+    label = label or f"{claude.path} mcpServers"
     current = claude.servers()
     if current is None:
         result.errors.append(f"cannot read {claude.path}; its MCP servers were left alone")
         return
-    record = _record(home, CLAUDE_STATE, str(claude.path), fresh=not claude.exists())
+    record = _record(home, state_key, str(claude.path), fresh=fresh or not claude.exists())
     wanted = {name: claude_entry(server, cache) for name, server in sorted(servers.items())}
-    plan = _Plan(wanted, current, record, label, result)
+    plan = _Plan(wanted, current, record, label, result, removals=removals)
     for name, other in _duplicates(current, servers, set(wanted) | set(record["owned"])):
         result.notes.append(
             f"{label}.{name} runs the {other} server repo-template installs; remove it with "
-            f"`claude mcp remove {name} --scope user`"
+            f"`claude mcp remove {name} --scope {scope}`"
         )
     if check or not plan.changes:
         result.created += [f"{label}.{name}" for name in plan.add]
@@ -244,7 +285,7 @@ def sync_claude_mcp(
         if not check:
             _save(
                 home,
-                CLAUDE_STATE,
+                state_key,
                 {**record, "owned": plan.owned, "kept": plan.kept, "removed": plan.removed},
             )
         return
@@ -267,9 +308,7 @@ def sync_claude_mcp(
         if _run(claude.remove(name), f"{label}.{name}", result, result.removed):
             continue
         owned[name] = record["owned"][name]
-    _save(
-        home, CLAUDE_STATE, {**record, "owned": owned, "kept": plan.kept, "removed": plan.removed}
-    )
+    _save(home, state_key, {**record, "owned": owned, "kept": plan.kept, "removed": plan.removed})
 
 
 def _run(done: Completed, label: str, result: Result, into: list[str] | None) -> bool:
