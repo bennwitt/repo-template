@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- `setup-machine.sh` sets up a Mac or a Linux machine in one run.
+  - It asks where the standards repository goes (default `~/aiDevStandards`).
+  - It clones or pulls it, installs the CLI, and shows `globals` before applying it.
+  - It copies the ignore lines to the file `core.excludesFile` names, and offers each optional
+    tool.
+  - It is safe to run again, and refuses rather than guesses (no terminal without `--yes`, a
+    folder that isn't repo-template, a machine still on the pre-0.4.2 settings link).
+- `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md` covers updating a machine, updating a templated
+  repository, and adopting one.
+- The README's Mac location is `~/aiDevStandards`: macOS keeps the top of the disk read-only.
+
 ## 0.5.3 - 2026-10-14
 
 - `update --personal` (and `check --personal`) adopts a repository you don't manage, such as a
