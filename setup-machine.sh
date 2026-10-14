@@ -217,7 +217,13 @@ if have node; then
   node_major=${node_major%%.*}
   case "$node_major" in
     '' | *[!0-9]*) ;;
-    *) [ "$node_major" -ge 20 ] || warn "Node $node_version is too old for the MCP servers started with npx: install Node 22 or 24 LTS" ;;
+    *)
+      if [ "$node_major" -lt 20 ]; then
+        warn "Node $node_version is too old for the MCP servers started with npx: install Node 22 or 24 LTS"
+      elif [ "$node_major" -lt 22 ]; then
+        warn "Node $node_version is past its end of life: move to Node 22 or 24 LTS when you can"
+      fi
+      ;;
   esac
 else
   warn "Node isn't installed: MCP servers started with npx (playwright, shadcn) won't run until it is (Node 22 or 24 LTS)"
@@ -229,13 +235,19 @@ else
 fi
 if have codex; then note "codex: $(codex --version 2>/dev/null | head -n 1)"; else note "codex: not installed (optional)"; fi
 
-# A machine set up before 0.4.2 has ~/.claude/settings.json linked into a standards checkout.
+# A machine set up before 0.4.2 has ~/.claude/settings.json linked into a standards checkout. While
+# the file is there, migrate first (the guide's Appendix A, step 1); once a pull has removed it, the
+# link dangles, and globals writes fresh settings in its place.
+GUIDE="https://github.com/bennwitt/repo-template/blob/main/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md"
 if [ -L "$HOME/.claude/settings.json" ]; then
   linked=$(readlink "$HOME/.claude/settings.json")
   case "$linked" in
     */.claude/settings.json)
       if is_standards "${linked%/.claude/settings.json}"; then
-        die "$HOME/.claude/settings.json is a link into ${linked%/.claude/settings.json} (a machine set up before 0.4.2). Follow 'Upgrading a machine from a linked settings file' in that repository's README.md first, then run this again"
+        if [ -e "$HOME/.claude/settings.json" ]; then
+          die "$HOME/.claude/settings.json is a link into ${linked%/.claude/settings.json} (a machine set up before 0.4.2): migrate it first, as $GUIDE#appendix-a-setting-up-a-machine-by-hand step 1 says, then run this again"
+        fi
+        warn "$HOME/.claude/settings.json is a link left from before 0.4.2, and its file is gone (a pull removed it): globals writes fresh settings in its place; your old ones are in Git: git -C ${linked%/.claude/settings.json} show HEAD@{1}:.claude/settings.json"
       fi
       ;;
   esac
@@ -293,7 +305,7 @@ else
     if [ "$os" = mac ]; then hint=" (macOS keeps the top of the disk read-only: choose a folder in your home folder)"; fi
     die "can't create $dir$hint"
   fi
-  git clone --quiet "$REPO_URL" "$dir"
+  git clone --quiet "$REPO_URL" "$dir" || die "couldn't clone $REPO_URL (the error is above)"
   note "cloned $REPO_URL"
 fi
 note "repo-template $(version_of "$dir")"
@@ -301,8 +313,9 @@ note "repo-template $(version_of "$dir")"
 # 3. The repo-template command.
 
 say "Installing the repo-template command"
-uv tool install --quiet --editable --force "$dir"
-bin=$(uv tool dir --bin)
+uv tool install --quiet --editable --force "$dir" || die "couldn't install repo-template (the error is above)"
+bin=$(uv tool dir --bin) || die "uv can't say where it installs commands"
+
 "$bin/repo-template" --help >/dev/null || die "repo-template didn't install"
 note "$bin/repo-template (an editable install: a git pull updates it)"
 case ":$PATH:" in
@@ -441,7 +454,7 @@ if [ "$run_tools" = 1 ]; then
       have az || optional "Installing the Azure CLI" brew install azure-cli
       have azd || { optional "Adding azd's Homebrew tap" brew tap azure/azd && optional "Installing azd" brew install azd; }
     elif ! have az || ! have azd; then
-      note "Install the Azure CLI and azd: see 'Per-machine tools' in $dir/README.md"
+      note "Install the Azure CLI and azd: see section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md (on a Mac, install Homebrew first: https://brew.sh)"
     fi
     if have az; then
       az account show >/dev/null 2>&1 || optional "az login" az login
@@ -463,12 +476,12 @@ if [ "$run_tools" = 1 ]; then
   elif [ "$os" = linux ]; then
     note "github plugin: export GITHUB_PERSONAL_ACCESS_TOKEN from a file only you can read (chmod 600), sourced by your shell profile; never in a repository"
   fi
-  note "Codex (optional): npm install -g @openai/codex@<a release at least 7 days old>"
+  note "Codex (optional): npm install -g --ignore-scripts @openai/codex@<a release at least 7 days old>; then run codex once, and this script again, so Codex gets its MCP servers"
 fi
 
 say "Done"
 if [ "$status" != 0 ]; then warn "some steps reported problems (above); fix them, then run this again"; fi
 note "Open a new terminal, then restart Claude Code and Codex"
 note "Check the MCP servers: claude mcp list   (playwright and huggingface, connected)"
-note "Your repositories: $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md, sections 2 and 3"
+note "Your repositories: section 2 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md"
 exit "$status"

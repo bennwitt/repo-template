@@ -76,7 +76,7 @@ Read the profile: `grep -h '"profile"' <repo>/.repo-template.json <repo>/.git/re
      `domain-modeling` skill describes. Then repoint every reference: `git grep -n CONTEXT.md`.
    - **`(Git wouldn't ignore this link; …)`**: the machine's global Git ignore doesn't reach this
      repository. Ask the user to run `setup-machine.sh` again (it copies the ignore lines to the
-     file Git reads), or add `.claude/` and `.agents/` to the repository's `.gitignore`.
+     file Git reads), or add `.claude/`, `.agents/` and `.codex/` to the repository's `.gitignore`.
    - **`(not a link …)`, `(a link this tool didn't make …)`, `(edited in this repository; kept)`**:
      something of the project's sits where repo-template would write. Ask the user before
      removing or replacing it.

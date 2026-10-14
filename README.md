@@ -191,8 +191,9 @@ reinstall. `globals` finds this repository through `--standards-root`, else `AI_
 (the setup script sets it in your shell profile), else the checkout the CLI is installed from.
 A root named either way must be a standards repository, or the command stops with an error, so
 running it inside some other repository (which may well have `.agents/skills/` of its own, from
-`npx skills add`) never relinks `~/.agents` there. If you're inside a second repo-template
-checkout, it stops and asks you to pass `--standards-root`.
+`npx skills add`) never relinks `~/.agents` there. With neither set, if you're inside a second
+repo-template checkout, it stops and asks you to pass `--standards-root`. To work on another
+checkout of this repository, name it: `repo-template globals --standards-root .`.
 
 ### Per-machine tools
 
