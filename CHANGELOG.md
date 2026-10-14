@@ -84,6 +84,9 @@
   and Anthropic key forms. It looks only at lines being added, so a commit that removes a key
   isn't stopped, and it reads the diff the same way whatever the user's diff settings (colour,
   external diff tools, textconv) or the file's encoding.
+- `update` adds the baseline's `[build-system]` (uv_build) to a `pyproject.toml` without one when
+  the code is in `src/<package>/`, unless `[tool.uv] package = false`: repositories generated
+  before the baseline had it couldn't install their package, so their own tests failed.
 - The pre-commit hook runs `uv lock`, Ruff, mypy and pytest without Git's repository variables
   (`git rev-parse --local-env-vars`). Git sets them for hooks, and in a worktree a test that ran
   git in a temporary folder wrote into the repository being committed instead (it happened here:

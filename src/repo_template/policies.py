@@ -177,7 +177,13 @@ def _merge_pyproject(existing: str, desired: str) -> str:
     groups = desired_data.get("dependency-groups", {})
     required = groups.get("dev", []) if isinstance(groups, dict) else []
     proposed = _append_dev_dependencies(existing, [str(item) for item in required])
-    configured = tomllib.loads(existing).get("tool", {})
+    existing_data = tomllib.loads(existing)
+    configured = existing_data.get("tool", {})
+    uv = configured.get("uv", {}) if isinstance(configured, dict) else {}
+    build = _table_block(desired, "build-system")
+    if build and "build-system" not in existing_data and uv.get("package") is not False:
+        # without one, uv installs nothing from src/<package>/ and the tests can't import it
+        proposed = proposed.rstrip() + "\n\n" + build + "\n"
     for table in ("tool.pytest.ini_options", "tool.ruff", "tool.ruff.lint", "tool.mypy"):
         # A tool the project already configures keeps its settings: adding even one table
         # (say a line length beside an existing [tool.ruff.lint]) changes how the tool behaves.

@@ -24,6 +24,14 @@ packages = ["__PACKAGE_NAME__"]
 """
 
 
+BUILD_SYSTEM = """
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+"""  # src/<package>/ is installed into the environment, so its tests can import it
+
+
 def project_files(context: ProjectContext, *, package: bool = True) -> list[TemplateFile]:
     """Return the complete, rendered Python/uv baseline.
 
@@ -55,11 +63,7 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         readme = "README.md"
         requires-python = ">=__PYTHON_VERSION__"
         dependencies = []
-
-        [build-system]
-        requires = ["uv_build>=0.12.17,<0.13.0"]
-        build-backend = "uv_build"
-
+        __BUILD_SYSTEM__
         [dependency-groups]
         dev = [
             "mypy>=1.18",
@@ -79,7 +83,7 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         [tool.ruff.lint]
         select = ["E", "F", "I", "B", "UP", "SIM"]
         """
-        )
+        ).replace("__BUILD_SYSTEM__\n", BUILD_SYSTEM if package else "")
         + (MYPY_TABLE if package else ""),
         policy="toml_merge",
     )

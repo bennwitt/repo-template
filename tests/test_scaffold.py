@@ -418,3 +418,38 @@ def test_the_global_excludes_ignore_playwright_state() -> None:
 
     assert "**/.playwright-cli/" in GITIGNORE_CONTENT
     assert "**/.playwright-mcp/" in GITIGNORE_CONTENT
+
+
+HATCH = '\n[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n'
+PROJECT = """
+[project]
+name = "existing-app"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = []
+""".lstrip()
+
+
+@pytest.mark.parametrize(
+    ("layout", "extra", "built"),
+    [
+        ("package", "", "uv_build"),  # generated before the baseline had it: tests couldn't import
+        ("flat", "", None),  # code in src/ itself: nothing to install
+        ("package", "\n[tool.uv]\npackage = false\n", None),  # said so on purpose
+        ("package", HATCH, "hatchling.build"),  # its own backend stays
+    ],
+)  # fmt: skip
+def test_a_package_gets_a_build_system_unless_it_has_one_or_opts_out(
+    tmp_path: Path, layout: str, extra: str, built: str | None
+) -> None:
+    root = tmp_path / "existing"
+    code = root / ("src/existing_app" if layout == "package" else "src")
+    code.mkdir(parents=True)
+    (code / "__init__.py").write_text("")
+    (root / "pyproject.toml").write_text(PROJECT + extra)
+
+    update_project(root)
+
+    parsed = tomllib.loads((root / "pyproject.toml").read_text())
+    assert parsed.get("build-system", {}).get("build-backend") == built
+    assert "pyproject.toml" not in update_project(root, check=True).updated  # and it stays put
