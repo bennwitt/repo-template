@@ -305,7 +305,11 @@ repo-template update /path/to/web-app --packs-only --pack react
 That writes a `.repo-template.json` whose `profile` is `packs-only`, the pack links, and the
 packs' MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`): no baseline file, hook path
 or lockfile. Later `update` and `check` follow the recorded profile, so the flag is needed only
-the first time, and `--pack` adds more. It is refused for a repository on the Python/uv baseline.
+the first time, and `--pack` adds more. `check <repo> --packs-only --pack react` shows what it
+would do first. It is refused for a repository on the Python/uv baseline, and for a
+`.repo-template.json` another tool wrote, which it never overwrites; every refusal comes before
+anything is written. To move a packs-only repository onto the Python/uv baseline later, delete
+its `.repo-template.json` and run `update`.
 Links are made only where Git ignores them: on a machine where `globals` ran, its global excludes
 ignore `.agents/`, `.claude/` and `.codex/` in every repository; elsewhere the repository's own
 `.gitignore` needs them, and `update` reports each link it couldn't make.

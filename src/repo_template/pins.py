@@ -3,17 +3,20 @@
 A release is offered once it is a week old (COOLDOWN), so a bad release has time to be caught
 and pulled first; pre-releases, and releases yanked or deprecated, never are. A pin younger than
 that needs a `pinException` saying why, and is reported once the exception is no longer needed.
+Versions are plain final releases (1.2.3; 1.2 and 1.2.0 are the same one); a post-release or
+local version isn't offered or pinned.
 """
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 from repo_template.mcp import MCP_SERVERS_NAME, Server
@@ -21,6 +24,7 @@ from repo_template.upstream import NetworkError, NotFound, Report, clean
 
 COOLDOWN = timedelta(days=7)
 FINAL = re.compile(r"\d+(?:\.\d+)*")  # 1.2.3: a final release, the only kind offered
+EXTRAS = re.compile(r"\[[^\]]*\]$")
 URLS = {"npm": "https://registry.npmjs.org/{}", "pypi": "https://pypi.org/pypi/{}/json"}
 
 
@@ -32,7 +36,10 @@ class Registry(Protocol):
 
 
 def _time(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    when = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if when.tzinfo is None:
+        raise ValueError(f"{value!r} has no time zone")
+    return when
 
 
 def npm_releases(document: Any) -> dict[str, datetime]:
@@ -48,8 +55,11 @@ def npm_releases(document: Any) -> dict[str, datetime]:
 
 
 def pypi_releases(document: Any) -> dict[str, datetime]:
+    releases = document.get("releases")
+    if not isinstance(releases, dict):  # deprecated in the JSON API: say so, don't report "yanked"
+        raise ValueError("no 'releases' in PyPI's response")
     found = {}
-    for version, files in document.get("releases", {}).items():
+    for version, files in releases.items():
         live = [
             item["upload_time_iso_8601"]
             for item in files
@@ -66,25 +76,34 @@ class HttpRegistry:
     """npm's and PyPI's public JSON APIs; no login."""
 
     def releases(self, registry: str, package: str) -> dict[str, datetime]:
-        url = URLS[registry].format(urllib.parse.quote(package, safe="@"))
+        name = EXTRAS.sub("", package)  # msmcp-azure[x] is the msmcp-azure project
+        url = URLS[registry].format(urllib.parse.quote(name, safe="@"))
         request = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
             with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
                 document = json.loads(response.read())
+            if not isinstance(document, dict):
+                raise ValueError("not a JSON object")
+            return (npm_releases if registry == "npm" else pypi_releases)(document)
         except urllib.error.HTTPError as exc:
             error = NotFound if exc.code == 404 else NetworkError
             raise error(f"GET {url}: HTTP {exc.code}") from None
-        except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+        except (OSError, http.client.HTTPException) as exc:  # URLError, timeouts, resets
             raise NetworkError(f"GET {url}: {clean(str(exc))}") from None
-        return (npm_releases if registry == "npm" else pypi_releases)(document)
+        except (ValueError, TypeError, AttributeError, KeyError) as exc:
+            raise NetworkError(f"GET {url}: unexpected response ({clean(str(exc))})") from None
 
 
 def _key(version: str) -> tuple[int, ...]:
-    return tuple(int(part) for part in version.split("."))
+    """1.2 and 1.2.0 are the same release."""
+    parts = [int(part) for part in version.split(".")]
+    while len(parts) > 1 and parts[-1] == 0:
+        parts.pop()
+    return tuple(parts)
 
 
-def _day(when: datetime) -> str:
-    return when.strftime("%Y-%m-%d")
+def _stamp(when: datetime) -> str:
+    return when.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def check_pins(
@@ -105,21 +124,26 @@ def check_pins(
         except NotFound:
             report.review.append(f"{label} isn't on {pin.registry} any more")
             continue
-        published = releases.get(pin.version)
+        by_key = {_key(version): when for version, when in releases.items()}
+        published = by_key.get(_key(pin.version))
+        recorded = _time(pin.published_at)
         if published is None:
             report.review.append(
                 f"{label}@{pin.version} was yanked or deprecated, or never published; pin "
                 f"another release"
             )
-        elif abs(published - _time(pin.published_at)) > timedelta(minutes=1):
+        elif (
+            abs(published - recorded) > timedelta(minutes=1)
+            or recorded.astimezone(UTC).date() != published.astimezone(UTC).date()
+        ):  # the cutoff a pin runs with is the UTC midnight after its recorded day
             report.review.append(
-                f"{label}@{pin.version} was published {published:%Y-%m-%dT%H:%M:%SZ}, not "
+                f"{label}@{pin.version} was published {_stamp(published)}, not "
                 f"{pin.published_at} as {MCP_SERVERS_NAME} records"
             )
         elif now - published < COOLDOWN and not pin.exception:
             report.review.append(
                 f"{label}@{pin.version} is inside its cooldown until "
-                f"{_day(published + COOLDOWN)}; pin an older release or give a pinException"
+                f"{_stamp(published + COOLDOWN)}; pin an older release or give a pinException"
             )
         elif now - published >= COOLDOWN and pin.exception:
             report.review.append(
@@ -130,14 +154,15 @@ def check_pins(
         best = max(ripe, key=_key) if ripe else pin.version
         if ripe:
             report.changed.append(
-                f"{label} {best} ({_day(newer[best])}) is newer than the pinned {pin.version}; "
-                f"re-pin it in {MCP_SERVERS_NAME} with its publishedAt"
+                f"{label} {best} is newer than the pinned {pin.version}; re-pin it in "
+                f"{MCP_SERVERS_NAME} (args and pin) with publishedAt {_stamp(newer[best])}"
             )
+            report.pin_changes += 1
         else:
             report.pins.append(f"{name}: {pin.package}@{pin.version}")
         waiting = [v for v in newer if _key(v) > _key(best)]  # newer than any ripe one: young
         if waiting:
             soon = max(waiting, key=_key)
             report.notes.append(
-                f"{label} {soon} is in its cooldown until {_day(newer[soon] + COOLDOWN)}"
+                f"{label} {soon} is in its cooldown until {_stamp(newer[soon] + COOLDOWN)}"
             )

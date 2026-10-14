@@ -31,8 +31,9 @@ A baseline file that `update` extends with missing entries and never removes fro
 _Avoid_: patched file
 
 **Manifest**:
-`.repo-template.json` in a generated repository: the template version, the project variables, and
-the hash of each file as generated.
+`.repo-template.json` in a repository repo-template manages: its profile, template version, skill
+packs and pack MCP records; for the Python/uv profile also the project variables and the hash of
+each file as generated.
 _Avoid_: lock, state file
 
 **Accepted difference**:

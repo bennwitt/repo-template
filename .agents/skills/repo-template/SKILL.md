@@ -78,13 +78,16 @@ where another system owns the Git hooks or the lockfile.
 ## Skill packs
 
 Domain skills (LangChain, Gradio, knowledge graphs, TypeScript) load only in repositories that
-list their pack; `~/.agents/skill-packs.json` defines the packs. Add one when the repository uses
-that framework: `repo-template update <repo> --pack <name>` records it under `skill_packs` in
+list their pack; `~/.agents/skill-packs.json` defines the packs. If the repository isn't
+Python/uv (no `pyproject.toml`) and has no `.repo-template.json` yet, adopt it for packs alone:
+preview with `repo-template check <repo> --packs-only --pack <name>`, then
+`repo-template update <repo> --packs-only --pack <name>` (once; later runs follow its manifest,
+which then holds only the profile, packs and MCP records). Otherwise add one when the repository
+uses that framework: `repo-template update <repo> --pack <name>` records it under `skill_packs` in
 `.repo-template.json` and links its skills into the repository's `.claude/skills/` (Claude Code)
 and `.agents/skills/` (Codex), where Git ignores them. To remove a pack, delete it from
 `skill_packs` and run `update`. Read what `update` preserves: a link it can't own is reported,
-not replaced. A repository that isn't Python/uv takes packs alone with
-`repo-template update <repo> --packs-only --pack <name>` (once; later runs follow its manifest).
+not replaced.
 
 ## New repositories
 

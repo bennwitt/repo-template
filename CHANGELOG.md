@@ -8,6 +8,9 @@
 - `globals --upstream` checks each MCP pin against npm or PyPI: a newer final release past the
   7-day cooldown is a change, a younger one a note; a yanked pin, a wrong `publishedAt`, a pin
   inside its cooldown without a `pinException`, and an exception no longer needed are for review.
+- `check` takes `--packs-only` and `--pack`, to preview an adoption. Every refusal (a Python/uv
+  or foreign manifest, a newer version, a missing directory) now comes before anything is
+  written, and a `.repo-template.json` with no known profile is never overwritten.
 
 ## 0.5.0 - 2026-10-14
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import difflib
+import http.client
 import json
 import os
 import re
@@ -170,7 +171,7 @@ class GhApi:
         except urllib.error.HTTPError as exc:
             error = NotFound if exc.code == 404 else NetworkError
             raise error(f"GET {path}: HTTP {exc.code}") from None
-        except (urllib.error.URLError, TimeoutError) as exc:
+        except (OSError, http.client.HTTPException, ValueError) as exc:  # resets, bad JSON
             raise NetworkError(f"GET {path}: {clean(str(exc))}") from None
 
     def commit(self, source: str, ref: str) -> tuple[str, str]:
@@ -354,6 +355,7 @@ class Report:
     new: list[str] = field(default_factory=list)  # informational
     notes: list[str] = field(default_factory=list)
     pins: list[str] = field(default_factory=list)  # MCP pins with nothing newer to offer
+    pin_changes: int = 0  # of the changed lines, how many are MCP pins (not for --upgrade)
 
     @property
     def exit_code(self) -> int:

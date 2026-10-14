@@ -94,6 +94,18 @@ def _parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--no-hooks", action="store_true", help="ignore the Git hook path")
     check.add_argument("--no-lock", action="store_true", help="ignore uv.lock")
+    check.add_argument(
+        "--pack",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="plan as if this skill pack were added (as update --pack would)",
+    )
+    check.add_argument(
+        "--packs-only",
+        action="store_true",
+        help="plan a packs-only adoption (as update --packs-only would)",
+    )
 
     globals_parser = subparsers.add_parser(
         "globals", help="connect global Codex and Claude configuration to this standards repo"
@@ -225,7 +237,12 @@ def _check(args: argparse.Namespace) -> int:
     paths = args.paths or [Path.cwd()]
     if len(paths) == 1:
         result = update_repository(
-            paths[0], check=True, hooks=not args.no_hooks, lock=not args.no_lock
+            paths[0],
+            check=True,
+            hooks=not args.no_hooks,
+            lock=not args.no_lock,
+            packs=args.pack,
+            packs_only=args.packs_only,
         )
         _print_result(result, check=True)
         return 1 if result.needs_attention else 0
@@ -233,7 +250,12 @@ def _check(args: argparse.Namespace) -> int:
     for path in paths:
         try:
             result = update_repository(
-                path, check=True, hooks=not args.no_hooks, lock=not args.no_lock
+                path,
+                check=True,
+                hooks=not args.no_hooks,
+                lock=not args.no_lock,
+                packs=args.pack,
+                packs_only=args.packs_only,
             )
         except (OSError, ValueError) as exc:
             print(f"{path}: error")
@@ -284,8 +306,8 @@ def _upstream(root: Path) -> int:
     if report.exit_code == 0:
         pins = f" and {len(report.pins)} MCP pins" if report.pins else ""
         print(f"All {len(report.current)} vendored skills{pins} are current.")
-    elif report.changed:
-        print("Run `repo-template globals --upgrade` to review and apply them.")
+    elif len(report.changed) > report.pin_changes:
+        print("Run `repo-template globals --upgrade` to review and apply the skills.")
     return report.exit_code
 
 

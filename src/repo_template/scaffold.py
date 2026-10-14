@@ -391,6 +391,34 @@ def _carried(
     return {key: manifest[key] for key in MCP_KEYS if isinstance(manifest.get(key), dict)}
 
 
+PROFILES = ("python-uv", PACKS_ONLY)
+
+
+def preflight(root: Path, *, packs_only: bool, add_packs: Sequence[str]) -> dict[str, Any]:
+    """Every reason `update` (or `check`) can't run, checked before anything is written; the
+    manifest, read once. A packs-only manifest makes the run packs-only."""
+    root = root.resolve()
+    if not root.is_dir():
+        raise ValueError(f"repository directory does not exist: {root}")
+    manifest = _read_manifest(root)
+    profile = manifest.get("profile")
+    if manifest and profile not in PROFILES:
+        raise ValueError(
+            f"{root / MANIFEST_NAME} isn't a repo-template manifest (no known profile); "
+            f"repo-template won't overwrite it, so move it aside first"
+        )
+    if packs_only and profile == "python-uv":
+        raise ValueError(
+            f"{root / MANIFEST_NAME} has the Python/uv baseline; update it without --packs-only"
+        )
+    if packs_only and not manifest and not add_packs:
+        raise ValueError(
+            "--packs-only adopts a repository for its skill packs; name one with --pack"
+        )
+    _refuse_downgrade(root, manifest)
+    return manifest
+
+
 def update_packs_only(
     root: Path,
     *,
@@ -401,19 +429,7 @@ def update_packs_only(
     """A repository that takes only skill packs, and their MCP servers, from repo-template: its
     manifest records those and nothing else, and no baseline file is written."""
     root = root.resolve()
-    if not root.is_dir():
-        raise ValueError(f"repository directory does not exist: {root}")
-    manifest = _read_manifest(root)
-    if manifest and manifest.get("profile") != PACKS_ONLY:
-        raise ValueError(
-            f"{root / MANIFEST_NAME} has the {manifest.get('profile')} baseline; update it "
-            f"without --packs-only"
-        )
-    if not manifest and not add_packs:
-        raise ValueError(
-            "--packs-only adopts a repository for its skill packs; name one with --pack"
-        )
-    _refuse_downgrade(root, manifest)
+    manifest = preflight(root, packs_only=True, add_packs=add_packs)
     proposed: dict[str, Any] = {
         "schema": 1,
         "template_version": __version__,
@@ -442,12 +458,12 @@ def update_project(
     """`mcp` holds the pack MCP records to keep (mcp_servers, mcp_kept); None carries the
     manifest's forward."""
     root = root.resolve()
-    if not root.is_dir():
-        raise ValueError(f"repository directory does not exist: {root}")
-    manifest = _read_manifest(root)
+    manifest = preflight(root, packs_only=False, add_packs=add_packs)
     if manifest.get("profile") == PACKS_ONLY:
-        raise ValueError(f"{root / MANIFEST_NAME} takes only skill packs; no baseline to apply")
-    _refuse_downgrade(root, manifest)
+        raise ValueError(
+            f"{root / MANIFEST_NAME} takes only skill packs; to take the Python/uv baseline, "
+            f"delete it and run update"
+        )
     context = _context_from_manifest(root, manifest)
     specs = project_files(context, package=_uses_package_layout(root, context))
     baseline = {spec.relative_path: spec for spec in specs}

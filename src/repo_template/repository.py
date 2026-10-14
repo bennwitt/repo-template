@@ -26,7 +26,7 @@ from repo_template.runner import SUBPROCESS, Completed, Runner, SubprocessRunner
 from repo_template.scaffold import (
     PACKS_ONLY,
     new_project,
-    read_manifest,
+    preflight,
     skill_packs,
     update_packs_only,
     update_project,
@@ -216,7 +216,8 @@ def update_repository(
     runs follow it): no baseline file, hook path or lockfile.
     """
     _require_known_packs(packs, agents_dir)
-    manifest = read_manifest(root)
+    # every refusal before the first write (.mcp.json is written ahead of the manifest)
+    manifest = preflight(root, packs_only=packs_only, add_packs=packs)
     packs_only = packs_only or manifest.get("profile") == PACKS_ONLY
     wanted = sorted({*skill_packs(root.resolve()), *packs})
     mcp = _mcp(root.resolve(), wanted, agents_dir, manifest)

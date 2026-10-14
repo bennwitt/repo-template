@@ -108,7 +108,7 @@ def test_a_repository_on_the_baseline_isnt_adopted_packs_only(tmp_path: Path) ->
     new_project(root, name="service", description="S.", python_version="3.12")
     before = (root / ".repo-template.json").read_text()
 
-    with pytest.raises(ValueError, match="has the python-uv baseline"):
+    with pytest.raises(ValueError, match="has the Python/uv baseline"):
         update_repository(root, packs=["ts"], packs_only=True, agents_dir=agents)
     assert (root / ".repo-template.json").read_text() == before
 
@@ -150,6 +150,84 @@ def test_the_cli_adopts_then_checks_clean(
         cli, "update_repository", lambda *args, **kwargs: real(*args, agents_dir=agents, **kwargs)
     )
 
+    assert cli.main(["check", str(root), "--packs-only", "--pack", "ts"]) == 1
+    planned = capsys.readouterr().out
+    assert "+ .repo-template.json" in planned and "pyproject.toml" not in planned
     assert cli.main(["update", str(root), "--packs-only", "--pack", "ts", "--no-input"]) == 0
+    assert json.loads((root / ".repo-template.json").read_text())["profile"] == "packs-only"
+    assert not (root / "pyproject.toml").exists() and not (root / "uv.lock").exists()
+    hooks = subprocess.run(
+        ["git", "-C", str(root), "config", "core.hooksPath"], capture_output=True
+    )
+    assert hooks.returncode == 1
+    capsys.readouterr()
     assert cli.main(["check", str(root)]) == 0
     assert "Standards are current." in capsys.readouterr().out
+
+
+def _manifest(root: Path, **fields: object) -> None:
+    (root / ".repo-template.json").write_text(json.dumps(fields))
+
+
+@pytest.mark.parametrize(
+    ("setup", "message"),
+    [
+        ("baseline", "has the Python/uv baseline"),
+        ("foreign", "isn't a repo-template manifest"),
+        ("newer", "newer than this"),
+        ("missing", "does not exist"),
+    ],
+)
+def test_a_refused_adoption_writes_nothing(tmp_path: Path, setup: str, message: str) -> None:
+    agents = _catalog(tmp_path / "standards")
+    if setup == "baseline":
+        root = tmp_path / "web"
+        new_project(root, name="web", description="W.", python_version="3.12")
+    elif setup == "missing":
+        root = tmp_path / "typo"
+    else:
+        root = _web_app(tmp_path / "web")
+        if setup == "foreign":
+            _manifest(root, tool="some-other-tool", version=3)
+        else:
+            _manifest(root, schema=1, profile="packs-only", template_version="9.0.0")
+    before = _files(root) if root.exists() else None
+
+    with pytest.raises(ValueError, match=message):
+        update_repository(root, packs=["ts"], packs_only=True, agents_dir=agents)
+
+    assert (_files(root) if root.exists() else None) == before
+
+
+def test_a_foreign_manifest_is_never_overwritten_by_the_baseline(tmp_path: Path) -> None:
+    agents = _catalog(tmp_path / "standards")
+    root = _web_app(tmp_path / "web")
+    _manifest(root, tool="some-other-tool")
+
+    with pytest.raises(ValueError, match="isn't a repo-template manifest"):
+        update_repository(root, hooks=False, lock=False, agents_dir=agents)
+    assert json.loads((root / ".repo-template.json").read_text()) == {"tool": "some-other-tool"}
+    assert not (root / "pyproject.toml").exists()
+
+
+def test_packs_only_keeps_project_owned_and_kept_entries(tmp_path: Path) -> None:
+    agents = _catalog(tmp_path / "standards")
+    root = _web_app(tmp_path / "web")
+    update_repository(root, packs=["ts"], packs_only=True, agents_dir=agents)
+    project = json.loads((root / ".mcp.json").read_text())
+    project["mcpServers"]["docs"]["url"] = "https://mine.example.com/mcp"
+    (root / ".mcp.json").write_text(json.dumps(project))
+    manifest = json.loads((root / ".repo-template.json").read_text())
+    manifest["project_owned"] = [".codex/config.toml"]
+    (root / ".repo-template.json").write_text(json.dumps(manifest))
+
+    first = update_repository(root, agents_dir=agents)
+    second = update_repository(root, agents_dir=agents)
+
+    assert first.preserved == [".mcp.json mcpServers.docs (edited in this repository; kept)"]
+    assert (
+        second.preserved == []
+        and not update_repository(root, check=True, agents_dir=agents).needs_attention
+    )
+    kept = json.loads((root / ".repo-template.json").read_text())
+    assert kept["project_owned"] == [".codex/config.toml"] and "docs" in kept["mcp_kept"]
