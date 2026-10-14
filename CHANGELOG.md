@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 - 2026-10-14
+
+- MCP servers: `.agents/mcp-servers.json` defines each server once (pinned `npx`/`uvx` package or
+  URL, clients, denied tools, why). `globals` installs the global ones in Claude Code's user scope
+  (`claude mcp add-json`) and `~/.codex/config.toml`; a pack's servers go into the repository's
+  `.mcp.json` and an ignored `.codex/config.toml`. Claude Code gets `${NAME:-default}`, Codex
+  literal values. Entries are owned by name and digest (in `globals-state.json` and the manifest's
+  new `mcp_servers`): an entry changed by hand is kept, one removed on the machine stays removed.
+  A denied tool is denied in both clients. Global: `playwright` (0.0.83, isolated, headless),
+  `huggingface`, and `microsoft-learn` for Codex; the `langchain` pack gets the LangChain docs
+  and reference servers, `gradio` its docs server.
+- The `playwright` plugin is off in the portable settings (the pinned server replaces it), and
+  `mcp__*__submit_feedback` is denied.
+
 ## 0.4.3 - 2026-10-14
 
 - Pack skills move to `.agents/packs/`, outside every folder Codex reads on its own, so Codex

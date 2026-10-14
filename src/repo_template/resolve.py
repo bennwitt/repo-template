@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Protocol
 
 from repo_template.model import Conflict
-from repo_template.repository import Runner
+from repo_template.runner import Runner
 from repo_template.scaffold import accept_difference, own_file, record_baseline, write_file
 
 Options = Sequence[tuple[str, str]]

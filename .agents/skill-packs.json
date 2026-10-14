@@ -22,6 +22,10 @@
       "langgraph-typescript-quickstart",
       "langsmith-online-eval-engineering",
       "managed-deep-agents"
+    ],
+    "mcp": [
+      "docs-langchain",
+      "reference-langchain"
     ]
   },
   "agent-evals": {
@@ -35,6 +39,9 @@
     "skills": [
       "gradio",
       "hf-gradio"
+    ],
+    "mcp": [
+      "gradio-docs"
     ]
   },
   "knowledge-graph": {

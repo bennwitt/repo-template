@@ -11,7 +11,7 @@
       "mcp-apps@claude-plugins-official": false,
       "mcp-server-dev@claude-plugins-official": false,
       "microsoft-docs@claude-plugins-official": true,
-      "playwright@claude-plugins-official": true,
+      "playwright@claude-plugins-official": false,
       "pyright-lsp@claude-plugins-official": true,
       "remember@claude-plugins-official": true,
       "skill-creator@claude-plugins-official": true,
@@ -29,7 +29,8 @@
         "Read(./secrets/**)",
         "Read(./**/*.pem)",
         "Read(./**/*.key)",
-        "mcp__*__browser_run_code_unsafe"
+        "mcp__*__browser_run_code_unsafe",
+        "mcp__*__submit_feedback"
       ],
       "ask": [
         "Bash(docker *system prune*)",

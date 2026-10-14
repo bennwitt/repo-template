@@ -71,6 +71,10 @@ A named group of catalog skills, defined in `.agents/skill-packs.json` and kept 
 `.claude/skills/` for Claude Code and `.agents/skills/` for Codex), not into every machine.
 _Avoid_: skill bundle, plugin
 
+**MCP catalog**:
+`.agents/mcp-servers.json`: each MCP server once, with what it runs, its pin, its denied tools
+and why. A global server is installed on every machine; a pack server comes with a pack.
+
 **Skill sources**:
 `.agents/skill-sources.json`: each source repository's license, copyright and pinned license
 texts, the upstream commit of each vendored skill, the local skills and what they derive from,

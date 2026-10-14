@@ -4,7 +4,7 @@ import json
 import os
 import re
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -241,6 +241,7 @@ def _build_manifest(
     packs: Sequence[str] = (),
     owned: Sequence[str] = (),
     previous: dict[str, Any] | None = None,
+    mcp_servers: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
@@ -273,6 +274,8 @@ def _build_manifest(
         manifest["skill_packs"] = sorted(set(packs))
     if owned:
         manifest["project_owned"] = sorted(set(owned))
+    if mcp_servers:
+        manifest["mcp_servers"] = dict(sorted(mcp_servers.items()))
     return manifest
 
 
@@ -332,6 +335,7 @@ def new_project(
     description: str,
     python_version: str,
     packs: Sequence[str] = (),
+    mcp_servers: Mapping[str, str] | None = None,
 ) -> Result:
     target = target.resolve()
     if target.exists() and any(target.iterdir()):
@@ -343,7 +347,7 @@ def new_project(
     result = Result(target)
     for spec in specs:
         _apply_file(target, spec, {}, result, check=False, baseline={})
-    _write_manifest(target, _build_manifest(target, context, specs, packs))
+    _write_manifest(target, _build_manifest(target, context, specs, packs, mcp_servers=mcp_servers))
     result.created.append(MANIFEST_NAME)
     return result
 
@@ -354,7 +358,19 @@ def _uses_package_layout(root: Path, context: ProjectContext) -> bool:
     return not src.is_dir() or (src / context.package_name).is_dir()
 
 
-def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] = ()) -> Result:
+def read_manifest(root: Path) -> dict[str, Any]:
+    """The repository's .repo-template.json, or {} when it has none."""
+    return _read_manifest(root.resolve())
+
+
+def update_project(
+    root: Path,
+    *,
+    check: bool = False,
+    add_packs: Sequence[str] = (),
+    mcp_servers: Mapping[str, str] | None = None,
+) -> Result:
+    """`mcp_servers` is the pack MCP record to keep; None carries the manifest's forward."""
     root = root.resolve()
     if not root.is_dir():
         raise ValueError(f"repository directory does not exist: {root}")
@@ -368,7 +384,10 @@ def update_project(root: Path, *, check: bool = False, add_packs: Sequence[str] 
         _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
     packs = [*skill_packs(root), *add_packs]
     owned = sorted(_project_owned(manifest))
-    proposed = _build_manifest(root, context, specs, packs, owned, manifest)
+    if mcp_servers is None:
+        recorded = manifest.get("mcp_servers")
+        mcp_servers = recorded if isinstance(recorded, dict) else {}
+    proposed = _build_manifest(root, context, specs, packs, owned, manifest, mcp_servers)
     if proposed == manifest:
         result.unchanged.append(MANIFEST_NAME)
         return result

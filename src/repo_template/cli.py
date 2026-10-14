@@ -143,6 +143,10 @@ def _print_result(result: Result, *, check: bool = False, preserved: bool = True
         print(f"Preserved for manual review ({len(result.preserved)}):")
         for path in result.preserved:
             print(f"  ! {path}")
+    if result.notes:
+        print(f"Notes ({len(result.notes)}):")
+        for note in result.notes:
+            print(f"  · {note}")
     if result.errors:
         print(f"Errors ({len(result.errors)}):", file=sys.stderr)
         for error in result.errors:

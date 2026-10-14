@@ -582,6 +582,7 @@ def integrity(
                 f"'allowCommands' in {SOURCES_NAME}",
             )
 
+    _check_mcp(root, problems)
     for leftover in sorted(root.glob(f"{STAGE_PREFIX}*")):
         problems.add(
             None,
@@ -630,6 +631,33 @@ def integrity(
                 f"vendor it again, or make the change an override",
             )
     return problems.errors, problems.skills
+
+
+def _check_mcp(root: Path, problems: _Problems) -> None:
+    """The MCP catalog loads, packs use only pack servers, and every server's denied tools are
+    denied for Claude Code too (Codex gets them as disabled_tools)."""
+    from repo_template.mcp import deny_rules, load_mcp_servers, pack_servers
+
+    try:
+        servers = load_mcp_servers(root / ".agents")
+        pack_servers(root / ".agents", servers)
+    except ValueError as exc:
+        problems.add(None, str(exc))
+        return
+    settings = root / ".agents/claude-settings.json"
+    try:
+        portable = (
+            json.loads(settings.read_text()).get("portable", {}) if settings.is_file() else {}
+        )
+    except json.JSONDecodeError:
+        return  # the settings merge reports it
+    denied = set(portable.get("permissions", {}).get("deny", []))
+    for rule in sorted(deny_rules(servers) - denied):
+        problems.add(
+            None,
+            f"{rule}: an MCP server denies this tool; add the rule to portable permissions.deny "
+            f"in .agents/claude-settings.json so Claude Code denies it too",
+        )
 
 
 def check_integrity(root: Path, names: list[str]) -> list[str]:
@@ -702,7 +730,40 @@ def render_catalog(root: Path, names: list[str], packs: dict[str, list[str]]) ->
         lines.append(
             f"| `{name}` | {_where(name, packs)} | {link} | {license_id} | {'; '.join(notes)} |"
         )
-    return "\n".join(lines)
+    return "\n".join(lines + _mcp_rows(root))
+
+
+def _mcp_rows(root: Path) -> list[str]:
+    """The MCP servers table: where each runs, for which clients, what it runs, what's denied."""
+    from repo_template.mcp import load_mcp_servers, pack_servers
+
+    servers = load_mcp_servers(root / ".agents")
+    if not servers:
+        return []
+    users: dict[str, list[str]] = {}
+    for pack, refs in pack_servers(root / ".agents", servers).items():
+        for name, _ in refs:
+            users.setdefault(name, []).append(pack)
+    rows = [
+        "",
+        "| MCP server | Where | Clients | Runs | Denied tools | Why |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for name, server in sorted(servers.items()):
+        if server.scope == "global":
+            where = "global"
+        else:
+            where = ", ".join(f"pack `{pack}`" for pack in sorted(users.get(name, []))) or "unused"
+        if server.url:
+            runs = server.url
+        elif server.pin:
+            runs = f"`{server.command} {server.pin.package}@{server.pin.version}`"
+        else:
+            runs = f"`{server.command}`"
+        denied = ", ".join(f"`{tool}`" for tool in server.deny)
+        clients = ", ".join(sorted(server.clients))
+        rows.append(f"| `{name}` | {where} | {clients} | {runs} | {denied} | {_cell(server.why)} |")
+    return rows
 
 
 def _license_text(path: Path, heading: str) -> list[str]:

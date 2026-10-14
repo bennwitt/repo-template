@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "servers": {
+    "docs-langchain": {
+      "scope": "pack",
+      "url": "https://docs.langchain.com/mcp",
+      "deny": [
+        "submit_feedback"
+      ],
+      "source": "https://docs.langchain.com/use-these-docs",
+      "why": "Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers."
+    },
+    "gradio-docs": {
+      "scope": "pack",
+      "url": "https://gradio-docs-mcp.hf.space/gradio_api/mcp/",
+      "source": "https://huggingface.co/spaces/gradio/docs-mcp",
+      "why": "Searches and loads the Gradio docs for the gradio pack."
+    },
+    "huggingface": {
+      "scope": "global",
+      "url": "https://huggingface.co/mcp",
+      "codex": {
+        "enabled_tools": [
+          "hub_repo_search",
+          "hub_repo_details",
+          "hf_fs"
+        ]
+      },
+      "source": "https://huggingface.co/settings/mcp",
+      "why": "Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only)."
+    },
+    "microsoft-learn": {
+      "scope": "global",
+      "clients": [
+        "codex"
+      ],
+      "url": "https://learn.microsoft.com/api/mcp",
+      "source": "https://learn.microsoft.com/training/support/mcp",
+      "why": "Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin."
+    },
+    "playwright": {
+      "scope": "global",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.83",
+        "--isolated",
+        "--headless",
+        "--no-webmcp",
+        "--output-dir",
+        "{cache}/playwright-mcp"
+      ],
+      "pin": {
+        "registry": "npm",
+        "package": "@playwright/mcp",
+        "version": "0.0.83",
+        "publishedAt": "2026-09-28T23:19:13Z"
+      },
+      "deny": [
+        "browser_run_code_unsafe"
+      ],
+      "codex": {
+        "startup_timeout_sec": 30
+      },
+      "source": "https://github.com/microsoft/playwright-mcp",
+      "why": "Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile."
+    },
+    "reference-langchain": {
+      "scope": "pack",
+      "url": "https://reference.langchain.com/mcp",
+      "source": "https://docs.langchain.com/use-these-docs",
+      "why": "Looks up LangChain API symbols and their signatures."
+    }
+  }
+}

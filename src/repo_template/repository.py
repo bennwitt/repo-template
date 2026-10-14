@@ -5,48 +5,29 @@
 
 from __future__ import annotations
 
-import shutil
-import subprocess
 from collections.abc import Sequence
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Any
 
+from repo_template.mcp import for_packs, load_mcp_servers, pack_servers
+from repo_template.mcp_project import McpPlan, apply_project_mcp, plan_project_mcp, recorded_mcp
 from repo_template.model import Result
-from repo_template.scaffold import new_project, skill_packs, update_project
-from repo_template.standards import sync_project_packs, unknown_packs
+from repo_template.runner import SUBPROCESS, Completed, Runner, SubprocessRunner
+from repo_template.scaffold import new_project, read_manifest, skill_packs, update_project
+from repo_template.standards import load_skill_packs, sync_project_packs, unknown_packs
 
 AGENTS_DIR = Path.home() / ".agents"
 HOOKS_PATH = ".githooks"
 HOOKS_LABEL = f"git config core.hooksPath {HOOKS_PATH}"
 LOCK_NAME = "uv.lock"
-
-
-@dataclass(frozen=True)
-class Completed:
-    code: int
-    out: str = ""
-    err: str = ""
-
-
-class Runner(Protocol):
-    """Runs Git and uv. Production uses subprocesses; tests substitute a recording fake."""
-
-    def which(self, program: str) -> bool: ...
-
-    def run(self, args: Sequence[str], cwd: Path) -> Completed: ...
-
-
-class SubprocessRunner:
-    def which(self, program: str) -> bool:
-        return shutil.which(program) is not None
-
-    def run(self, args: Sequence[str], cwd: Path) -> Completed:
-        process = subprocess.run(list(args), cwd=cwd, check=False, text=True, capture_output=True)
-        return Completed(process.returncode, process.stdout, process.stderr)
-
-
-SUBPROCESS = SubprocessRunner()
+__all__ = [
+    "SUBPROCESS",
+    "Completed",
+    "Runner",
+    "SubprocessRunner",
+    "create_repository",
+    "update_repository",
+]
 
 
 def _reconcile_hooks(root: Path, result: Result, runner: Runner, *, check: bool) -> None:
@@ -99,6 +80,31 @@ def _require_known_packs(packs: Sequence[str], agents_dir: Path) -> None:
         )
 
 
+def _mcp_plan(
+    root: Path, packs: Sequence[str], agents_dir: Path, manifest: dict[str, Any]
+) -> McpPlan | None:
+    """The pack MCP servers' plan; None for a repository with no packs and no recorded servers,
+    which needs no MCP catalog (CI has no ~/.agents)."""
+    recorded = recorded_mcp(manifest)
+    if not packs and not recorded:
+        return None
+    servers = load_mcp_servers(agents_dir)
+    definitions = load_skill_packs(agents_dir)
+    known = [pack for pack in packs if pack in definitions]
+    wanted = for_packs(known, servers, pack_servers(agents_dir, servers))
+    owned = manifest.get("project_owned", [])
+    return plan_project_mcp(
+        root,
+        wanted,
+        recorded,
+        owned={item for item in owned if isinstance(item, str)}
+        if isinstance(owned, list)
+        else set(),
+        removals=len(known) == len(packs),
+        cache=str(Path.home() / ".cache/repo-template"),
+    )
+
+
 def create_repository(
     target: Path,
     *,
@@ -113,9 +119,17 @@ def create_repository(
 ) -> Result:
     """Render the baseline into an empty directory, then initialize Git and the lockfile."""
     _require_known_packs(packs, agents_dir)
+    plan = _mcp_plan(target.resolve(), list(packs), agents_dir, {})
     result = new_project(
-        target, name=name, description=description, python_version=python_version, packs=packs
+        target,
+        name=name,
+        description=description,
+        python_version=python_version,
+        packs=packs,
+        mcp_servers=plan.record if plan else None,
     )
+    if plan:
+        apply_project_mcp(result.root, plan, result, check=False)
     sync_project_packs(result.root, packs, result, check=False, agents_dir=agents_dir)
     if git:
         if not runner.which("git"):
@@ -146,8 +160,13 @@ def update_repository(
     `packs` adds skill packs to the repository's manifest; every listed pack is then linked.
     """
     _require_known_packs(packs, agents_dir)
-    result = update_project(root, check=check, add_packs=packs)
-    wanted = sorted({*skill_packs(result.root), *packs})
+    wanted = sorted({*skill_packs(root.resolve()), *packs})
+    plan = _mcp_plan(root.resolve(), wanted, agents_dir, read_manifest(root))
+    result = update_project(
+        root, check=check, add_packs=packs, mcp_servers=plan.record if plan else None
+    )
+    if plan:
+        apply_project_mcp(result.root, plan, result, check=check)
     sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
     if hooks:
         _reconcile_hooks(result.root, result, runner, check=check)
