@@ -4,9 +4,17 @@ import json
 from pathlib import Path
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from repo_template.model import Result
-from repo_template.skillfile import read_fields, set_field
+from repo_template.skillfile import (
+    field_count,
+    field_lines,
+    read_fields,
+    restore_field,
+    set_field,
+)
 from repo_template.standards import apply_skill_overrides, sync_globals
 
 SKILL = """---
@@ -88,6 +96,55 @@ def test_malformed_overrides_are_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="frontmatter"):
         apply_skill_overrides(standards, Result(standards), check=True)
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [{"description": "a --- b"}, {"bad key": "x"}, {"description: x\nhooks": "x"}],
+)
+def test_overrides_that_would_break_the_frontmatter_are_rejected(
+    tmp_path: Path, fields: dict[str, str]
+) -> None:
+    """Claude Code ends the frontmatter at the first "---", even inside a quoted value."""
+    standards = _standards(tmp_path / "standards", {"rag": {"frontmatter": fields}})
+
+    with pytest.raises(ValueError, match="can't set"):
+        apply_skill_overrides(standards, Result(standards), check=True)
+
+
+lines = st.lists(
+    st.tuples(
+        st.text(alphabet="ab: \t\u2028\x0c\x85", max_size=6),
+        st.sampled_from(["\n", "\r\n", "\r"]),
+    ),
+    max_size=5,
+).map(lambda pairs: "".join(text + end for text, end in pairs))
+
+
+@given(
+    before=lines,
+    value=st.text(max_size=20),
+    after=lines,
+    body=lines,
+    ending=st.sampled_from(["\n", "\r\n"]),
+)
+def test_a_field_set_then_restored_gives_back_the_file(
+    before: str, value: str, after: str, body: str, ending: str
+) -> None:
+    """The override round trip: whatever the layout, putting the recorded field back restores
+    the file byte for byte, and setting it again is stable."""
+    text = f"---{ending}name: s{ending}{before}description: old{ending}{after}---{ending}{body}"
+    try:
+        raw = field_lines(text, "description")
+    except ValueError:
+        return  # not a frontmatter skillfile can find (a stray "---" line)
+    if field_count(text, "description") != 1:
+        return
+    changed = set_field(text, "description", value)
+
+    assert read_fields(changed)["description"] == value
+    assert restore_field(changed, "description", raw) == text
+    assert set_field(changed, "description", value) == changed
 
 
 def test_set_field_handles_windows_line_endings() -> None:

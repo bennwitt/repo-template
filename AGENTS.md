@@ -29,6 +29,10 @@ project-owned files.
 - Keep project-specific instructions in generated `AGENTS.md`; keep reusable workflows in global skills.
 - Never copy Claude credentials, history, caches, or machine state into this repository.
 - Add tests for any change to rendering, update conflict handling, or symlink behavior.
+- Every skill is recorded and licensed: vendored ones in the lock (and byte-identical to it,
+  except the frontmatter fields an override changes), local ones in
+  `.agents/skill-sources.json`. Run `repo-template globals` after catalog changes; it records
+  overrides and, once the catalog is clean, regenerates the README catalog and notices.
 
 ## Safety invariants
 

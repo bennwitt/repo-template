@@ -69,9 +69,22 @@ A named group of catalog skills, defined in `.agents/skill-packs.json`, that are
 repositories whose manifest lists the pack, not into every machine.
 _Avoid_: skill bundle, plugin
 
+**Skill sources**:
+`.agents/skill-sources.json`: each source repository's license, copyright and pinned license
+texts, the upstream commit of each vendored skill, the local skills and what they derive from,
+skills deliberately not vendored, and skills allowed to run commands when they load. With the
+lock, it is the catalog's provenance.
+
+**Catalog integrity**:
+Every vendored skill hashes to its lock entry, with nothing untracked in it (an override may
+change only its own frontmatter fields, to exactly what it writes), and every skill is recorded
+and licensed. `globals --check` and the tests verify it offline; a skill that fails isn't
+linked.
+
 **Skill override**:
-A frontmatter edit to a vendored skill, kept in `.agents/skill-overrides.json` and re-applied by
-`globals` after `npx skills update` replaces the skill.
+A frontmatter edit to a vendored skill, kept in `.agents/skill-overrides.json` with the upstream
+text of each field it replaces and the upstream SKILL.md's blob SHA, marked in the SKILL.md, and
+re-applied by `globals` after the skill is vendored again.
 
 **Skill mirror**:
 `.claude/skills/` in the standards repository: one relative link per catalog skill.

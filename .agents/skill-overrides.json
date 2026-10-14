@@ -3,42 +3,70 @@
     "why": "Upstream triggers on any \"how do I do X\" question; fire only on explicit requests for a skill.",
     "frontmatter": {
       "description": "Discover and install agent skills from the open skills ecosystem (npx skills, skills.sh). Use when the user explicitly asks to find, search for, compare, or install a skill, or asks whether a skill exists for a task. Not for answering ordinary how-to questions."
+    },
+    "upstream": "a41bdd074bb587afd861332cf2f473f3154de4d7",
+    "base": {
+      "description": "description: Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.\n"
     }
   },
   "github-actions-hardening": {
     "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the catalog of topics.",
     "frontmatter": {
-      "description": "Security review and hardening of GitHub Actions workflows (.github/workflows/*.yml): script injection through ${{ }} expressions, pull_request_target and workflow_run privilege escalation, SHA-pinning actions, least-privilege GITHUB_TOKEN permissions, and secret exposure. Use when writing a workflow, or when asked to review, audit, harden, or pin a workflow or its actions."
+      "description": "Security review and hardening of GitHub Actions workflows: script injection through ${{ }}, pull_request_target and workflow_run privilege escalation, SHA-pinned actions, least-privilege GITHUB_TOKEN permissions, secret exposure. Use when writing, reviewing, auditing or pinning a workflow."
+    },
+    "upstream": "61fa956e0ca6a0958ff6713b7b94ed22ecdc2e7e",
+    "base": {
+      "description": "description: Security hardening reviewer for GitHub Actions workflow files (.github/workflows/*.yml). Reasons about the Actions threat model that pattern matchers and general code linters miss — untrusted-input script injection, privileged triggers running fork code, mutable action references, and over-scoped tokens. Use this skill when asked to review, audit, harden, or secure a GitHub Actions workflow, when writing a new workflow, or for any request like \"is this workflow safe?\", \"review my CI for security issues\", \"why is pull_request_target dangerous here?\", \"pin my actions\", or \"lock down GITHUB_TOKEN permissions\". Covers script injection via ${{ }} interpolation, pull_request_target / workflow_run privilege escalation, SHA-pinning of third-party actions, least-privilege permissions, GITHUB_ENV/GITHUB_OUTPUT injection, secret exposure, OIDC over long-lived credentials, and self-hosted runner exposure on public repositories.\n"
     }
   },
   "langchain-dependencies": {
     "why": "Upstream triggers on \"setting up a new project\" of any kind.",
     "frontmatter": {
       "description": "INVOKE THIS SKILL when installing, upgrading, or choosing versions of LangChain, LangGraph, LangSmith, or Deep Agents packages, in Python or TypeScript. Covers required packages, minimum versions, environment requirements, versioning practices, and common community tool packages. Not for setting up projects that don't use LangChain."
+    },
+    "upstream": "ec9e0d6cd8bef087996390820201a78f2d3f6151",
+    "base": {
+      "description": "description: \"INVOKE THIS SKILL when setting up a new project or when asked about package versions, installation, or dependency management for LangChain, LangGraph, LangSmith, or Deep Agents. Covers required packages, minimum versions, environment requirements, versioning best practices, and common community tool packages for both Python and TypeScript.\"\n"
     }
   },
   "langchain-fundamentals": {
     "why": "Upstream description says what it covers but never when to use it.",
     "frontmatter": {
       "description": "Create LangChain agents with create_agent, define tools, and use middleware for human-in-the-loop and error handling. Use when writing or debugging LangChain agent code in Python or TypeScript."
+    },
+    "upstream": "ab44392344fa0d7114f2a6de589aafe5b80d3918",
+    "base": {
+      "description": "description: Create LangChain agents with create_agent, define tools, and use middleware for human-in-the-loop and error handling.\n"
     }
   },
   "langchain-middleware": {
     "why": "Upstream triggers on any human-in-the-loop or structured-output work, LangChain or not.",
     "frontmatter": {
       "description": "INVOKE THIS SKILL when writing LangChain agent middleware: HumanInTheLoopMiddleware approval for dangerous tool calls, custom middleware hooks, Command resume patterns, or structured output with Pydantic/Zod in a LangChain agent. Not for other frameworks or the Claude API's own structured output."
+    },
+    "upstream": "1760245dc34354d0475cd3a434f759370d395068",
+    "base": {
+      "description": "description: \"INVOKE THIS SKILL when you need human-in-the-loop approval, custom middleware, or structured output. Covers HumanInTheLoopMiddleware for human approval of dangerous tool calls, creating custom middleware with hooks, Command resume patterns, and structured output with Pydantic/Zod.\"\n"
     }
   },
   "langchain-rag": {
     "why": "Upstream triggers on building ANY RAG system, whatever the framework.",
     "frontmatter": {
       "description": "INVOKE THIS SKILL when building a retrieval-augmented generation (RAG) system with LangChain. Covers LangChain document loaders, RecursiveCharacterTextSplitter, embeddings, and vector stores (Chroma, FAISS, Pinecone). Not for RAG built without LangChain."
+    },
+    "upstream": "1ca5cf6660726785eab15d2808524653d08ff0fe",
+    "base": {
+      "description": "description: \"INVOKE THIS SKILL when building ANY retrieval-augmented generation (RAG) system. Covers document loaders, RecursiveCharacterTextSplitter, embeddings (OpenAI), and vector stores (Chroma, FAISS, Pinecone).\"\n"
     }
   },
   "property-based-testing": {
     "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the long list of cases.",
     "frontmatter": {
-      "description": "Write, review, and debug property-based tests (Hypothesis, fast-check, proptest, jqwik, rapid). Use when tests should cover a whole input domain rather than hand-picked examples: round-trips such as encode/decode, parsers and normalizers, idempotent operations, invariants, and ordering, or when judging a shrunk counterexample. Not for coverage-guided fuzzing, mutation testing, or end-to-end tests."
+      "description": "Write, review and debug property-based tests (Hypothesis, fast-check, proptest, jqwik, rapid): round-trips, parsers and normalizers, idempotence, invariants, ordering, and shrunk counterexamples. Use when tests should cover a whole input domain. Not for fuzzing, mutation or end-to-end tests."
+    },
+    "upstream": "1cc39d8d8cba5955bf9c8d7c9a2aef348722a55e",
+    "base": {
+      "description": "description: \"Writes, reviews, and debugs property-based tests — Hypothesis, fast-check, proptest, jqwik, rapid, and Echidna or Medusa for Solidity invariants. Use whenever tests should cover a whole input domain instead of a hand-picked list of examples: encode/decode and serialize/deserialize pairs, parsers, canonicalizers and normalizers, validators, numeric and Decimal types, comparators and sort order, data structures, and smart-contract state invariants. Also use when adding cases to an existing @given, fast-check, or proptest suite, when judging whether existing property tests assert anything real, and when a generator has shrunk a counterexample and you need to tell a wrong property from a genuine bug. Not for coverage-guided binary fuzzing (libFuzzer, AFL), mutation-testing campaigns, static analysis, benchmarking, or end-to-end UI tests.\"\n"
     }
   }
 }

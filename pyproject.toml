@@ -3,6 +3,8 @@ name = "repo-template"
 version = "0.4.2"
 description = "Create and safely update opinionated Python repositories and shared AI development standards."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = []
 
@@ -19,6 +21,7 @@ dev = [
     "pytest>=8.4",
     "ruff>=0.13",
     "pytest-cov>=7.0",
+    "hypothesis==6.168.3",
 ]
 
 [tool.pytest.ini_options]

@@ -65,9 +65,7 @@ def load_config(path: Path) -> list[dict[str, Any]]:
         preserve_order = query.get("preserve_order", False)
         if not isinstance(name, str) or not name or name in names:
             raise SnapshotError("query names must be unique non-empty strings")
-        if not isinstance(sql, str) or not sql.lstrip().lower().startswith(
-            ("select ", "with ")
-        ):
+        if not isinstance(sql, str) or not sql.lstrip().lower().startswith(("select ", "with ")):
             raise SnapshotError(f"query {name} must be a SELECT or WITH statement")
         if ";" in sql.rstrip().rstrip(";"):
             raise SnapshotError(f"query {name} must contain one statement")
@@ -97,9 +95,7 @@ def json_value(value: Any) -> Any:
     return value
 
 
-def canonical_rows(
-    cursor: sqlite3.Cursor, preserve_order: bool = False
-) -> list[dict[str, Any]]:
+def canonical_rows(cursor: sqlite3.Cursor, preserve_order: bool = False) -> list[dict[str, Any]]:
     columns = [item[0] for item in cursor.description or []]
     if len(columns) != len(set(columns)):
         raise SnapshotError("query result contains duplicate column names")
@@ -109,9 +105,7 @@ def canonical_rows(
     ]
     if preserve_order:
         return rows
-    return sorted(
-        rows, key=lambda row: json.dumps(row, sort_keys=True, separators=(",", ":"))
-    )
+    return sorted(rows, key=lambda row: json.dumps(row, sort_keys=True, separators=(",", ":")))
 
 
 def capture(database: Path, config: Path) -> dict[str, Any]:

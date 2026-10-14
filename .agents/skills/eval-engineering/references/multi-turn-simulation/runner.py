@@ -92,10 +92,7 @@ def validate_user_turn(value: object) -> UserTurn:
     if value.stop:
         if value.message is not None:
             raise SimulatorProtocolError("a stop decision must not contain a message")
-    elif (
-        not isinstance(value.message, str)
-        or not 1 <= len(value.message.strip()) <= 2_000
-    ):
+    elif not isinstance(value.message, str) or not 1 <= len(value.message.strip()) <= 2_000:
         raise SimulatorProtocolError("simulator message is invalid")
     return value
 
@@ -121,16 +118,13 @@ async def run_scripted_conversation(
     for index, raw_message in enumerate((first_message, *followups)):
         message = _message(raw_message, "user")
         turns.append(
-            Turn(
-                "user",
-                message,
-                "instruction" if index == 0 else "scripted",
-                timestamp=_timestamp(),
-            )
+            Turn("user", message, "instruction" if index == 0 else "scripted", timestamp=_timestamp())
         )
         reply = _message(await session.send(message), "assistant")
         turns.append(Turn("assistant", reply, "harness", timestamp=_timestamp()))
-    return ConversationResult(tuple(turns), "script_finished", len(followups) + 1, 0)
+    return ConversationResult(
+        tuple(turns), "script_finished", len(followups) + 1, 0
+    )
 
 
 async def run_llm_user_conversation(
@@ -150,9 +144,7 @@ async def run_llm_user_conversation(
 
     for harness_calls in range(1, max_turns + 1):
         assistant_message = _message(await session.send(user_message), "assistant")
-        turns.append(
-            Turn("assistant", assistant_message, "harness", timestamp=_timestamp())
-        )
+        turns.append(Turn("assistant", assistant_message, "harness", timestamp=_timestamp()))
 
         simulator_calls += 1
         try:

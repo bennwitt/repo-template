@@ -1,6 +1,7 @@
 ---
 name: langchain-dependencies
 description: "INVOKE THIS SKILL when installing, upgrading, or choosing versions of LangChain, LangGraph, LangSmith, or Deep Agents packages, in Python or TypeScript. Covers required packages, minimum versions, environment requirements, versioning practices, and common community tool packages. Not for setting up projects that don't use LangChain."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/langchain-dependencies (MIT).
 ---
 
 <overview>

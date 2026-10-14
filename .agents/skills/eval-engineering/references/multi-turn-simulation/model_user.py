@@ -41,10 +41,7 @@ class ModelUser:
     ) -> None:
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
-        if (
-            not isinstance(contract, str)
-            or not 1 <= len(contract.strip()) <= MAX_CONTEXT_CHARS
-        ):
+        if not isinstance(contract, str) or not 1 <= len(contract.strip()) <= MAX_CONTEXT_CHARS:
             raise ValueError("contract is invalid")
         self.contract = contract
         self._call_model = call_model

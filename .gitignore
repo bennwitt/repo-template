@@ -42,8 +42,16 @@ CLAUDE.local.md
 !/.agents/skill-packs.json
 !/.agents/skill-overrides.json
 !/.agents/claude-settings.json
+!/.agents/skill-sources.json
+!/.agents/licenses/
+!/.agents/licenses/**
 !/.agents/skills/
 !/.agents/skills/**
+# Caches a skill's scripts leave behind when they run in place (the links point here).
+/.agents/skills/**/__pycache__/
+/.agents/skills/**/*.py[cod]
+/.agents/skills/**/.DS_Store
+/.agents/skills/**/.ruff_cache/
 !/.agents/hooks/
 !/.agents/hooks/**
 /.agents/hooks/__pycache__/

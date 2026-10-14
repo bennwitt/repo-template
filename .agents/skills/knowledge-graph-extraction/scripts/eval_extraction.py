@@ -1,3 +1,5 @@
+# Adapted in part from anthropics/claude-cookbooks (capabilities/knowledge_graph at
+# ef99c70e2e6d), Copyright (c) 2023 Anthropic, MIT License; see ../LICENSE.txt.
 """Extraction quality against a gold set -- honest version.
 
     ceiling      fraction of gold facts that even appear in the source. Read it
@@ -131,7 +133,8 @@ def cmd_score(a) -> None:
         c = ceiling(gold, load_documents(a.corpus), aliases)
         print(f"\nCEILING  entity recall <= {c['entity_recall_ceiling']:.2f}   relation recall <= {c['relation_recall_ceiling']:.2f}")
         for t, v in c["per_document"].items():
-            print(f"  {t:<28} {v if isinstance(v, str) else f'entities {v['entities']}  relations {v['relations']}  absent: {v['absent']}'}")
+            shown = v if isinstance(v, str) else f"entities {v['entities']}  relations {v['relations']}  absent: {v['absent']}"
+            print(f"  {t:<28} {shown}")
     variants = a.compare or sorted(p.name for p in a.runs_dir.iterdir() if p.is_dir())
     results = {}
     for v in variants:

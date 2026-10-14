@@ -1,6 +1,7 @@
 ---
 name: langchain-middleware
 description: "INVOKE THIS SKILL when writing LangChain agent middleware: HumanInTheLoopMiddleware approval for dangerous tool calls, custom middleware hooks, Command resume patterns, or structured output with Pydantic/Zod in a LangChain agent. Not for other frameworks or the Claude API's own structured output."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/langchain-middleware (MIT).
 ---
 
 <overview>

@@ -1,6 +1,7 @@
 ---
 name: langchain-fundamentals
 description: "Create LangChain agents with create_agent, define tools, and use middleware for human-in-the-loop and error handling. Use when writing or debugging LangChain agent code in Python or TypeScript."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/langchain-fundamentals (MIT).
 ---
 
 <oneliner>

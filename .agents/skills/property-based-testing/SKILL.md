@@ -1,7 +1,8 @@
 ---
 name: property-based-testing
 effort: low
-description: "Write, review, and debug property-based tests (Hypothesis, fast-check, proptest, jqwik, rapid). Use when tests should cover a whole input domain rather than hand-picked examples: round-trips such as encode/decode, parsers and normalizers, idempotent operations, invariants, and ordering, or when judging a shrunk counterexample. Not for coverage-guided fuzzing, mutation testing, or end-to-end tests."
+description: "Write, review and debug property-based tests (Hypothesis, fast-check, proptest, jqwik, rapid): round-trips, parsers and normalizers, idempotence, invariants, ordering, and shrunk counterexamples. Use when tests should cover a whole input domain. Not for fuzzing, mutation or end-to-end tests."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/trailofbits/skills/tree/123037ec8aed26f0d86327cc39137ee5043e5deb/plugins/property-based-testing/skills/property-based-testing (CC-BY-SA-4.0).
 ---
 
 # Property-Based Testing

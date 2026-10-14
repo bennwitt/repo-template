@@ -1,6 +1,7 @@
 ---
 name: langchain-rag
 description: "INVOKE THIS SKILL when building a retrieval-augmented generation (RAG) system with LangChain. Covers LangChain document loaders, RecursiveCharacterTextSplitter, embeddings, and vector stores (Chroma, FAISS, Pinecone). Not for RAG built without LangChain."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/langchain-ai/langchain-skills/tree/6c63acc130304741ce2a52e497ab58a7072f54c0/config/skills/langchain-rag (MIT).
 ---
 
 <overview>

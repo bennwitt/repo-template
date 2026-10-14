@@ -1,6 +1,7 @@
 ---
 name: github-actions-hardening
-description: "Security review and hardening of GitHub Actions workflows (.github/workflows/*.yml): script injection through ${{ }} expressions, pull_request_target and workflow_run privilege escalation, SHA-pinning actions, least-privilege GITHUB_TOKEN permissions, and secret exposure. Use when writing a workflow, or when asked to review, audit, harden, or pin a workflow or its actions."
+description: "Security review and hardening of GitHub Actions workflows: script injection through ${{ }}, pull_request_target and workflow_run privilege escalation, SHA-pinned actions, least-privilege GITHUB_TOKEN permissions, secret exposure. Use when writing, reviewing, auditing or pinning a workflow."
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/github/awesome-copilot/tree/df566343b3a685e821f8ebe8ea70a2a8eb8b857b/skills/github-actions-hardening (MIT).
 ---
 
 # GitHub Actions Hardening
