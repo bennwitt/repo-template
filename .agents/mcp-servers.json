@@ -28,7 +28,10 @@
         "tool_timeout_sec": 120
       },
       "source": "https://github.com/microsoft/mcp/tree/main/servers/Azure.Mcp.Server",
-      "why": "Read-only Azure tools (resources, monitor, deploy plans, pricing, Foundry agents and evaluations) through az login; each pack picks its namespaces. No Key Vault. The first start downloads about 62 MB."
+      "why": "Read-only Azure tools through az login; each pack picks its namespaces (no Key Vault). App Service settings, which can hold connection strings, are returned only after a consent prompt. The foundry and arm namespaces proxy Microsoft's hosted servers, so which of their tools count as read-only comes from those services at run time, and foundryextensions can call deployed models, which spends tokens. The first start downloads about 62 MB.",
+      "packArgs": [
+        "--namespace"
+      ]
     },
     "docs-langchain": {
       "scope": "pack",

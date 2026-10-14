@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pytest
 
 
@@ -14,14 +16,8 @@ def _no_machine_config_dirs(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(autouse=True)
 def _no_git_context(monkeypatch: pytest.MonkeyPatch) -> None:
     """Run from a pre-commit hook (in a worktree above all), Git sets GIT_DIR and
-    GIT_INDEX_FILE; a test's `git -C <tmp> ...` would then commit to this repository."""
-    for name in (
-        "GIT_DIR",
-        "GIT_INDEX_FILE",
-        "GIT_WORK_TREE",
-        "GIT_PREFIX",
-        "GIT_COMMON_DIR",
-        "GIT_OBJECT_DIRECTORY",
-        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-    ):
-        monkeypatch.delenv(name, raising=False)
+    GIT_INDEX_FILE, and `git -c` sets GIT_CONFIG_PARAMETERS; a test's `git -C <tmp> ...` would
+    then write to this repository, or see its settings. Tests run with no GIT_* variable."""
+    for name in list(os.environ):
+        if name.startswith("GIT_") and name != "GIT_EDITOR":
+            monkeypatch.delenv(name, raising=False)

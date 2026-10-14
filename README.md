@@ -622,7 +622,7 @@ itself.
 
 | MCP server | Where | Clients | Runs | Denied tools | Why |
 | --- | --- | --- | --- | --- | --- |
-| `azure` | pack `azure`, pack `foundry` | claude, codex | `uvx msmcp-azure@3.0.0` |  | Read-only Azure tools (resources, monitor, deploy plans, pricing, Foundry agents and evaluations) through az login; each pack picks its namespaces. No Key Vault. The first start downloads about 62 MB. |
+| `azure` | pack `azure`, pack `foundry` | claude, codex | `uvx msmcp-azure@3.0.0` |  | Read-only Azure tools through az login; each pack picks its namespaces (no Key Vault). App Service settings, which can hold connection strings, are returned only after a consent prompt. The foundry and arm namespaces proxy Microsoft's hosted servers, so which of their tools count as read-only comes from those services at run time, and foundryextensions can call deployed models, which spends tokens. The first start downloads about 62 MB. |
 | `docs-langchain` | pack `langchain`, pack `react` | claude, codex | https://docs.langchain.com/mcp | `submit_feedback` | Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers. |
 | `gradio-docs` | pack `gradio` | claude, codex | https://gradio-docs-mcp.hf.space/gradio_api/mcp/ |  | Searches and loads the Gradio docs for the gradio pack. |
 | `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |

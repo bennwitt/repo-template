@@ -1841,6 +1841,18 @@ def _list_in_pack(root: Path, *, move: bool = True) -> None:
     _git(root, "commit", "-qm", "pack")
 
 
+def test_only_a_truly_empty_git_file_is_let_through(tmp_path: Path) -> None:
+    """The exemption keys on the blob SHA GitHub lists for the entry, which the staged bytes
+    are then verified against, not on a size."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _publish(github, {**V2, "skills/s/.gitattributes": b"* -diff\n"})
+
+    outcome = _run(root, github, ["s"], "a")
+
+    assert outcome.applied == [] and "would change how Git sees it" in outcome.refused[0]
+
+
 def test_an_empty_gitignore_in_a_skill_is_harmless(tmp_path: Path) -> None:
     """microsoft-foundry ships an empty .gitignore: it has no rules, so it changes nothing."""
     github = FakeGitHub()

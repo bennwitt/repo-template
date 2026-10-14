@@ -28,7 +28,11 @@
   asked (`/microsoft-foundry`), since on load it installs an azd extension, edits AGENTS.md and
   starts billable evaluations. Both packs share the `azure` MCP server: Azure MCP 3.0.0 through
   `uvx`, `--read-only`, with each pack's namespaces (no Key Vault), signing in through az
-  login. 3.0.0 is under 7 days old, with a recorded `pinException`.
+  login. 3.0.0 is under 7 days old, with a recorded `pinException`. Packs may add only
+  `--namespace` (`packArgs`), so none can undo `--read-only`; `AZURE_TOKEN_CREDENTIALS` may only
+  name a credential type. App Service settings are returned only after a consent prompt; the
+  `foundry` and `arm` namespaces proxy Microsoft's hosted servers, whose read-only marking comes
+  from those services, and `foundryextensions` can call deployed models (spending tokens).
 - The `azure` plugin is off (the packs replace it: about 16,000 characters of descriptions in
   every session, a telemetry hook, and an MCP server that runs `@azure/mcp@latest`).
 - Portable settings ask before Azure deploys, deletes and purges, role assignments, admin

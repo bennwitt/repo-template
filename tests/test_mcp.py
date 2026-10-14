@@ -1174,3 +1174,28 @@ def test_the_catalog_check_wants_each_deny_in_the_portable_settings(tmp_path: Pa
     assert any(
         error.startswith("mcp__*__run_unsafe: an MCP server denies") for error in problems.errors
     )
+
+
+@pytest.mark.parametrize(
+    ("value", "ok"),
+    [
+        ("AzureCliCredential", True),
+        ("dev", True),
+        ("hunter2", False),
+        ("ClientSecretCredential", False),
+    ],
+)
+def test_azure_token_credentials_only_names_a_credential_type(
+    tmp_path: Path, value: str, ok: bool
+) -> None:
+    server = {**AZ, "env": {"AZURE_TOKEN_CREDENTIALS": value}}
+    if ok:
+        assert load_mcp_servers(_agents(tmp_path, {"az": server}))["az"].env
+    else:
+        with pytest.raises(ValueError, match="one of"):
+            load_mcp_servers(_agents(tmp_path, {"az": server}))
+
+
+def test_other_azure_secrets_stay_refused(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="keyless"):
+        load_mcp_servers(_agents(tmp_path, {"az": {**AZ, "env": {"AZURE_CLIENT_SECRET": "x"}}}))

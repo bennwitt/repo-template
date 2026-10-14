@@ -33,7 +33,6 @@
             "bicepschema",
             "containerapps",
             "deploy",
-            "extension",
             "get_azure_bestpractices",
             "group",
             "monitor",
