@@ -14,6 +14,7 @@ from repo_template.repository import SUBPROCESS, create_repository, update_repos
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import manifest_version, normalize_project_name
 from repo_template.standards import find_standards_root, installed_root, sync_globals
+from repo_template.tools import check_machine_tools, load_machine_tools
 from repo_template.upstream import (
     GhApi,
     HeadScanner,
@@ -334,6 +335,9 @@ def _upstream(root: Path) -> int:
         if (root / ".agents" / MCP_SERVERS_NAME).is_file():
             servers = load_mcp_servers(root / ".agents")
             check_pins(servers, HttpRegistry(), datetime.now(UTC), report)
+        tools = load_machine_tools(root / ".agents")
+        if tools:
+            check_machine_tools(tools, HttpRegistry(), GhApi(), datetime.now(UTC), report)
     except NetworkError as exc:
         print(f"repo-template: error: {exc}", file=sys.stderr)
         return 3
@@ -348,7 +352,7 @@ def _upstream(root: Path) -> int:
             for line in lines:
                 print(f"  {clean(line)}")
     if report.exit_code == 0:
-        pins = f" and {len(report.pins)} MCP pins" if report.pins else ""
+        pins = f" and {len(report.pins)} pins (MCP servers, tools)" if report.pins else ""
         print(f"All {len(report.current)} vendored skills{pins} are current.")
     elif len(report.changed) > report.pin_changes:
         print("Run `repo-template globals --upgrade` to review and apply the skills.")

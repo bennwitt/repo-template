@@ -210,6 +210,11 @@ class GhApi:
         spdx = (data.get("license") or {}).get("spdx_id")
         return spdx if isinstance(spdx, str) else None
 
+    def releases(self, source: str) -> list[dict[str, Any]]:
+        """The repository's recent releases (up to 100), as GitHub's API returns them."""
+        data = self._get(f"repos/{source}/releases?per_page=100")
+        return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
+
     def latest_release(self, source: str) -> str | None:
         try:
             data = self._get(f"repos/{source}/releases/latest")

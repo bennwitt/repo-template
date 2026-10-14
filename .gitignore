@@ -52,6 +52,7 @@ blob-report/
 !/.agents/.skill-lock.json
 !/.agents/skill-packs.json
 !/.agents/mcp-servers.json
+!/.agents/machine-tools.json
 !/.agents/skill-overrides.json
 !/.agents/claude-settings.json
 !/.agents/skill-sources.json
