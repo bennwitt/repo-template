@@ -744,7 +744,7 @@ def test_an_exclude_file_linked_outside_the_checkout_is_left_alone(
 
     assert shared.read_text() == "*.log\n" and _status(root) == ""
     assert any(
-        item.startswith(".git/info/exclude (a link to a file outside") for item in result.preserved
+        item.startswith(".git/info/exclude (it resolves outside") for item in result.preserved
     )
     assert not (root / ".claude/skills/ts-one").exists()  # nothing would hide it
 
@@ -949,3 +949,65 @@ def test_a_codex_block_edited_by_hand_stays_hidden_when_it_cant_come_out(
     assert any("edited inside the repo-template block" in item for item in result.preserved)
     assert "/.codex/config.toml" in (root / ".git/info/exclude").read_text()
     assert _status(root) == ""  # its machine paths stay hidden
+
+
+@pytest.mark.parametrize("adopted", [False, True])
+def test_a_sparse_checkout_is_refused(
+    setup: tuple[Path, Path, FakeClaude, Path], adopted: bool
+) -> None:
+    agents, root, claude, home = setup
+    if adopted:
+        _update(root, agents, claude, home, packs=["ts"], personal=True)
+    _git(root, "sparse-checkout", "set", "--cone", "src")
+    before = _files(root)
+
+    with pytest.raises(ValueError, match="is a sparse checkout"):
+        _update(root, agents, claude, home, packs=["ts"], personal=not adopted)
+
+    assert _files(root) == before
+
+
+def test_a_link_where_the_team_mounts_a_submodule_goes(
+    setup: tuple[Path, Path, FakeClaude, Path],
+) -> None:
+    agents, root, claude, home = setup
+    _update(root, agents, claude, home, packs=["ts"], personal=True)
+    commit = _git(root, "rev-parse", "HEAD").strip()  # a submodule at .claude/skills, not cloned
+    _git(root, "update-index", "--add", "--cacheinfo", f"160000,{commit},.claude/skills")
+    _git(root, "commit", "-q", "-m", "shared skills")
+
+    planned = _update(root, agents, claude, home, check=True)
+    _update(root, agents, claude, home)
+
+    assert ".claude/skills/ts-one" in planned.removed
+    assert not any((root / ".claude/skills").iterdir())  # empty: `submodule update --init` works
+
+
+def test_a_team_sub_project_with_its_own_manifest_is_not_refused(
+    setup: tuple[Path, Path, FakeClaude, Path],
+) -> None:
+    agents, root, claude, home = setup
+    _commit(root, {"services/api/.repo-template.json": '{"schema": 1, "profile": "packs-only"}\n'})
+    _update(root, agents, claude, home, packs=["ts"], personal=True)
+
+    result = update_repository(root / "services/api", check=True, agents_dir=agents)
+
+    assert not result.errors
+
+
+def test_an_info_folder_linked_outside_the_checkout_is_left_alone(
+    setup: tuple[Path, Path, FakeClaude, Path], tmp_path: Path
+) -> None:
+    agents, root, claude, home = setup
+    shared = tmp_path / "shared-info"
+    shared.mkdir()
+    (shared / "exclude").write_text("*.log\n")
+    shutil.rmtree(root / ".git/info", ignore_errors=True)
+    (root / ".git/info").symlink_to(shared)
+
+    result = _update(root, agents, claude, home, packs=["ts"], personal=True)
+
+    assert (shared / "exclude").read_text() == "*.log\n" and _status(root) == ""
+    assert any(
+        item.startswith(".git/info/exclude (it resolves outside") for item in result.preserved
+    )

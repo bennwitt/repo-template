@@ -355,9 +355,10 @@ It needs the top folder of a main checkout, and any run in a linked worktree of 
 Git shares `info/exclude` with linked worktrees (so the Codex line applies there too), and
 Claude Code keys local scope by the main checkout, so its servers show there as well, while the
 skill links don't. It is refused too once the repository has a `.repo-template.json` of its own;
-the error says how to undo the personal adoption first, and so is any run from one of the
-checkout's subfolders. `git clean -fdx` deletes the links and the Codex file like any ignored
-file; `update` puts them back.
+the error says how to undo the personal adoption first; in a sparse checkout, where a team
+file outside the checkout can land on a link or the Codex file; and in a subfolder of a personal
+checkout, unless that subfolder has a `.repo-template.json` of its own. `git clean -fdx` deletes
+the links and the Codex file like any ignored file; `update` puts them back.
 
 ### Exit codes
 

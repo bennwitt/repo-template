@@ -473,7 +473,7 @@ def preflight(
             f"repo-template in that checkout"
         )
     enclosing = _enclosing_personal(root)
-    if enclosing is not None:
+    if enclosing is not None and not shared.exists():  # a sub-project with a manifest is its own
         raise ValueError(
             f"{root} is inside a checkout adopted personally ({enclosing}); run repo-template "
             f"at that checkout's top folder"

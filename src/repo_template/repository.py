@@ -40,6 +40,7 @@ from repo_template.personal import (
     listed_paths,
     plan_exclude,
     predicted_ignores,
+    sparse,
     team_servers,
     tracked_paths,
 )
@@ -296,9 +297,9 @@ def _sync_claude_local(
 
 
 def _links_under_tracked_folders(root: Path, index: Index, agents_dir: Path) -> list[Path]:
-    """Links of this tool's at a path the repository tracks only as a folder (its files not
-    checked out, in a sparse checkout): the repository's version isn't there, and Git shows
-    the link."""
+    """Links of this tool's at a path the repository tracks only around it (its files not checked
+    out, or a submodule mounted above it): the repository's version isn't there, and the link
+    stands in its way."""
     agents = agents_dir.absolute()
     homes = {agents / "packs", agents / "skills"}
     found: list[Path] = []
@@ -333,6 +334,12 @@ def _update_personal(
     """A personal adoption (see repo_template.personal). Everything is worked out, and every
     file read, before the first write; the exclude block is written before the links and the
     Codex file it ignores."""
+    if sparse(root):
+        raise ValueError(
+            f"{root} is a sparse checkout: repository files outside it can land where a link or "
+            f"the Codex file stands, so personal adoption isn't supported here (`git "
+            f"sparse-checkout disable` first)"
+        )
     wanted = sorted({*skill_packs(root), *packs})
     mcp = _mcp(root, wanted, agents_dir, manifest, always=True)
     assert mcp is not None
@@ -363,7 +370,7 @@ def _update_personal(
     result = update_packs_only(root, check=check, add_packs=packs, profile=PERSONAL)
     result.errors.extend(mcp.errors + probe.errors)
     stale = _links_under_tracked_folders(root, tracked, agents_dir)
-    for link in stale:  # the repository's own folder is there, though not checked out
+    for link in stale:  # the repository's own version belongs there
         result.removed.append(link.relative_to(root).as_posix())
         if not check:
             link.unlink()

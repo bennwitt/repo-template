@@ -10,8 +10,9 @@
   doesn't ignore). Paths the repository tracks are never linked, listed or removed, a server its
   `.mcp.json` defines is left to it, and a link or Codex block Git would no longer ignore is
   taken out. Later runs follow the recorded profile; it is refused in a subfolder, in a linked
-  worktree (of a personal checkout, for any run), and in a repository with its own
-  `.repo-template.json`.
+  worktree or a sparse checkout, and in a repository with its own `.repo-template.json`; any
+  run in a subfolder or linked worktree of a personal checkout is refused too (unless the
+  subfolder has its own manifest).
 - Pack `react` no longer brings the LangChain docs servers; the `langchain` pack has them, so a
   repository with both still gets them.
 - The checks of what Git ignores and tracks run without the variables that tie Git to one

@@ -82,10 +82,19 @@ class Index:
         )
 
     def only_under(self, path: Path) -> bool:
-        """Tracked only as a folder the path stands for (files under it, maybe not checked out):
-        a link there can't be the repository's."""
+        """Tracked only around the path: as a folder it stands for (files under it, maybe not
+        checked out), or under an entry above it (a submodule mounted there). A link of this
+        tool's there can't be the repository's version, and it stands in the repository's way."""
         name = inside(self.root, path)
-        return name is not None and name in self.folders and name not in self.entries
+        if name is None or name in self.entries:
+            return False
+        return name in self.folders or any(parent in self.entries for parent in _parents(name))
+
+
+def sparse(root: Path) -> bool:
+    """Whether the checkout is sparse: then repository files outside its definition aren't on
+    disk, and a link or Codex file of this tool's can stand where one of them lands."""
+    return _git(root, "config", "--bool", "--get", "core.sparseCheckout").strip() == b"true"
 
 
 def tracked_paths(root: Path) -> Index:
@@ -178,7 +187,7 @@ def listed_paths(patterns: list[str]) -> set[str]:
 
 
 DAMAGED = "repo-template's block has lost a marker line; fix or delete it"
-OUTSIDE = "a link to a file outside this checkout's .git, maybe shared; not written"
+OUTSIDE = "it resolves outside this checkout's .git, so it may be shared; not written"
 
 
 @dataclass(frozen=True)
@@ -199,7 +208,7 @@ def plan_exclude(root: Path, patterns: list[str]) -> ExcludePlan:
     except (OSError, UnicodeDecodeError) as exc:
         raise ValueError(f"cannot read {path}: {exc}") from exc
     git = (root / ".git").resolve()
-    if path.is_symlink() and git not in path.resolve().parents:  # shared with other checkouts
+    if git not in path.resolve().parents:  # through a link to a file or folder elsewhere
         return ExcludePlan(path, existing, existing, damaged=True, why=OUTSIDE)
     starts, ends = existing.count(EXCLUDE_START), existing.count(EXCLUDE_END)
     if (starts, ends) not in ((0, 0), (1, 1)) or (
