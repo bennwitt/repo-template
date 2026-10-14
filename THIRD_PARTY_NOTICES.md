@@ -916,6 +916,7 @@ THE SOFTWARE.
 - Copyright: Copyright GitHub, Inc.
 - Skills:
   - `github-actions-hardening`: [skills/github-actions-hardening](https://github.com/github/awesome-copilot/tree/df566343b3a685e821f8ebe8ea70a2a8eb8b857b/skills/github-actions-hardening) at df566343b3a6, description modified
+  - `python-mcp-server-generator`: [skills/python-mcp-server-generator](https://github.com/github/awesome-copilot/tree/f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8/skills/python-mcp-server-generator) at f25421d3f1b8, description modified
 
 ### LICENSE
 

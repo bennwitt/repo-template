@@ -172,7 +172,7 @@
   "microsoft-foundry": {
     "why": "Upstream is ~1,000 characters of triggers that also catch general RBAC, quota and deploy work, and on load it installs an azd extension, edits AGENTS.md and starts billable evaluation jobs: run it only when asked (/microsoft-foundry), with a narrower description.",
     "frontmatter": {
-      "description": "Microsoft Foundry end to end: agents (prompt and hosted, agent.yaml, azd ai agent), invoking and evaluating them, agent insights and monitoring, prompt optimization, model deployment and fine-tuning, Foundry projects, RBAC and quota. Use for any Foundry agent or model task; general Azure deploys go to azure-prepare and azure-deploy.",
+      "description": "Microsoft Foundry end to end: prompt and hosted agents (azd ai agent), invoking and evaluating them, agent insights and monitoring, prompt optimization, model deployment and fine-tuning, Foundry projects, RBAC and quota. Use for any Foundry agent or model task; general Azure deploys go to azure-prepare and azure-deploy.",
       "disable-model-invocation": true
     },
     "upstream": "12ca5ad6f6296e04163cbfed55c9ea37dd6d4009",
@@ -199,6 +199,16 @@
     "upstream": "1cc39d8d8cba5955bf9c8d7c9a2aef348722a55e",
     "base": {
       "description": "description: \"Writes, reviews, and debugs property-based tests — Hypothesis, fast-check, proptest, jqwik, rapid, and Echidna or Medusa for Solidity invariants. Use whenever tests should cover a whole input domain instead of a hand-picked list of examples: encode/decode and serialize/deserialize pairs, parsers, canonicalizers and normalizers, validators, numeric and Decimal types, comparators and sort order, data structures, and smart-contract state invariants. Also use when adding cases to an existing @given, fast-check, or proptest suite, when judging whether existing property tests assert anything real, and when a generator has shrunk a counterexample and you need to tell a wrong property from a genuine bug. Not for coverage-guided binary fuzzing (libFuzzer, AFL), mutation-testing campaigns, static analysis, benchmarking, or end-to-end UI tests.\"\n"
+    }
+  },
+  "python-mcp-server-generator": {
+    "why": "Upstream always starts with uv init; in a repository that already has a uv project (and a src/ and tests/ layout), the server belongs in it.",
+    "frontmatter": {
+      "description": "Create an MCP server in Python with the official SDK v2 (MCPServer): typed tools, in-memory tests, client configuration. In an existing uv project, add it there and keep its src/ and tests/ layout (skip uv init). Use for a new Python MCP server, or to expose functions, an API or a database as MCP tools; not for clients."
+    },
+    "upstream": "2af91072828c27eec9f758262be17745982f7a3e",
+    "base": {
+      "description": "description: 'Use this skill when the user wants to create a new Model Context Protocol (MCP) server in Python. Also use it to expose Python functions, an API, or a database to AI clients as MCP tools. The skill makes a uv project with the MCP Python SDK v2 (MCPServer), typed tools, in-memory tests, and client configuration. Do not use it for an MCP client or for a server in another language.'\n"
     }
   },
   "vercel-react-best-practices": {

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Foundry LangChain"
+  short_description: "LangChain and LangGraph agents on Microsoft Foundry"

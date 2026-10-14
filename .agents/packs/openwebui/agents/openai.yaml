@@ -1,0 +1,3 @@
+interface:
+  display_name: "Open WebUI"
+  short_description: "Put your agents behind Open WebUI and extend it"

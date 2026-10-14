@@ -42,6 +42,15 @@
       "source": "https://docs.langchain.com/use-these-docs",
       "why": "Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers."
     },
+    "fastmcp-docs": {
+      "scope": "pack",
+      "url": "https://gofastmcp.com/mcp",
+      "deny": [
+        "submit_feedback"
+      ],
+      "source": "https://gofastmcp.com",
+      "why": "Searches the FastMCP docs (two read-only tools); its feedback tool is denied."
+    },
     "gradio-docs": {
       "scope": "pack",
       "url": "https://gradio-docs-mcp.hf.space/gradio_api/mcp/",

@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry
-description: "Microsoft Foundry end to end: agents (prompt and hosted, agent.yaml, azd ai agent), invoking and evaluating them, agent insights and monitoring, prompt optimization, model deployment and fine-tuning, Foundry projects, RBAC and quota. Use for any Foundry agent or model task; general Azure deploys go to azure-prepare and azure-deploy."
+description: "Microsoft Foundry end to end: prompt and hosted agents (azd ai agent), invoking and evaluating them, agent insights and monitoring, prompt optimization, model deployment and fine-tuning, Foundry projects, RBAC and quota. Use for any Foundry agent or model task; general Azure deploys go to azure-prepare and azure-deploy."
 license: MIT
 metadata:
   author: Microsoft

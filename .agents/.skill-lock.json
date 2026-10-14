@@ -837,6 +837,15 @@
       "skillFolderHash": "89782df299cf7514502688a9f5f174a875e9927d",
       "installedAt": "2026-10-14T08:34:49.629Z",
       "updatedAt": "2026-10-14T08:34:49.629Z"
+    },
+    "python-mcp-server-generator": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/github/awesome-copilot.git",
+      "skillPath": "skills/python-mcp-server-generator/SKILL.md",
+      "skillFolderHash": "8b926108ed1a63b3f21b0c600718323cce27b99f",
+      "installedAt": "2026-10-14T09:07:45.456Z",
+      "updatedAt": "2026-10-14T09:07:45.456Z"
     }
   },
   "dismissed": {

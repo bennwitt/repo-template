@@ -11,8 +11,8 @@
   `azure-resource-lookup`, `azure-storage`, `azure-validate`, `docker-build-strategies`,
   `docker-compose-patterns`, `docker-destructive-guardrails`, `entra-app-registration`, `fastapi`,
   `frontend-design`, `hf-mem`, `huggingface-local-models`, `microsoft-foundry`, `model-recipes`,
-  `playwright-best-practices`, `playwright-cli`, `playwright-trace`, `vercel-composition-patterns`,
-  `vercel-react-best-practices`, `vllm-bench-serve`.
+  `playwright-best-practices`, `playwright-cli`, `playwright-trace`, `python-mcp-server-generator`,
+  `vercel-composition-patterns`, `vercel-react-best-practices`, `vllm-bench-serve`.
 - New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
   healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
 - Pack `react`: `frontend-design` (anthropics/skills, Apache-2.0) and a `shadcn` skill derived
@@ -52,6 +52,17 @@
   EXIF at every hand-off, video I/O, servers, tests) and `sam3` (Meta SAM 3 and 3.1: hosted,
   transformers and native paths, prompts, coordinates, GPU memory, the SAM License).
 - `compose-gpu-serving`: vLLM's `--gpu-memory-utilization` default is 0.92 (v0.29 to v0.31).
+- Packs `fastapi` (local `fastapi-services`: tests, lifespan, auth with PyJWT and pwdlib,
+  CORS, Open WebUI tool servers, an OpenAI-compatible streaming endpoint in front of a graph),
+  `mcp` (local `mcp-servers`, and `python-mcp-server-generator` from github/awesome-copilot with
+  its description overridden; MCP server `fastmcp-docs`, its feedback tool denied) and
+  `openwebui` (local `openwebui`: an agent as an OpenAI-compatible model, Pipes, Tools, Filters,
+  tool servers, deployment; and `frontend-design`).
+- Pack `foundry` adds the local `foundry-langchain` (LangChain, LangGraph and Deep Agents on
+  Foundry, keyless); pack `gradio` adds `frontend-design`. The `microsoft-foundry` description
+  no longer mentions agent.yaml, which the current azd agent extension refuses.
+- `langgraph-decision-models` (langchain-ai/langchain-skills) is recorded as ignored: it routes
+  through LangSmith Gateway or the TypeSafe API, and LangSmith is out of scope here.
 - The `azure` plugin is off (the packs replace it: about 16,000 characters of descriptions in
   every session, a telemetry hook, and an MCP server that runs `@azure/mcp@latest`).
 - Portable settings ask before Azure deploys, deletes and purges, role assignments, admin

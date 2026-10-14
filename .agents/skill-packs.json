@@ -47,11 +47,18 @@
       }
     ]
   },
+  "fastapi": {
+    "description": "FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph.",
+    "skills": [
+      "fastapi-services"
+    ]
+  },
   "foundry": {
     "description": "Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools.",
     "skills": [
       "azure-ai",
       "azure-ai-projects-ts",
+      "foundry-langchain",
       "microsoft-foundry"
     ],
     "mcp": [
@@ -75,6 +82,7 @@
   "gradio": {
     "description": "Building Gradio apps and calling Gradio apps through their API",
     "skills": [
+      "frontend-design",
       "gradio",
       "hf-gradio"
     ],
@@ -125,6 +133,23 @@
       "model-recipes",
       "muse-glimmer",
       "vllm-bench-serve"
+    ]
+  },
+  "mcp": {
+    "description": "Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations.",
+    "skills": [
+      "mcp-servers",
+      "python-mcp-server-generator"
+    ],
+    "mcp": [
+      "fastmcp-docs"
+    ]
+  },
+  "openwebui": {
+    "description": "Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment.",
+    "skills": [
+      "frontend-design",
+      "openwebui"
     ]
   },
   "playwright": {

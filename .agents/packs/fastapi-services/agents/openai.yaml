@@ -1,0 +1,3 @@
+interface:
+  display_name: "FastAPI services"
+  short_description: "Test, secure and connect FastAPI services to Open WebUI"
