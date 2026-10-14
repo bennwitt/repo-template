@@ -1,11 +1,24 @@
 {
   "sources": {
+    "anthropics/skills": {
+      "license": "See each skill",
+      "copyright": "Anthropic, PBC (each skill's own license file)",
+      "discover": "none"
+    },
     "astral-sh/claude-code-plugins": {
       "license": "MIT OR Apache-2.0",
       "copyright": "Copyright (c) 2025 Astral Software Inc.",
       "licenseFiles": {
         "LICENSE-MIT": "014835144877ea9c926d027ece3e1a26290cf481",
         "LICENSE-APACHE": "47fd5b871ae0c1b3158ce6c41aca0f592731cb50"
+      },
+      "discover": "none"
+    },
+    "currents-dev/playwright-best-practices-skill": {
+      "license": "MIT",
+      "copyright": "Copyright © 2026 Currents Software Inc.",
+      "licenseFiles": {
+        "LICENSE.md": "0312fd7de9487ced54515687d0026fc146aba947"
       },
       "discover": "none"
     },
@@ -65,6 +78,15 @@
       },
       "discover": "all"
     },
+    "microsoft/playwright": {
+      "license": "Apache-2.0",
+      "copyright": "Portions Copyright (c) Microsoft Corporation.",
+      "licenseFiles": {
+        "LICENSE": "df112373eb2e23e459bf93ec412be1764dc5a38b",
+        "NOTICE": "814ec1696f7ad36c1b524fb6adeef14b4b367fec"
+      },
+      "discover": "none"
+    },
     "microsoft/playwright-cli": {
       "license": "Apache-2.0",
       "copyright": "Copyright (c) Microsoft Corporation.",
@@ -109,6 +131,19 @@
     },
     "repo-template": {
       "license": "MIT"
+    },
+    "shadcn": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "shadcn-ui/ui",
+        "path": "skills/shadcn",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2023 shadcn",
+        "licenseFiles": {
+          "LICENSE.md": "fad4d887a681dd49233e5ed01ee2c7a1513089a0"
+        },
+        "commit": "d51870f66fd13cc975d82ecbb9eace3cff066878"
+      }
     }
   },
   "skills": {
@@ -184,6 +219,12 @@
     "find-skills": {
       "commit": "773fb2c7bbf16781670a3520affc4abd0c6151ae",
       "tree": "76a98a285cb0434f3d39e1a873823556330e398b"
+    },
+    "frontend-design": {
+      "commit": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+      "tree": "d79e2a5bb4df4a386c2adcdd9ab8709bba28c3f6",
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE.txt is the Apache License 2.0 text, without a copyright line)"
     },
     "git-guardrails-claude-code": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -289,10 +330,19 @@
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
       "tree": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23"
     },
+    "playwright-best-practices": {
+      "commit": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
+      "tree": "b4620eb2cfc6b58173cda800b7c7578190dfd632"
+    },
     "playwright-cli": {
       "commit": "b85c7a736bb473bf55b584e54a09ffa698d6d871",
       "tree": "6b746b43751be277378e0ee04fe0db69f24da045",
       "ref": "v0.1.22"
+    },
+    "playwright-trace": {
+      "commit": "606ecd8b34bac100db32561b6278ffd76e5eb3cd",
+      "tree": "a1d5f43906b95c995da460dac32ccf1996223388",
+      "ref": "v1.64.0"
     },
     "pr": {
       "commit": "e484a8095543718ced436b9b49a8160ed4554000",

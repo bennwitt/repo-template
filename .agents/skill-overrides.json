@@ -99,6 +99,16 @@
       "description": "description: \"INVOKE THIS SKILL when building ANY retrieval-augmented generation (RAG) system. Covers document loaders, RecursiveCharacterTextSplitter, embeddings (OpenAI), and vector stores (Chroma, FAISS, Pinecone).\"\n"
     }
   },
+  "playwright-best-practices": {
+    "why": "Upstream lists every topic (about 1,100 characters) and loads on every turn in a repository with the pack; keep the triggers.",
+    "frontmatter": {
+      "description": "Playwright test best practices: locators, assertions and waiting, fixtures and page objects, authentication, network mocking, flaky tests, CI and sharding, and API, accessibility, visual, component and Electron testing. Use when writing, reviewing or debugging Playwright tests or their configuration."
+    },
+    "upstream": "0da736253c343081ab8c0cb9802729a707c23196",
+    "base": {
+      "description": "description: Use when writing Playwright tests, fixing flaky tests, debugging failures, implementing Page Object Model, configuring CI/CD, optimizing performance, mocking APIs, handling authentication or OAuth, testing accessibility (axe-core), file uploads/downloads, date/time mocking, WebSockets, geolocation, permissions, multi-tab/popup flows, mobile/responsive layouts, touch gestures, GraphQL, error handling, offline mode, multi-user collaboration, third-party services (payments, email verification), console error monitoring, global setup/teardown, test annotations (skip, fixme, slow), test tags (@smoke, @fast, @critical, filtering with --grep), project dependencies, security testing (XSS, CSRF, auth), performance budgets (Web Vitals, Lighthouse), iframes, component testing, canvas/WebGL, service workers/PWA, test coverage, i18n/localization, Electron apps, or browser extension testing. Covers E2E, component, API, visual, accessibility, security, Electron, and extension testing.\n"
+    }
+  },
   "property-based-testing": {
     "why": "Upstream description is ~900 characters and loads every turn; keep the triggers, drop the long list of cases.",
     "frontmatter": {

@@ -639,6 +639,33 @@
       "skillFolderHash": "34ece4801c3efb15889c30835d58511da031796f",
       "installedAt": "2026-10-14T05:55:26.608Z",
       "updatedAt": "2026-10-14T05:55:26.608Z"
+    },
+    "playwright-best-practices": {
+      "source": "currents-dev/playwright-best-practices-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/currents-dev/playwright-best-practices-skill.git",
+      "skillPath": "playwright-best-practices/SKILL.md",
+      "skillFolderHash": "b4620eb2cfc6b58173cda800b7c7578190dfd632",
+      "installedAt": "2026-10-14T06:24:56.982Z",
+      "updatedAt": "2026-10-14T06:24:56.982Z"
+    },
+    "playwright-trace": {
+      "source": "microsoft/playwright",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/microsoft/playwright.git",
+      "skillPath": "packages/playwright-core/src/tools/skills/playwright-trace/SKILL.md",
+      "skillFolderHash": "a1d5f43906b95c995da460dac32ccf1996223388",
+      "installedAt": "2026-10-14T06:25:01.108Z",
+      "updatedAt": "2026-10-14T06:25:01.108Z"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anthropics/skills.git",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "skillFolderHash": "d79e2a5bb4df4a386c2adcdd9ab8709bba28c3f6",
+      "installedAt": "2026-10-14T06:26:16.632Z",
+      "updatedAt": "2026-10-14T06:26:16.632Z"
     }
   },
   "dismissed": {

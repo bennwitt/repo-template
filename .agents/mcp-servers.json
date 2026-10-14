@@ -70,6 +70,23 @@
       "url": "https://reference.langchain.com/mcp",
       "source": "https://docs.langchain.com/use-these-docs",
       "why": "Looks up LangChain API symbols and their signatures."
+    },
+    "shadcn": {
+      "scope": "pack",
+      "command": "npx",
+      "args": [
+        "-y",
+        "shadcn@4.21.3",
+        "mcp"
+      ],
+      "pin": {
+        "registry": "npm",
+        "package": "shadcn",
+        "version": "4.21.3",
+        "publishedAt": "2026-10-06T06:19:49Z"
+      },
+      "source": "https://ui.shadcn.com/docs/mcp",
+      "why": "Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself)."
     }
   }
 }

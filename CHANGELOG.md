@@ -7,10 +7,17 @@
   `teach`, `to-tickets`, `wayfinder`, `wizard`.
 - Skills removed (gone upstream): `langsmith-online-eval-engineering`, `resolving-merge-conflicts`.
 - Skills added from upstream: `docker-build-strategies`, `docker-compose-patterns`,
-  `docker-destructive-guardrails`, `fastapi`, `playwright-cli`. The Docker and FastAPI
-  descriptions are overridden to stay short (FastAPI no longer triggers on any Pydantic model).
+  `docker-destructive-guardrails`, `fastapi`, `frontend-design`, `playwright-best-practices`,
+  `playwright-cli`, `playwright-trace`.
 - New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
   healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
+- Pack `react`: `frontend-design` (anthropics/skills, Apache-2.0) and a `shadcn` skill derived
+  from shadcn-ui/ui at `shadcn@4.21.3` (the CLI pinned, nothing run when it loads, no icon
+  images), with the `shadcn` MCP server (`shadcn@4.21.3`, read-only) and the LangChain docs
+  servers for `useStream` UIs. Vercel's React skills aren't vendored: vercel-labs/agent-skills
+  has no license file.
+- Pack `playwright`: `playwright-best-practices` (currents-dev, MIT, description overridden) and
+  `playwright-trace` (microsoft/playwright v1.64.0, Apache-2.0).
 - Portable settings ask before `playwright-cli run-code` (it runs code outside the page).
 - `globals --upgrade` accepts a new source's skill whose `license` field states the license
   GitHub detects for the repository (docker/skills does), instead of refusing it.

@@ -1,4 +1,26 @@
 {
+  "agent-evals": {
+    "description": "Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration)",
+    "skills": [
+      "eval-engineering"
+    ]
+  },
+  "gradio": {
+    "description": "Building Gradio apps and calling Gradio apps through their API",
+    "skills": [
+      "gradio",
+      "hf-gradio"
+    ],
+    "mcp": [
+      "gradio-docs"
+    ]
+  },
+  "knowledge-graph": {
+    "description": "Extracting knowledge graphs from text",
+    "skills": [
+      "knowledge-graph-extraction"
+    ]
+  },
   "langchain": {
     "description": "LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills)",
     "skills": [
@@ -27,26 +49,23 @@
       "reference-langchain"
     ]
   },
-  "agent-evals": {
-    "description": "Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration)",
+  "playwright": {
+    "description": "Playwright end-to-end tests: best practices and reading traces.",
     "skills": [
-      "eval-engineering"
+      "playwright-best-practices",
+      "playwright-trace"
     ]
   },
-  "gradio": {
-    "description": "Building Gradio apps and calling Gradio apps through their API",
+  "react": {
+    "description": "React and shadcn/ui front ends, including LangGraph useStream chat UIs.",
     "skills": [
-      "gradio",
-      "hf-gradio"
+      "frontend-design",
+      "shadcn"
     ],
     "mcp": [
-      "gradio-docs"
-    ]
-  },
-  "knowledge-graph": {
-    "description": "Extracting knowledge graphs from text",
-    "skills": [
-      "knowledge-graph-extraction"
+      "shadcn",
+      "docs-langchain",
+      "reference-langchain"
     ]
   },
   "typescript": {
