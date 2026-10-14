@@ -74,13 +74,20 @@
   GitHub detects for the repository (docker/skills does), instead of refusing it.
 - Codex 0.160.1 shows about 40,000 characters of skills before it truncates; a test keeps the
   global skills to half of that.
-- Generated `.gitignore` ignores `.playwright-cli/`, `.playwright-mcp/`, `playwright/.auth/`
-  (browser sessions, traces and saved logins), `.azure/` (azd environment settings) and `.foundry/`
-  (the microsoft-foundry skill's copies of production conversations and connection strings); the
-  global excludes that `globals` writes add the two Playwright folders.
-- The pre-commit secret scan also stops Hugging Face tokens (`hf_…`) and Meta API keys
-  (`LLM|<id>|<secret>`), and looks only at lines being added, so a commit that removes a key
-  from a file isn't stopped.
+- Generated `.gitignore` ignores `.playwright-cli/`, `.playwright-mcp/`, `.auth/`,
+  `test-results/`, `playwright-report/` and `blob-report/` (browser sessions, saved logins,
+  traces and reports), `.azure/` (azd environment settings) and `.foundry/` (the
+  microsoft-foundry skill's copies of production conversations and connection strings); the
+  global excludes that `globals` writes add the two Playwright CLI folders.
+- The pre-commit secret scan also stops Hugging Face tokens (`hf_…`), Meta API keys
+  (`LLM|<id>|<secret>`), more private-key headers, temporary AWS keys (`ASIA…`) and more OpenAI
+  and Anthropic key forms. It looks only at lines being added, so a commit that removes a key
+  isn't stopped, and it reads the diff the same way whatever the user's diff settings (colour,
+  external diff tools, textconv) or the file's encoding.
+- The pre-commit hook runs `uv lock`, Ruff, mypy and pytest without Git's repository variables
+  (`git rev-parse --local-env-vars`). Git sets them for hooks, and in a worktree a test that ran
+  git in a temporary folder wrote into the repository being committed instead (it happened here:
+  `core.bare` and a test user landed in the shared config). The test suite strips them too.
 
 ## 0.5.1 - 2026-10-14
 

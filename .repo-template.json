@@ -18,7 +18,7 @@
     },
     ".githooks/pre-commit": {
       "policy": "managed",
-      "sha256": "33cb4eda6101200f0ce116b87698987664d270e81703e1e066de6335a98ba3ae"
+      "sha256": "998dd904befc3c331f222f54a049959e76d8648060019011f7cd4d4f9328748e"
     },
     ".github/PULL_REQUEST_TEMPLATE.md": {
       "policy": "managed",

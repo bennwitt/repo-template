@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -323,41 +325,54 @@ def test_versions_compare_as_major_minor_patch(
         update_project(root, check=True)
 
 
-@pytest.mark.parametrize(
-    ("line", "stopped"),
-    [
-        ("token = 'hf_" + "a1B2" * 9 + "'", True),
-        ("key = 'LLM|" + "1234567890" + "|" + "AbCd_ef-" * 4 + "'", True),
-        ("key = 'sk-proj-" + "x" * 48 + "'", True),
-        ("hf_short = 1", False),
-        ("model = 'facebook/sam3'", False),
-    ],
-)
-def test_the_pre_commit_hook_stops_added_secrets(tmp_path: Path, line: str, stopped: bool) -> None:
-    """Tokens are built at run time, so this file never holds one."""
+HF = "hf_" + "a1B2" * 9  # tokens are built at run time, so this file never holds one
+SCAN_CASES = [
+    ("token = '" + HF + "'", True, []),
+    ("key = 'LLM|" + "1234567890" + "|" + "AbCd_ef-" * 4 + "'", True, []),
+    ("key = 'sk-proj-" + "x" * 48 + "'", True, []),
+    ("key = 'sk-ant-" + "x" * 48 + "'", True, []),
+    ("id = 'ASIA" + "ABCDEFGHIJKLMNOP" + "'", True, []),
+    ("-----BEGIN ENCRYPTED " + "PRIVATE KEY-----", True, []),
+    ("token = '" + HF + "'", True, ["-c", "color.ui=always", "-c", "color.diff=always"]),
+    ("token = '" + HF + "'", True, ["-c", "diff.external=true"]),
+    ("++ " + HF, True, []),  # shown as '+++ ...', like a file header
+    ("caf\xe9 = '" + HF + "'", True, []),  # Latin-1, not UTF-8
+    ("hf_short = 1", False, []),
+    ("model = 'facebook/sam3'", False, []),
+]
+
+
+def _git_repo(tmp_path: Path) -> tuple[Path, list[str]]:
     import shutil
-    import subprocess
 
     if shutil.which("git") is None:
         pytest.skip("needs git")
     root = tmp_path / "repo"
     new_project(root, name="repo", description="R.", python_version="3.12")
+    git = ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@e"]
+    subprocess.run([*git, "init", "-q"], check=True)
+    return root, git
+
+
+@pytest.mark.parametrize(("line", "stopped", "settings"), SCAN_CASES)
+def test_the_pre_commit_hook_stops_added_secrets(
+    tmp_path: Path, line: str, stopped: bool, settings: list[str]
+) -> None:
+    root, git = _git_repo(tmp_path)
     hook = root / ".githooks/pre-commit"
     scan = hook.read_text().split("\nuv lock --check")[0] + "\n"  # the scan, not the checks
     (root / "scan.sh").write_text(scan)
-    git = ["git", "-C", str(root)]
-    subprocess.run([*git, "init", "-q"], check=True)
-    (root / "config.py").write_text(line + "\n")
+    for value in settings[1::2]:
+        name, _, setting = value.partition("=")
+        subprocess.run([*git, "config", name, setting], check=True)
+    (root / "config.py").write_bytes(line.encode("latin-1") + b"\n")
     subprocess.run([*git, "add", "config.py"], check=True)
 
     added = subprocess.run(["sh", str(root / "scan.sh")], cwd=root, capture_output=True)
 
     assert (added.returncode == 1) is stopped, added.stderr
     if stopped:  # removing the same line later doesn't stop that commit
-        subprocess.run(
-            [*git, "-c", "user.name=t", "-c", "user.email=t@e", "commit", "-qm", "x", "-n"],
-            check=True,
-        )
+        subprocess.run([*git, "commit", "-qm", "x", "-n"], check=True)
         (root / "config.py").write_text("")
         subprocess.run([*git, "add", "config.py"], check=True)
         removed = subprocess.run(["sh", str(root / "scan.sh")], cwd=root, capture_output=True)
@@ -365,12 +380,41 @@ def test_the_pre_commit_hook_stops_added_secrets(tmp_path: Path, line: str, stop
 
 
 def test_the_pre_commit_checks_run_without_this_commits_git_context(tmp_path: Path) -> None:
-    """A commit from a worktree hands hooks GIT_DIR and GIT_INDEX_FILE; tests the hook runs
-    must not inherit them, or their git commands write to the repository being committed."""
-    root = tmp_path / "repo"
-    new_project(root, name="repo", description="R.", python_version="3.12")
-    hook = (root / ".githooks/pre-commit").read_text()
-    scan, checks = hook.split("\nuv lock --check", 1)
+    """A commit from a worktree hands hooks GIT_DIR and GIT_INDEX_FILE. A test the hook runs
+    that calls `git -C <tmp> init` must not write to the repository being committed (that set
+    core.bare and a user in this repository's config once)."""
+    root, git = _git_repo(tmp_path)
+    subprocess.run([*git, "config", "core.hooksPath", ".githooks"], check=True)
+    (root / ".gitignore").write_text("worktree/\n")
+    subprocess.run([*git, "add", "-A"], check=True)
+    subprocess.run([*git, "commit", "-qm", "start", "-n"], check=True)
+    work = root / "worktree"
+    subprocess.run([*git, "worktree", "add", "-q", "-b", "side", str(work)], check=True)
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    probe = tmp_path / "probe"
+    (stub / "uv").write_text(  # stands in for the checks: a test that runs git in a temp dir
+        f"#!/bin/sh\ngit -C {probe} init -q && git -C {probe} config user.name x\nexit 0\n"
+    )
+    (stub / "uv").chmod(0o755)
+    probe.mkdir()
+    before = (root / ".git/config").read_text()
+    (work / "new.txt").write_text("x\n")
+    env = {**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"}
+    subprocess.run(["git", "-C", str(work), "add", "new.txt"], check=True, env=env)
 
-    assert "unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE" in scan.rsplit("fi\n", 1)[1]
-    assert "git diff --cached" in scan  # the scan itself still sees the commit's index
+    done = subprocess.run(
+        ["git", "-C", str(work), "-c", "user.name=t", "-c", "user.email=t@e", "commit", "-qm", "y"],
+        capture_output=True, text=True, env=env,
+    )  # fmt: skip
+
+    assert done.returncode == 0, done.stderr
+    assert (root / ".git/config").read_text() == before
+    assert (probe / ".git").is_dir()  # the stand-in ran, in its own folder
+
+
+def test_the_global_excludes_ignore_playwright_state() -> None:
+    from repo_template.standards import GITIGNORE_CONTENT
+
+    assert "**/.playwright-cli/" in GITIGNORE_CONTENT
+    assert "**/.playwright-mcp/" in GITIGNORE_CONTENT

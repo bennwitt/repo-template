@@ -812,9 +812,12 @@ and follow `writing-for-agents`.
 - `~/.claude` is never linked wholesale: individual skills are linked, and the portable settings
   are merged into `~/.claude/settings.json`, entry by entry, keeping changes made on the machine.
 - Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/`,
-  `.codex/`, Playwright's session and trace folders, `.azure/` and `.foundry/`; a repository's
-  `.codex/config.toml` is written only where Git ignores it. The pre-commit hook blocks added
-  lines holding a private key, or an AWS, OpenAI, Hugging Face or Meta API key.
+  `.codex/`, Playwright's session, login, trace and report folders, `.azure/` and `.foundry/`; a
+  repository's `.codex/config.toml` is written only where Git ignores it. The pre-commit hook
+  blocks added lines holding a private-key header, or an AWS, OpenAI, Anthropic, Hugging Face or
+  Meta API key in its usual form; it doesn't look inside files Git treats as binary, or at a
+  key split across lines. Its checks run without Git's repository variables, so a commit from a
+  worktree can't have tests write into the repository.
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
 
 ## Current limitations
