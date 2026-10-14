@@ -6,9 +6,12 @@
   `grilling`, `handoff`, `implement`, `managed-deep-agents`, `setup-matt-pocock-skills`, `tdd`,
   `teach`, `to-tickets`, `wayfinder`, `wizard`.
 - Skills removed (gone upstream): `langsmith-online-eval-engineering`, `resolving-merge-conflicts`.
-- Skills added from upstream: `docker-build-strategies`, `docker-compose-patterns`,
-  `docker-destructive-guardrails`, `fastapi`, `frontend-design`, `playwright-best-practices`,
-  `playwright-cli`, `playwright-trace`.
+- Skills added from upstream: `appinsights-instrumentation`, `azure-ai`, `azure-ai-projects-ts`,
+  `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`,
+  `azure-resource-lookup`, `azure-storage`, `azure-validate`, `docker-build-strategies`,
+  `docker-compose-patterns`, `docker-destructive-guardrails`, `entra-app-registration`, `fastapi`,
+  `frontend-design`, `microsoft-foundry`, `playwright-best-practices`, `playwright-cli`,
+  `playwright-trace`.
 - New local skill `compose-gpu-serving`: GPU services in Docker Compose (device requests,
   healthchecks for slow model loads, a shared model cache, loopback ports, uv in images).
 - Pack `react`: `frontend-design` (anthropics/skills, Apache-2.0) and a `shadcn` skill derived
@@ -18,6 +21,20 @@
   has no license file.
 - Pack `playwright`: `playwright-best-practices` (currents-dev, MIT, description overridden) and
   `playwright-trace` (microsoft/playwright v1.64.0, Apache-2.0).
+- Packs `azure` (azure-prepare, -validate, -deploy, -diagnostics, -resource-lookup,
+  -storage, appinsights-instrumentation, entra-app-registration, azure-identity-py and -ts) and
+  `foundry` (microsoft-foundry, azure-ai, azure-ai-projects-ts), from microsoft/azure-skills and
+  microsoft/skills (MIT). Long descriptions are overridden; `microsoft-foundry` runs only when
+  asked (`/microsoft-foundry`), since on load it installs an azd extension, edits AGENTS.md and
+  starts billable evaluations. Both packs share the `azure` MCP server: Azure MCP 3.0.0 through
+  `uvx`, `--read-only`, with each pack's namespaces (no Key Vault), signing in through az
+  login. 3.0.0 is under 7 days old, with a recorded `pinException`.
+- The `azure` plugin is off (the packs replace it: about 16,000 characters of descriptions in
+  every session, a telemetry hook, and an MCP server that runs `@azure/mcp@latest`).
+- Portable settings ask before Azure deploys, deletes and purges, role assignments, admin
+  consent, credential resets, key listings, `az`/`azd` extension installs, `terraform
+  apply`/`destroy` and `kubectl debug`/`delete`/`drain`.
+- `globals --upgrade` accepts an empty `.gitignore` in a skill (microsoft-foundry has one).
 - Portable settings ask before `playwright-cli run-code` (it runs code outside the page).
 - `globals --upgrade` accepts a new source's skill whose `license` field states the license
   GitHub detects for the repository (docker/skills does), instead of refusing it.

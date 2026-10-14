@@ -5,6 +5,74 @@
       "eval-engineering"
     ]
   },
+  "azure": {
+    "description": "Azure: prepare, validate and deploy with azd, diagnostics, resource lookup, Storage, App Insights, Entra app registration and azure-identity.",
+    "skills": [
+      "appinsights-instrumentation",
+      "azure-deploy",
+      "azure-diagnostics",
+      "azure-identity-py",
+      "azure-identity-ts",
+      "azure-prepare",
+      "azure-resource-lookup",
+      "azure-storage",
+      "azure-validate",
+      "entra-app-registration"
+    ],
+    "mcp": [
+      {
+        "server": "azure",
+        "args": {
+          "--namespace": [
+            "acr",
+            "aks",
+            "applens",
+            "applicationinsights",
+            "appservice",
+            "arm",
+            "bicepschema",
+            "containerapps",
+            "deploy",
+            "extension",
+            "get_azure_bestpractices",
+            "group",
+            "monitor",
+            "pricing",
+            "quota",
+            "resourcehealth",
+            "role",
+            "storage",
+            "subscription"
+          ]
+        }
+      }
+    ]
+  },
+  "foundry": {
+    "description": "Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools.",
+    "skills": [
+      "azure-ai",
+      "azure-ai-projects-ts",
+      "microsoft-foundry"
+    ],
+    "mcp": [
+      {
+        "server": "azure",
+        "args": {
+          "--namespace": [
+            "foundry",
+            "foundryextensions",
+            "get_azure_bestpractices",
+            "group",
+            "monitor",
+            "role",
+            "search",
+            "subscription"
+          ]
+        }
+      }
+    ]
+  },
   "gradio": {
     "description": "Building Gradio apps and calling Gradio apps through their API",
     "skills": [

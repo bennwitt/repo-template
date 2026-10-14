@@ -34,6 +34,13 @@ SECRET_FLAG = re.compile(
     re.I,
 )
 SECRET_VALUE = re.compile(r"^(hf_|sk-|ghp_|gho_|github_pat_|xox[abpr]-|AKIA|AIza|glpat-)")
+NOT_SECRET = {  # names that look secret but only choose something, with the values they take
+    "AZURE_TOKEN_CREDENTIALS": {  # the Azure Identity credential type (casefolded)
+        "dev", "prod", "environmentcredential", "workloadidentitycredential",
+        "managedidentitycredential", "azureclicredential", "azurepowershellcredential",
+        "azuredeveloperclicredential", "visualstudiocodecredential",
+    },
+}  # fmt: skip
 FLAG = re.compile(r"--[a-z0-9][a-z0-9-]*")
 UV_PINNED = re.compile(r"[A-Za-z0-9._-]+(?:\[[A-Za-z0-9,._-]+\])?")  # a package, extras allowed
 PACK_KEYS = {"description", "skills", "mcp"}
@@ -267,7 +274,11 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         if key in MACHINE_ENV or GUID.search(value):
             raise _fail(path, name, f"env {key!r}: tenant, subscription and client IDs belong to "
                         f"each machine (az login or its environment), not the catalog")  # fmt: skip
-        if "$" in value or "}" in value or SECRET_NAME.search(key) or SECRET_VALUE.match(value):
+        allowed = NOT_SECRET.get(key)
+        if allowed is not None and value.casefold() not in allowed:
+            raise _fail(path, name, f"env {key!r}: one of {sorted(allowed)}")
+        secret_name = SECRET_NAME.search(key) and allowed is None
+        if "$" in value or "}" in value or secret_name or SECRET_VALUE.match(value):
             raise _fail(path, name, f"env {key!r}: servers are keyless; no secrets or placeholders")
     if url is not None and env:
         raise _fail(path, name, "a url server has no 'env'")

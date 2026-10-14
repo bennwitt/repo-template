@@ -1,6 +1,35 @@
 {
   "schema": 1,
   "servers": {
+    "azure": {
+      "scope": "pack",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "msmcp-azure==3.0.0",
+        "azmcp",
+        "server",
+        "start",
+        "--read-only"
+      ],
+      "env": {
+        "AZURE_MCP_COLLECT_TELEMETRY": "false",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
+      },
+      "pin": {
+        "registry": "pypi",
+        "package": "msmcp-azure",
+        "version": "3.0.0",
+        "publishedAt": "2026-10-12T22:33:00Z",
+        "pinException": "The microsoft/azure-skills tools target the 3.0 contract (removed parameters are rejected), and 3.0 marks the MySQL and PostgreSQL query tools destructive, so --read-only hides them. Re-pin to a 3.0.x at least 7 days old when there is one (2026-10-19 or later)."
+      },
+      "codex": {
+        "startup_timeout_sec": 120,
+        "tool_timeout_sec": 120
+      },
+      "source": "https://github.com/microsoft/mcp/tree/main/servers/Azure.Mcp.Server",
+      "why": "Read-only Azure tools (resources, monitor, deploy plans, pricing, Foundry agents and evaluations) through az login; each pack picks its namespaces. No Key Vault. The first start downloads about 62 MB."
+    },
     "docs-langchain": {
       "scope": "pack",
       "url": "https://docs.langchain.com/mcp",

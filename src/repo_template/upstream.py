@@ -628,6 +628,9 @@ def _safe_path(path: str) -> bool:
     )
 
 
+EMPTY_BLOB = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"  # the Git blob of an empty file
+
+
 def _git_file(path: str) -> bool:
     """A .gitignore, .gitattributes or .gitmodules, in any case and with the trailing dots or
     spaces that Windows ignores."""
@@ -678,7 +681,7 @@ def stage(github: GitHub, upstream: Snapshot, target: Target, into: Path) -> Sta
             )
         if not _safe_path(entry.path):
             raise ValueError(f"{target.name}: unsafe path {clean(entry.path)!r}")
-        if _git_file(entry.path):
+        if _git_file(entry.path) and entry.sha != EMPTY_BLOB:  # an empty one has no rules
             raise ValueError(f"{target.name}: {clean(entry.path)} would change how Git sees it")
         folded = unicodedata.normalize("NFC", entry.path).casefold()
         if folded in seen:

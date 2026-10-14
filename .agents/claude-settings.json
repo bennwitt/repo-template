@@ -2,7 +2,7 @@
   "portable": {
     "enabledPlugins": {
       "atlassian@claude-plugins-official": true,
-      "azure@claude-plugins-official": true,
+      "azure@claude-plugins-official": false,
       "chrome-devtools-mcp@claude-plugins-official": true,
       "claude-code-setup@claude-plugins-official": true,
       "github@claude-plugins-official": true,
@@ -46,7 +46,25 @@
         "Bash(docker compose *down*-v*)",
         "Bash(docker compose *rm *-v*)",
         "Bash(playwright-cli *run-code*)",
-        "Bash(npx playwright cli *run-code*)"
+        "Bash(npx playwright cli *run-code*)",
+        "Bash(az * delete*)",
+        "Bash(az * purge*)",
+        "Bash(az ad app permission admin-consent*)",
+        "Bash(az ad * credential reset*)",
+        "Bash(az role assignment create*)",
+        "Bash(az * keys list*)",
+        "Bash(az acr credential show*)",
+        "Bash(azd up*)",
+        "Bash(azd provision*)",
+        "Bash(azd deploy*)",
+        "Bash(azd down*)",
+        "Bash(terraform apply*)",
+        "Bash(terraform destroy*)",
+        "Bash(kubectl debug*)",
+        "Bash(kubectl delete*)",
+        "Bash(kubectl drain*)",
+        "Bash(azd extension install*)",
+        "Bash(az extension add*)"
       ]
     },
     "hooks": {

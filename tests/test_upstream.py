@@ -744,6 +744,7 @@ def _publish(github: FakeGitHub, files: Files, ref: str = "HEAD", source: str = 
         ({"skills/s/a\x1bb.md": b"x"}, "unsafe path"),
         ({"skills/s/.gitattributes": b"* -diff\n"}, "would change how Git sees it"),
         ({"skills/s/scripts/.gitignore": b"*\n"}, "would change how Git sees it"),
+        ({"skills/s/.gitignore ": b" \n"}, "would change how Git sees it"),
         ({"skills/s/Notes.md": b"a", "skills/s/notes.md": b"b"}, "one file on a case-insensitive"),
         ({"skills/s/.DS_Store": b"x"}, ".gitignore would hide .DS_Store"),
     ],
@@ -1838,6 +1839,19 @@ def _list_in_pack(root: Path, *, move: bool = True) -> None:
     sync_globals(root, home=root.parent / "home")
     _git(root, "add", "-A")
     _git(root, "commit", "-qm", "pack")
+
+
+def test_an_empty_gitignore_in_a_skill_is_harmless(tmp_path: Path) -> None:
+    """microsoft-foundry ships an empty .gitignore: it has no rules, so it changes nothing."""
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    _publish(github, {**V2, "skills/s/.gitignore": b""})
+
+    outcome = _run(root, github, ["s"], "a")
+
+    assert outcome.applied == ["s"], outcome
+    assert (root / ".agents/skills/s/.gitignore").read_bytes() == b""
+    assert check_integrity(root, skill_names(root)) == []
 
 
 def test_a_pack_skill_is_upgraded_where_it_lives(tmp_path: Path) -> None:
