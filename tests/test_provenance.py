@@ -736,6 +736,7 @@ def test_a_skill_with_its_own_license_needs_it_recorded(tmp_path: Path) -> None:
     del sources["sources"]["o/r"]["licenseFiles"]  # every skill from o/r has its own
     _write_sources(root, sources)
     _documents(root, f"# R\n\n{README_START}\n{README_END}\n")
+    (root / ".agents/skill-packs.json").unlink()  # s stays a global skill here
     sync_documents(root, ["s"], {}, Result(root), check=False)
 
     assert _errors(root) == []
@@ -812,3 +813,19 @@ def test_globals_requires_the_records_of_a_full_catalog(tmp_path: Path) -> None:
     result = sync_globals(root, home=tmp_path / "home", check=True)
 
     assert any(error.endswith(".agents/.skill-lock.json is missing") for error in result.errors)
+
+
+def test_a_skill_lives_where_its_packs_say(tmp_path: Path) -> None:
+    """Pack skills live in .agents/packs, outside every folder Codex reads; others don't."""
+    root = _catalog(tmp_path / "c", {"SKILL.md": SKILL})
+    (root / ".agents/skill-packs.json").write_text('{"p": {"description": "P", "skills": ["s"]}}')
+
+    assert (
+        "s: a pack lists it, so it belongs in .agents/packs: git mv .agents/skills/s "
+        ".agents/packs/s" in _errors(root)
+    )
+    (root / ".agents/packs").mkdir()
+    _git(root, "mv", ".agents/skills/s", ".agents/packs/s")
+    assert _errors(root) == []
+    (root / ".agents/skill-packs.json").write_text("{}")
+    assert any("no pack lists it, so it belongs in .agents/skills" in e for e in _errors(root))

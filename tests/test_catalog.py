@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from repo_template.catalog import DESCRIPTION_LIMIT
+from repo_template.catalog import DESCRIPTION_LIMIT, skill_folder
 from repo_template.model import Result
 from repo_template.skillfile import read_fields
 from repo_template.standards import (
@@ -28,7 +28,7 @@ NAME = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
 
 @pytest.mark.parametrize("name", SKILLS)
 def test_skill_frontmatter_is_valid(name: str) -> None:
-    fields = read_fields((ROOT / ".agents/skills" / name / "SKILL.md").read_text())
+    fields = read_fields((skill_folder(ROOT, name) / "SKILL.md").read_text())
 
     assert fields.get("name") == name
     assert NAME.fullmatch(name) and len(name) <= 64
@@ -50,7 +50,7 @@ def test_descriptions_this_repository_writes_fit_the_budget() -> None:
     overrides = json.loads((ROOT / ".agents/skill-overrides.json").read_text())
     local = json.loads((ROOT / ".agents/skill-sources.json").read_text())["local"]
     for name in sorted(set(overrides) | set(local)):
-        description = read_fields((ROOT / ".agents/skills" / name / "SKILL.md").read_text())[
+        description = read_fields((skill_folder(ROOT, name) / "SKILL.md").read_text())[
             "description"
         ]
         assert len(description) <= DESCRIPTION_LIMIT, f"{name}: {len(description)} characters"
@@ -74,6 +74,8 @@ def test_every_catalog_data_file_is_committed(name: str) -> None:
         (".agents/skills/x/scripts/__pycache__/run.cpython-311.pyc", True),
         (".agents/skills/x/.DS_Store", True),
         (".agents/skills/x/.ruff_cache/0.1/a", True),
+        (".agents/packs/x/SKILL.md", False),
+        (".agents/packs/x/scripts/__pycache__/run.cpython-311.pyc", True),
     ],
 )
 def test_catalog_files_are_committed_and_caches_are_not(path: str, ignored: bool) -> None:

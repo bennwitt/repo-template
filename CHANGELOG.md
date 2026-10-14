@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.4.3 - 2026-10-14
 
+- Pack skills move to `.agents/packs/`, outside every folder Codex reads on its own, so Codex
+  sees them only where a repository lists the pack, like Claude Code. `update` links a pack's
+  skills into the repository's `.agents/skills/` (for Codex) as well as `.claude/skills/`, and
+  repoints links from before the move. Integrity checks that a skill lives in `.agents/packs/`
+  exactly when a pack lists it. Verified with Codex 0.160.1's `debug prompt-input`.
 - `globals --upstream` compares every vendored skill and license text with upstream, read-only, and
   confirms each recorded commit holds the vendored folder. `globals --upgrade [SKILL …]` refreshes
   skills, or adds one as `owner/repo@skill-or-path[#ref]`. Each is staged, verified against the

@@ -12,10 +12,11 @@ from repo_template.standards import sync_globals
 
 
 def _catalog(root: Path) -> Path:
-    """A standards repository whose .agents holds two pack skills and one global skill."""
+    """A standards repository whose .agents holds two pack skills (in packs/) and one global
+    skill (in skills/)."""
     agents = root / ".agents"
     for name in ("core", "lc-one", "lc-two"):
-        skill = agents / "skills" / name
+        skill = agents / ("skills" if name == "core" else "packs") / name
         skill.mkdir(parents=True)
         (skill / "SKILL.md").write_text(f"---\nname: {name}\ndescription: x\n---\n")
     (agents / "skill-packs.json").write_text(
@@ -63,10 +64,16 @@ def test_update_with_a_pack_links_it_and_records_it(tmp_path: Path) -> None:
     )
     applied = update_repository(root, hooks=False, lock=False, packs=["lc"], agents_dir=agents)
 
-    expected = [".claude/skills/lc-one", ".claude/skills/lc-two"]
+    expected = [
+        ".claude/skills/lc-one",
+        ".claude/skills/lc-two",
+        ".agents/skills/lc-one",  # for Codex, which reads a repository's .agents/skills
+        ".agents/skills/lc-two",
+    ]
     assert planned.created == expected
     assert applied.created == expected
-    assert os.readlink(root / ".claude/skills/lc-one") == str(agents / "skills/lc-one")
+    assert os.readlink(root / ".claude/skills/lc-one") == str(agents / "packs/lc-one")
+    assert os.readlink(root / ".agents/skills/lc-one") == str(agents / "packs/lc-one")
     assert skill_packs(root) == ["lc"]
     current = update_repository(root, check=True, hooks=False, lock=False, agents_dir=agents)
     assert not current.needs_attention
@@ -85,7 +92,12 @@ def test_dropping_a_pack_removes_only_its_links(tmp_path: Path) -> None:
 
     result = update_repository(root, hooks=False, lock=False, agents_dir=agents)
 
-    assert result.removed == [".claude/skills/lc-one", ".claude/skills/lc-two"]
+    assert result.removed == [
+        ".claude/skills/lc-one",
+        ".claude/skills/lc-two",
+        ".agents/skills/lc-one",
+        ".agents/skills/lc-two",
+    ]
     assert sorted(os.listdir(root / ".claude/skills")) == ["project-only"]
 
 
@@ -104,8 +116,39 @@ def test_a_skill_shared_by_two_packs_stays_when_one_is_dropped(tmp_path: Path) -
 
     result = update_repository(root, hooks=False, lock=False, agents_dir=agents)
 
-    assert result.removed == [".claude/skills/lc-one"]
+    assert result.removed == [".claude/skills/lc-one", ".agents/skills/lc-one"]
     assert sorted(os.listdir(root / ".claude/skills")) == ["lc-two"]
+    assert sorted(os.listdir(root / ".agents/skills")) == ["lc-two"]
+
+
+def test_links_from_before_pack_skills_moved_are_repointed(tmp_path: Path) -> None:
+    """Pack skills used to live in .agents/skills; a repository's old links get the new home."""
+    agents = _catalog(tmp_path / "standards")
+    root = _repository(tmp_path / "service")
+    update_repository(root, hooks=False, lock=False, packs=["lc"], agents_dir=agents)
+    (root / ".claude/skills/lc-one").unlink()
+    (root / ".claude/skills/lc-one").symlink_to(agents / "skills/lc-one")  # dangling now
+    (root / ".agents/skills/lc-two").unlink()
+
+    result = update_repository(root, hooks=False, lock=False, agents_dir=agents)
+
+    assert result.updated == [".claude/skills/lc-one"]
+    assert result.created == [".agents/skills/lc-two"]
+    assert os.readlink(root / ".claude/skills/lc-one") == str(agents / "packs/lc-one")
+
+
+def test_the_catalog_is_never_linked_into_itself(tmp_path: Path) -> None:
+    """In the standards repository, .agents is the catalog: only .claude/skills gets links."""
+    from repo_template.model import Result
+    from repo_template.standards import sync_project_packs
+
+    agents = _catalog(tmp_path / "standards")
+    result = Result(tmp_path / "standards")
+
+    sync_project_packs(tmp_path / "standards", ["lc"], result, check=False, agents_dir=agents)
+
+    assert result.created == [".claude/skills/lc-one", ".claude/skills/lc-two"]
+    assert not (agents / "skills/lc-one").exists()
 
 
 def test_unknown_pack_is_rejected_before_anything_changes(tmp_path: Path) -> None:

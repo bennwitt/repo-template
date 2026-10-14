@@ -9,8 +9,8 @@ agents (Claude Code, Codex) find what they need and do their best work.**
    ready to work in: uv, pytest, Ruff, strict mypy, CI, Dependabot, a pre-commit secret scan,
    and the context files agents read first (`AGENTS.md`, `GLOSSARY.md`, `docs/adr/`). Existing
    repositories move toward the same standard without losing local changes.
-2. **A versioned catalog of agent skills and settings.** `.agents/skills/` holds the skills you
-   rely on: test-driven development, bug diagnosis, architecture review, spec → tickets →
+2. **A versioned catalog of agent skills and settings.** `.agents/skills/` (and `.agents/packs/`
+   for skills only some repositories want) holds the skills you rely on: test-driven development, bug diagnosis, architecture review, spec → tickets →
    implementation, code review, LangChain/LangGraph, evals and more. One command links them
    into Claude Code and Codex on any machine.
 
@@ -341,8 +341,9 @@ my-service/
 
 ## The skill catalog
 
-Skills live in `.agents/skills/<name>/SKILL.md`. `.claude/skills/` in this repository is a mirror
-of symlinks, so the same skills appear when you open this repository in Claude Code.
+Global skills live in `.agents/skills/<name>/SKILL.md`, pack skills in
+`.agents/packs/<name>/SKILL.md` (see below). `.claude/skills/` in this repository is a mirror of
+symlinks to the global ones, so they appear when you open this repository in Claude Code.
 
 A skill with `disable-model-invocation: true` runs only when you type `/name`, so it costs no
 context until you use it. The others are listed in every session so the agent can pick them up
@@ -387,8 +388,10 @@ no blocking at all without `jq`), so treat it as a reminder, not a guarantee.
 
 A skill's description is listed in every session, so a LangChain skill costs context in a repository
 that has nothing to do with LangChain, and its broad triggers can fire there. Skills that only make
-sense in some repositories are grouped into packs in `.agents/skill-packs.json`. `globals` doesn't
-link pack skills into `~/.claude/skills`; a repository opts in instead:
+sense in some repositories are grouped into packs in `.agents/skill-packs.json`, and live in
+`.agents/packs/` rather than `.agents/skills/`. `globals` doesn't link them into `~/.claude/skills`,
+and Codex, which reads `~/.agents/skills` on its own, never sees them there; a repository opts in
+instead:
 
 ```bash
 repo-template new my-agent --pack langchain        # start with a pack
@@ -396,14 +399,17 @@ repo-template update /path/to/repo --pack gradio   # add one later (also applies
 ```
 
 The pack is recorded under `skill_packs` in `.repo-template.json`, and `update` links each of its
-skills into the repository's `.claude/skills/` (ignored by Git) as links to `~/.agents/skills/`.
-To drop a pack, remove it from `skill_packs` and run `update`; its links are removed and nothing
-else in `.claude/skills/` is touched. On another machine, `update` recreates the links. If
+skills into the repository's `.claude/skills/` (for Claude Code) and `.agents/skills/` (for Codex,
+which reads a repository's `.agents/skills` from its root down), both ignored by Git, as links to
+`~/.agents/packs/`. To drop a pack, remove it from `skill_packs` and run `update`; its links are
+removed and nothing else in either folder is touched. Links from before pack skills moved to
+`.agents/packs/` are repointed by the next `update`. On another machine, `update` recreates the links. If
 `skill_packs` lists a pack that `skill-packs.json` no longer defines (renamed, or a machine that
 hasn't pulled), `update` reports it and removes no links at all, since it can't tell which ones
 belonged to that pack.
 
-A skill can belong to several packs; it's linked once.
+A skill can belong to several packs; it's linked once. A skill lives in `.agents/packs/` exactly
+when some pack lists it, and integrity says which `git mv` to run when that changes.
 
 ### Catalog: every skill, where it applies, and where it comes from
 
@@ -523,8 +529,8 @@ hooks, but no event that reliably identifies a skill.
 
 ### Add, update, or remove a skill
 
-Every skill in `.agents/skills/` is recorded in one of two places, and `globals --check` (and the
-tests) fail until it is:
+Every skill in `.agents/skills/` and `.agents/packs/` is recorded in one of two places, and
+`globals --check` (and the tests) fail until it is:
 
 - **vendored** skills in `.agents/.skill-lock.json` (source repository, path, and the upstream
   folder's git tree SHA), with the upstream commit and the tree it was recorded for under
@@ -629,7 +635,7 @@ again; commit it with the override. An override value can't contain `---`: Claud
 frontmatter at the first one, even inside a value.
 
 Keep descriptions you write (overrides and local skills) to 350 characters: every description
-loads on every turn, and Codex sees the whole catalog. To remove a skill, delete its folder and
+loads on every turn, in Claude Code and in Codex. To remove a skill, delete its folder and
 every record of it: its lock entry or `local` record, its `skills` record, its override, any
 `allowCommands` entry, and its place in `.agents/skill-packs.json`. Then run
 `repo-template globals`, which removes the stale links and reports any record left behind. On
@@ -653,14 +659,12 @@ and follow `writing-for-agents`.
 
 - New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
   run `/setup-matt-pocock-skills` after `new`.
-- Skill packs scope skills for Claude Code only. Codex reads every skill in `~/.agents/skills`,
-  so it still sees pack skills everywhere.
 - Python/uv is the only project profile.
 
 ## License
 
 repo-template's own code and documentation are under the MIT License ([LICENSE](LICENSE)).
-Vendored agent skills under `.agents/skills/` keep their own licenses: the catalog above names
+Vendored agent skills under `.agents/skills/` and `.agents/packs/` keep their own licenses: the catalog above names
 each one, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) has the full texts. A vendored
 skill's entry in `.agents/skill-overrides.json`, and the `SKILL.md` it produces, are under that
 skill's license.

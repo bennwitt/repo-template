@@ -39,6 +39,8 @@ from repo_template.skillfile import (
     without_change_note,
 )
 
+SKILLS_DIR = ".agents/skills"  # global skills: linked on every machine, and read by Codex
+PACKS_DIR = ".agents/packs"  # pack skills: outside every folder Codex reads, linked per repository
 LOCK_NAME = ".agents/.skill-lock.json"
 SOURCES_NAME = ".agents/skill-sources.json"
 OVERRIDES_NAME = ".agents/skill-overrides.json"
@@ -122,6 +124,12 @@ def _license_file(source: str, name: str) -> str:
     return f"{LICENSES_DIR}/{source.replace('/', '_')}__{name}.txt"
 
 
+def skill_folder(root: Path, name: str) -> Path:
+    """Where a catalog skill lives: under .agents/packs if a pack holds it, else .agents/skills."""
+    packed = root / PACKS_DIR / name
+    return packed if packed.is_dir() else root / SKILLS_DIR / name
+
+
 def read_skill(path: Path) -> str:
     with path.open(newline="") as handle:  # the file's own line endings, as Git hashes them
         return handle.read()
@@ -181,7 +189,7 @@ def _git(root: Path, *args: str) -> bytes:
 
 @dataclass
 class SkillFiles:
-    """What Git knows about each folder under .agents/skills."""
+    """What Git knows about each skill folder under .agents/skills and .agents/packs."""
 
     files: dict[str, dict[str, tuple[str, str]]] = field(default_factory=dict)
     unusual: dict[str, list[str]] = field(default_factory=dict)  # links, submodules, escapes
@@ -189,9 +197,11 @@ class SkillFiles:
 
 
 def _in_skill(path: str) -> tuple[str, str] | None:
-    """(skill, path inside it) for .agents/skills/<skill>/<path>."""
+    """(skill, path inside it) for .agents/{skills,packs}/<skill>/<path>."""
     parts = path.split("/")
-    return (parts[2], "/".join(parts[3:])) if len(parts) >= 4 else None
+    if len(parts) < 4 or "/".join(parts[:2]) not in {SKILLS_DIR, PACKS_DIR}:
+        return None
+    return parts[2], "/".join(parts[3:])
 
 
 def list_skill_files(root: Path) -> SkillFiles:
@@ -199,20 +209,21 @@ def list_skill_files(root: Path) -> SkillFiles:
     bit), so an uncommitted edit counts too; plus the untracked, unignored files, which are live
     through each skill's link."""
     file_mode = _git(root, "config", "--bool", "--default", "true", "core.fileMode").strip()
-    skills_dir = (root / ".agents/skills").resolve()
     listing = SkillFiles()
-    for record in _git(root, "ls-files", "-s", "-z", "--", ".agents/skills").split(b"\0"):
+    tracked = _git(root, "ls-files", "-s", "-z", "--", SKILLS_DIR, PACKS_DIR)
+    for record in tracked.split(b"\0"):
         meta, _, raw = record.partition(b"\t")  # the metadata never holds a tab; a path may
         found = _in_skill(os.fsdecode(raw)) if raw else None
         if found is None:
             continue
         skill, path = found
         index_mode = meta.split()[0].decode()
-        file = root / ".agents/skills" / skill / path
+        folder = root / "/".join(os.fsdecode(raw).split("/")[:3])
+        file = folder / path
         if (
             index_mode not in {"100644", "100755"}
             or file.is_symlink()
-            or not file.resolve().is_relative_to(skills_dir / skill)
+            or not file.resolve().is_relative_to(folder.resolve())
         ):
             listing.unusual.setdefault(skill, []).append(path)
             continue
@@ -222,7 +233,9 @@ def list_skill_files(root: Path) -> SkillFiles:
         if file_mode == b"true":
             mode = "100755" if file.stat().st_mode & stat.S_IXUSR else "100644"
         listing.files.setdefault(skill, {})[path] = (mode, blob_sha(file.read_bytes()))
-    untracked = _git(root, "ls-files", "-o", "--exclude-standard", "-z", "--", ".agents/skills")
+    untracked = _git(
+        root, "ls-files", "-o", "--exclude-standard", "-z", "--", SKILLS_DIR, PACKS_DIR
+    )
     for raw in filter(None, untracked.split(b"\0")):
         found = _in_skill(os.fsdecode(raw))
         if found:
@@ -420,8 +433,29 @@ def integrity(
     vendored = sources.get("skills", {})
     allowed_commands = sources.get("allowCommands", {})
 
+    try:
+        packs = _json(root, PACKS_NAME) if (root / PACKS_NAME).is_file() else {}
+    except ValueError as exc:
+        return [str(exc)], set()
+    in_packs = {
+        skill
+        for pack in packs.values()
+        if isinstance(pack, dict)
+        for skill in pack.get("skills", [])
+        if isinstance(skill, str)
+    }
     for name in names:
-        if (root / ".agents/skills" / name).is_symlink():
+        placed = PACKS_DIR if (root / PACKS_DIR / name).is_dir() else SKILLS_DIR
+        wanted = PACKS_DIR if name in in_packs else SKILLS_DIR
+        if (root / PACKS_DIR / name).is_dir() and (root / SKILLS_DIR / name).is_dir():
+            problems.add(name, f"is in both {SKILLS_DIR} and {PACKS_DIR}; keep one")
+        elif placed != wanted:
+            problems.add(
+                name,
+                f"{'a pack lists it' if name in in_packs else 'no pack lists it'}, so it belongs "
+                f"in {wanted}: git mv {placed}/{name} {wanted}/{name}",
+            )
+        if skill_folder(root, name).is_symlink():
             problems.add(name, "its folder is a symlink; a skill is a folder in this repository")
         if name in lock and name in local:
             problems.add(name, "recorded both in the lock and as a local skill")
@@ -430,7 +464,7 @@ def integrity(
                 name, f"unrecorded skill; vendor it, or add it to 'local' in {SOURCES_NAME}"
             )
     for name in sorted(set(lock) - set(names)):
-        if (root / ".agents/skills" / name).is_dir():
+        if skill_folder(root, name).is_dir():
             problems.add(name, "its folder has no SKILL.md")
         elif any(root.glob(f"{STAGE_PREFIX}*")):
             problems.add(
@@ -461,7 +495,7 @@ def integrity(
 
     own: dict[str, list[str]] = {}
     for name in sorted(set(lock) & set(names)):
-        skill_dir = root / ".agents/skills" / name
+        skill_dir = skill_folder(root, name)
         spdx = licensed.get(lock[name].get("source"), {})
         spdx = spdx.get("license", "") if isinstance(spdx, dict) else ""
         own[name] = own_license(skill_dir, read_skill(skill_dir / "SKILL.md"), str(spdx))
@@ -517,7 +551,7 @@ def integrity(
                 problems.add(name, "'derivedFrom' needs the upstream 'commit' it was made from")
 
     for name in names:
-        text = read_skill(root / ".agents/skills" / name / "SKILL.md")
+        text = read_skill(skill_folder(root, name) / "SKILL.md")
         problem = _frontmatter_problem(text)
         if problem:
             problems.add(name, problem)
@@ -556,7 +590,7 @@ def integrity(
             )
         files = dict(listing.files.get(name, {}))
         if name in overrides and "SKILL.md" in files:
-            text = read_skill(root / ".agents/skills" / name / "SKILL.md")
+            text = read_skill(skill_folder(root, name) / "SKILL.md")
             done = completes(name, text)
             fields = overrides[name].get("frontmatter", {})
             try:
@@ -642,7 +676,7 @@ def render_catalog(root: Path, names: list[str], packs: dict[str, list[str]]) ->
             if derived:
                 url = upstream_url(derived["source"], derived["commit"], derived["path"])
                 notes.append(f"derived from [{derived['source']}]({url})")
-        fields = read_fields((root / ".agents/skills" / name / "SKILL.md").read_text())
+        fields = read_fields((skill_folder(root, name) / "SKILL.md").read_text())
         fields.update(  # what `globals` writes, so --check plans what it would do
             (key, format_value(value).strip('"'))
             for key, value in overrides.get(name, {}).get("frontmatter", {}).items()
@@ -700,8 +734,8 @@ def render_notices(root: Path, names: list[str]) -> str:
                 line += f"; under its own license, {record['license']}"
                 if record.get("copyright"):
                     line += f" ({record['copyright']})"
-                for file in _license_files(root / ".agents/skills" / name):
-                    texts += _license_text(root / ".agents/skills" / name / file, f"{name}/{file}")
+                for file in _license_files(skill_folder(root, name)):
+                    texts += _license_text(skill_folder(root, name) / file, f"{name}/{file}")
             listed.append(line)
         entries.append((source, sources["sources"].get(source, {}), listed, texts))
     for name, record in sorted(sources.get("local", {}).items()):

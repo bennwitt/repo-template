@@ -61,12 +61,14 @@ Credentials, sessions, caches, and local preferences that must stay on one machi
 _Avoid_: local config
 
 **Skill catalog**:
-The skills in `.agents/skills/`, linked into every machine by `globals`.
+The skills in `.agents/skills/` (global, linked into every machine by `globals`) and
+`.agents/packs/` (pack skills, linked only into repositories that list their pack).
 _Avoid_: skill library
 
 **Skill pack**:
-A named group of catalog skills, defined in `.agents/skill-packs.json`, that are linked only into
-repositories whose manifest lists the pack, not into every machine.
+A named group of catalog skills, defined in `.agents/skill-packs.json` and kept in
+`.agents/packs/`, that are linked only into repositories whose manifest lists the pack (into
+`.claude/skills/` for Claude Code and `.agents/skills/` for Codex), not into every machine.
 _Avoid_: skill bundle, plugin
 
 **Skill sources**:

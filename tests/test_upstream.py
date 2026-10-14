@@ -978,6 +978,8 @@ def test_removing_a_skill_drops_it_from_packs_and_allowed_commands(tmp_path: Pat
     (root / ".agents/skill-packs.json").write_text(
         json.dumps({"p": {"description": "P", "skills": ["s"]}}, indent=2) + "\n"
     )
+    (root / ".agents/packs").mkdir()
+    _git(root, "mv", ".agents/skills/s", ".agents/packs/s")  # a pack skill lives in packs/
     sources = json.loads((root / ".agents/skill-sources.json").read_text())
     sources["allowCommands"] = {"s": "reviewed"}
     (root / ".agents/skill-sources.json").write_text(json.dumps(sources, indent=2) + "\n")
@@ -1782,3 +1784,24 @@ def test_a_binary_file_is_left_for_review_even_where_the_scanner_looks(tmp_path:
     outcome = _run(root, github, ["s"], scanner=ReadsReferences())
 
     assert outcome.applied == [] and "binary, not shown" in outcome.undecided[0], outcome
+
+
+def test_a_pack_skill_is_upgraded_where_it_lives(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    (root / ".agents/skill-packs.json").write_text(
+        json.dumps({"p": {"description": "P", "skills": ["s"]}}, indent=2) + "\n"
+    )
+    (root / ".agents/packs").mkdir()
+    _git(root, "mv", ".agents/skills/s", ".agents/packs/s")
+    sync_globals(root, home=root.parent / "home")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "pack")
+    _publish(github, V2)
+
+    outcome = _run(root, github, ["s"], "a")
+
+    assert outcome.applied == ["s"], outcome
+    assert (root / ".agents/packs/s/new.md").is_file()
+    assert not (root / ".agents/skills/s").exists()
+    assert check_integrity(root, skill_names(root)) == []

@@ -13,7 +13,9 @@ from repo_template.catalog import (
     LICENSES_DIR,
     LOCK_NAME,
     NOTICES_NAME,
+    PACKS_DIR,
     SHA,
+    SKILLS_DIR,
     SOURCES_NAME,
     blob_sha,
     integrity,
@@ -21,6 +23,7 @@ from repo_template.catalog import (
     origin,
     override,
     read_skill,
+    skill_folder,
     sync_documents,
 )
 from repo_template.model import Result
@@ -112,16 +115,17 @@ def find_standards_root(explicit: Path | None = None) -> Path:
 
 
 def skill_names(standards_root: Path) -> list[str]:
-    """Every catalog skill: a folder under .agents/skills/ that contains a SKILL.md."""
-    skill_root = standards_root / ".agents/skills"
-    return sorted(
-        (
-            skill.name
-            for skill in skill_root.iterdir()
-            if skill.name != "synced" and (skill / "SKILL.md").is_file()
-        ),
-        key=str.casefold,
-    )
+    """Every catalog skill: a folder holding a SKILL.md under .agents/skills/ (global skills)
+    or .agents/packs/ (pack skills)."""
+    names: set[str] = set()
+    for folder in (standards_root / SKILLS_DIR, standards_root / PACKS_DIR):
+        if folder.is_dir():
+            names.update(
+                skill.name
+                for skill in folder.iterdir()
+                if skill.name != "synced" and (skill / "SKILL.md").is_file()
+            )
+    return sorted(names, key=str.casefold)
 
 
 def load_skill_packs(agents_dir: Path) -> dict[str, list[str]]:
@@ -197,7 +201,7 @@ def apply_skill_overrides(standards_root: Path, result: Result, *, check: bool) 
     completes = lock_completion(standards_root)
     recorded = False
     for name, fields in overrides.items():
-        path = agents / "skills" / name / "SKILL.md"
+        path = skill_folder(standards_root, name) / "SKILL.md"
         if not path.is_file():
             result.errors.append(f"{SKILL_OVERRIDES_NAME} overrides {name!r}, not in the catalog")
             continue
@@ -262,6 +266,10 @@ def _points_into(parent: Path) -> Callable[[Path], bool]:
     return lambda entry: Path(os.readlink(entry)).parent == parent
 
 
+def _points_into_any(*parents: Path) -> Callable[[Path], bool]:
+    return lambda entry: Path(os.readlink(entry)).parent in parents
+
+
 def _sync_links(
     directory: Path,
     targets: dict[str, Path],
@@ -304,14 +312,18 @@ def sync_project_packs(
     check: bool,
     agents_dir: Path,
 ) -> None:
-    """Link each skill of the repository's packs into <root>/.claude/skills (ignored by Git).
+    """Link each skill of the repository's packs into <root>/.claude/skills, for Claude Code, and
+    <root>/.agents/skills, for Codex (both ignored by Git).
 
-    Links point at <agents_dir>/skills/<name>, normally ~/.agents/skills, so they follow the
-    standards repository wherever it lives. Links for packs no longer listed are removed, unless
-    a listed pack isn't defined: its links can't be told apart, so nothing is removed.
+    Links point at <agents_dir>/packs/<name>, normally ~/.agents/packs, so they follow the
+    standards repository wherever it lives. Pack skills live there, outside every folder Codex
+    reads on its own, so Codex sees them only in repositories with the pack. Links for packs no
+    longer listed are removed, unless a listed pack isn't defined: its links can't be told
+    apart, so nothing is removed. Links into <agents_dir>/skills, where pack skills used to
+    live, are this tool's too, and are replaced.
     """
     definitions = load_skill_packs(agents_dir)
-    skills_dir = agents_dir / "skills"
+    packs_dir, skills_dir = agents_dir / "packs", agents_dir / "skills"
     wanted: dict[str, Path] = {}
     undefined = [pack for pack in packs if pack not in definitions]
     for pack in undefined:
@@ -321,15 +333,20 @@ def sync_project_packs(
         )
     for pack in packs:
         for name in definitions.get(pack, []):
-            if (skills_dir / name / "SKILL.md").is_file():
+            if (packs_dir / name / "SKILL.md").is_file():
+                wanted[name] = packs_dir / name
+            elif (skills_dir / name / "SKILL.md").is_file():  # a catalog not yet moved
                 wanted[name] = skills_dir / name
             else:
                 result.errors.append(f"skill pack {pack!r} lists {name!r}, which isn't installed")
-    target_dir = root / ".claude/skills"
-    _sync_links(target_dir, dict(sorted(wanted.items())), result, check=check, base=root)
-    if not undefined:
-        owned = _points_into(skills_dir)
-        _prune_links(target_dir, owned, set(wanted), result, check=check, base=root)
+    targets = [root / ".claude/skills"]
+    if (root / ".agents").resolve() != agents_dir.resolve():  # never link the catalog into itself
+        targets.append(root / ".agents/skills")
+    owned = _points_into_any(packs_dir, skills_dir)
+    for target_dir in targets:
+        _sync_links(target_dir, dict(sorted(wanted.items())), result, check=check, base=root)
+        if not undefined:
+            _prune_links(target_dir, owned, set(wanted), result, check=check, base=root)
 
 
 def unknown_packs(packs: Sequence[str], agents_dir: Path) -> list[str]:
