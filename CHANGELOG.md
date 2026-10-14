@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.2 - 2026-10-14
 
 - Skills refreshed from upstream: `ask-matt`, `claude-handoff`, `code-review`, `diagnosing-bugs`,
   `grilling`, `handoff`, `implement`, `managed-deep-agents`, `setup-matt-pocock-skills`, `tdd`,
@@ -74,6 +74,13 @@
   GitHub detects for the repository (docker/skills does), instead of refusing it.
 - Codex 0.160.1 shows about 40,000 characters of skills before it truncates; a test keeps the
   global skills to half of that.
+- Generated `.gitignore` ignores `.playwright-cli/`, `.playwright-mcp/`, `playwright/.auth/`
+  (browser sessions, traces and saved logins), `.azure/` (azd environment settings) and `.foundry/`
+  (the microsoft-foundry skill's copies of production conversations and connection strings); the
+  global excludes that `globals` writes add the two Playwright folders.
+- The pre-commit secret scan also stops Hugging Face tokens (`hf_…`) and Meta API keys
+  (`LLM|<id>|<secret>`), and looks only at lines being added, so a commit that removes a key
+  from a file isn't stopped.
 
 ## 0.5.1 - 2026-10-14
 

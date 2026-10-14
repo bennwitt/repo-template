@@ -43,7 +43,7 @@ from repo_template.skillfile import field_lines
 
 GITIGNORE_START = "# >>> repo-template personal AI directories"
 GITIGNORE_END = "# <<< repo-template personal AI directories"
-GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/"
+GITIGNORE_CONTENT = "**/.agents/\n**/.claude/\n**/.codex/\n**/.playwright-cli/\n**/.playwright-mcp/"
 
 
 SKILL_MIRROR_TARGET = Path("../../.agents/skills")

@@ -321,3 +321,56 @@ def test_versions_compare_as_major_minor_patch(
     manifest_path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="newer than this"):
         update_project(root, check=True)
+
+
+@pytest.mark.parametrize(
+    ("line", "stopped"),
+    [
+        ("token = 'hf_" + "a1B2" * 9 + "'", True),
+        ("key = 'LLM|" + "1234567890" + "|" + "AbCd_ef-" * 4 + "'", True),
+        ("key = 'sk-proj-" + "x" * 48 + "'", True),
+        ("hf_short = 1", False),
+        ("model = 'facebook/sam3'", False),
+    ],
+)
+def test_the_pre_commit_hook_stops_added_secrets(tmp_path: Path, line: str, stopped: bool) -> None:
+    """Tokens are built at run time, so this file never holds one."""
+    import shutil
+    import subprocess
+
+    if shutil.which("git") is None:
+        pytest.skip("needs git")
+    root = tmp_path / "repo"
+    new_project(root, name="repo", description="R.", python_version="3.12")
+    hook = root / ".githooks/pre-commit"
+    scan = hook.read_text().split("\nuv lock --check")[0] + "\n"  # the scan, not the checks
+    (root / "scan.sh").write_text(scan)
+    git = ["git", "-C", str(root)]
+    subprocess.run([*git, "init", "-q"], check=True)
+    (root / "config.py").write_text(line + "\n")
+    subprocess.run([*git, "add", "config.py"], check=True)
+
+    added = subprocess.run(["sh", str(root / "scan.sh")], cwd=root, capture_output=True)
+
+    assert (added.returncode == 1) is stopped, added.stderr
+    if stopped:  # removing the same line later doesn't stop that commit
+        subprocess.run(
+            [*git, "-c", "user.name=t", "-c", "user.email=t@e", "commit", "-qm", "x", "-n"],
+            check=True,
+        )
+        (root / "config.py").write_text("")
+        subprocess.run([*git, "add", "config.py"], check=True)
+        removed = subprocess.run(["sh", str(root / "scan.sh")], cwd=root, capture_output=True)
+        assert removed.returncode == 0, removed.stderr
+
+
+def test_the_pre_commit_checks_run_without_this_commits_git_context(tmp_path: Path) -> None:
+    """A commit from a worktree hands hooks GIT_DIR and GIT_INDEX_FILE; tests the hook runs
+    must not inherit them, or their git commands write to the repository being committed."""
+    root = tmp_path / "repo"
+    new_project(root, name="repo", description="R.", python_version="3.12")
+    hook = (root / ".githooks/pre-commit").read_text()
+    scan, checks = hook.split("\nuv lock --check", 1)
+
+    assert "unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE" in scan.rsplit("fi\n", 1)[1]
+    assert "git diff --cached" in scan  # the scan itself still sees the commit's index

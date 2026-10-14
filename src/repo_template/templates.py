@@ -240,6 +240,13 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         .codex/
         CLAUDE.local.md
 
+        # Tool state: browser sessions and traces, cloud environment settings, Foundry datasets
+        .playwright-cli/
+        .playwright-mcp/
+        playwright/.auth/
+        .azure/
+        .foundry/
+
         # Editors and operating systems
         .idea/
         .DS_Store
@@ -489,11 +496,17 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
 
         secret_pattern='BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}'
         secret_pattern="${secret_pattern}|sk-proj-[A-Za-z0-9_-]{40,}|sk-[A-Za-z0-9]{32,}"
-        if git diff --cached --binary | grep -Eq "$secret_pattern"; then
+        secret_pattern="${secret_pattern}|hf_[A-Za-z0-9]{30,}|LLM[|][0-9]{6,}[|][A-Za-z0-9_-]{16,}"
+        # only the lines being added: removing a key from a file doesn't stop the commit
+        added=$(git diff --cached --binary -U0 | grep '^+' | grep -v '^+++ ' || true)
+        if printf '%s\n' "$added" | grep -Eq "$secret_pattern"; then
           echo "Possible secret in staged changes; commit stopped." >&2
           exit 1
         fi
 
+        # Git points hooks at this commit's index (and, in a worktree, its repository); tests
+        # that run git in a temporary folder would write there, so the checks run without them
+        unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY
         uv lock --check
         uv run ruff check .
         uv run ruff format --check .

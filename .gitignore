@@ -27,6 +27,13 @@ htmlcov/
 .codex/
 CLAUDE.local.md
 
+# Tool state: browser sessions and traces, cloud environment settings, Foundry datasets
+.playwright-cli/
+.playwright-mcp/
+playwright/.auth/
+.azure/
+.foundry/
+
 # Editors and operating systems
 .idea/
 .DS_Store

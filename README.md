@@ -811,9 +811,10 @@ and follow `writing-for-agents`.
 - Global files are backed up before being replaced with links.
 - `~/.claude` is never linked wholesale: individual skills are linked, and the portable settings
   are merged into `~/.claude/settings.json`, entry by entry, keeping changes made on the machine.
-- Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/` and
-  `.codex/`; a repository's `.codex/config.toml` is written only where Git ignores it. The
-  pre-commit hook blocks staged private keys and AWS- or OpenAI-style keys.
+- Generated repositories ignore `.env`, `.env.*`, `*.pem`, `*.key`, `.agents/`, `.claude/`,
+  `.codex/`, Playwright's session and trace folders, `.azure/` and `.foundry/`; a repository's
+  `.codex/config.toml` is written only where Git ignores it. The pre-commit hook blocks added
+  lines holding a private key, or an AWS, OpenAI, Hugging Face or Meta API key.
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
 
 ## Current limitations
