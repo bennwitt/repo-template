@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import getpass
+import pwd
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -104,3 +107,59 @@ def test_check_writes_nothing_and_a_second_run_is_current(home: Path) -> None:
 
     assert planned.created == applied.created and again.unchanged == applied.created
     assert GITIGNORE_END in (home / ".config/git/ignore").read_text()
+
+
+def test_a_conditional_include_for_some_repository_never_decides_it(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (home / ".gitconfig-work").write_text("[core]\n\texcludesFile = ~/.work-ignore\n")
+    (home / ".gitconfig").write_text('[includeIf "gitdir:~/work/"]\n\tpath = ~/.gitconfig-work\n')
+    project = home / "work/project"
+    project.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(project)], check=True)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.chdir(project)  # where `globals` happens to run
+
+    assert global_ignore_file(home) == home / ".config/git/ignore"
+
+
+def test_git_expands_the_path_itself(home: Path) -> None:
+    user = getpass.getuser()
+    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = ~{user}/.gitignore_x\n")
+
+    assert global_ignore_file(home) == Path(pwd.getpwnam(user).pw_dir) / ".gitignore_x"
+
+
+def test_a_relative_excludesfile_is_reported_not_guessed(home: Path) -> None:
+    (home / ".gitconfig").write_text("[core]\n\texcludesFile = .gitignore_x\n")
+
+    result = _sync(home)
+
+    assert len(result.preserved) == 1 and "a relative path" in result.preserved[0]
+    assert sorted(p.name for p in home.iterdir()) == [".gitconfig"]  # nothing written
+
+
+def test_another_homes_system_config_is_ignored(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    system = tmp_path / "gitconfig"
+    system.write_text(f"[core]\n\texcludesFile = {tmp_path / 'system-ignore'}\n")
+    monkeypatch.delenv("GIT_CONFIG_NOSYSTEM")
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(system))
+
+    assert global_ignore_file(home) == home / ".config/git/ignore"
+    monkeypatch.setattr(Path, "home", lambda: home)  # now it is this machine's home
+    assert global_ignore_file(home) == tmp_path / "system-ignore"
+
+
+def test_markers_in_the_wrong_order_are_a_broken_block(home: Path) -> None:
+    target = home / ".config/git/ignore"
+    target.parent.mkdir(parents=True)
+    broken = f"{GITIGNORE_END}\n*.swp\n{GITIGNORE_START}\n"
+    target.write_text(broken)
+
+    planned = _sync(home, check=True)
+    applied = _sync(home)
+
+    assert target.read_text() == broken and planned.preserved == applied.preserved
+    assert applied.preserved == [f"{target} (repo-template's block has lost a marker line; kept)"]

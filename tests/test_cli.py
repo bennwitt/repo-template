@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from repo_template import __version__
+from repo_template import __version__, cli
 from repo_template.cli import main
 from repo_template.scaffold import new_project
 
@@ -148,4 +148,17 @@ def test_version_names_the_release_and_the_checkout_it_runs_from(
 
     assert stopped.value.code == 0
     root = Path(__file__).resolve().parents[1]
+    assert capsys.readouterr().out == f"repo-template {__version__} ({root})\n"
+
+
+def test_version_keeps_a_long_checkout_path_on_one_line(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = Path("/Users/someone/Library/CloudStorage/OneDrive-Company-Name/Projects/repo-template")
+    monkeypatch.setattr(cli, "installed_root", lambda: root)
+    monkeypatch.setenv("COLUMNS", "40")
+
+    with pytest.raises(SystemExit):
+        main(["--version"])
+
     assert capsys.readouterr().out == f"repo-template {__version__} ({root})\n"

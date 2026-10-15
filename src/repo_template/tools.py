@@ -44,11 +44,16 @@ class Tool:
     below: str | None = None
     tag: str | None = None  # github: the release tag, with {version}
     assets: Mapping[str, Asset] = field(default_factory=dict)  # github: by platform
+    pin_exception: str | None = None  # why a release inside its cooldown is pinned
 
 
 class Releases(Protocol):
     def releases(self, source: str) -> list[dict[str, Any]]:
-        """A repository's releases as GitHub's API returns them, newest first."""
+        """A repository's recent releases as GitHub's API returns them, newest first."""
+        ...
+
+    def release(self, source: str, tag: str) -> dict[str, Any] | None:
+        """The release with this tag, however old, or None when there is none."""
         ...
 
 
@@ -78,6 +83,7 @@ def load_machine_tools(agents_dir: Path) -> dict[str, Tool]:
         registry, package = entry.get("registry"), entry.get("package")
         version, published, why = entry.get("version"), entry.get("publishedAt"), entry.get("why")
         below, tag, assets = entry.get("below"), entry.get("tag"), entry.get("assets", {})
+        exception = entry.get("pinException")
         if registry not in ("npm", "github") or not isinstance(package, str) or not package:
             raise _fail(path, name, "needs 'registry' (npm or github) and 'package'")
         if not (isinstance(version, str) and FINAL.fullmatch(version)):
@@ -86,6 +92,8 @@ def load_machine_tools(agents_dir: Path) -> dict[str, Tool]:
             raise _fail(path, name, "'below' must be a version, such as 7")
         if not isinstance(why, str) or not why.strip():
             raise _fail(path, name, "needs a 'why'")
+        if exception is not None and not (isinstance(exception, str) and exception.strip()):
+            raise _fail(path, name, "a 'pinException' says why, in words")
         try:
             _time(str(published))
         except ValueError:
@@ -109,7 +117,7 @@ def load_machine_tools(agents_dir: Path) -> dict[str, Tool]:
         elif tag is not None or assets:
             raise _fail(path, name, "only a github tool has a 'tag' and 'assets'")
         tools[name] = Tool(
-            name, registry, package, version, str(published), why, below, tag, parsed
+            name, registry, package, version, str(published), why, below, tag, parsed, exception
         )
     return tools
 
@@ -151,6 +159,10 @@ def check_machine_tools(
             else:
                 assert tool.tag is not None
                 found = github_releases(github.releases(tool.package), tool.tag)
+                if tool.version not in found:  # older than the recent releases listed
+                    tag = tool.tag.replace("{version}", tool.version)
+                    pinned = github.release(tool.package, tag)
+                    found.update(github_releases([pinned] if pinned else [], tool.tag))
                 releases = {version: when for version, (when, _) in found.items()}
                 move += ", and each asset's sha256 from the release"
                 digests = found.get(tool.version, (None, {}))[1]
@@ -175,5 +187,6 @@ def check_machine_tools(
             report,
             record=TOOLS_NAME,
             move=move,
+            exception=tool.pin_exception,
             below=tool.below,
         )

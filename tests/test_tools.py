@@ -66,11 +66,15 @@ class FakeRegistry:
 
 
 class FakeReleases:
-    def __init__(self, releases: list[dict[str, Any]]) -> None:
-        self.listed = releases
+    def __init__(self, releases: list[dict[str, Any]], older: list[dict[str, Any]] = ()) -> None:
+        self.listed = releases  # the recent ones, as one page lists them
+        self.older = list(older)
 
     def releases(self, source: str) -> list[dict[str, Any]]:
         return self.listed
+
+    def release(self, source: str, tag: str) -> dict[str, Any] | None:
+        return next((r for r in self.listed + self.older if r["tag_name"] == tag), None)
 
 
 def _release(version: str, when: datetime, digest: str = DIGEST, **extra: object) -> dict[str, Any]:
@@ -100,6 +104,7 @@ def test_the_shipped_pin_file_is_valid() -> None:
         ({**_npm(), "registry": "pip"}, "needs 'registry'"),
         (_npm("1.0.0-beta"), "final release"),
         ({**_npm(), "why": ""}, "needs a 'why'"),
+        ({**_npm(), "pinException": " "}, "says why, in words"),
         ({**_npm(), "publishedAt": "2026-10-01"}, "time with its zone"),
         ({**_npm(), "below": "next"}, "'below' must be a version"),
         ({**_npm(), "tag": "v{version}"}, "only a github tool"),
@@ -165,3 +170,37 @@ def test_a_github_tool_is_checked_and_its_digests_compared(tmp_path: Path) -> No
         "tool: github o/tool 1.1.0 is in its cooldown until 2026-10-19T12:00:00Z"
     ]
     assert len(report.review) == 1 and "has sha256 " + "b" * 64 in report.review[0]
+
+
+def test_a_pin_older_than_the_recent_releases_is_found_by_its_tag(tmp_path: Path) -> None:
+    tools = load_machine_tools(_write(tmp_path, {"tool": _github()}))
+    releases = FakeReleases(
+        [_release("2.0.0", NOW - 30 * DAY)], older=[_release("1.0.0", NOW - 60 * DAY, "b" * 64)]
+    )
+    report = Report()
+
+    check_machine_tools(tools, FakeRegistry({}), releases, NOW, report)
+
+    assert not any("never published" in line for line in report.review)
+    assert len(report.review) == 1 and "has sha256 " + "b" * 64 in report.review[0]
+    assert report.changed == [
+        "tool: github o/tool 2.0.0 is newer than the pinned 1.0.0; update its version and "
+        "publishedAt in machine-tools.json, and each asset's sha256 from the release"
+    ]
+
+
+@pytest.mark.parametrize(("age", "review"), [(2, False), (30, True)])
+def test_a_pin_exception_lets_a_young_release_through_until_it_is_old_enough(
+    tmp_path: Path, age: int, review: bool
+) -> None:
+    entry = _npm(publishedAt=_stamp(NOW - age * DAY), pinException="a security fix")
+    tools = load_machine_tools(_write(tmp_path, {"lsp": entry}))
+    report = Report()
+
+    check_machine_tools(
+        tools, FakeRegistry({"1.0.0": NOW - age * DAY}), FakeReleases([]), NOW, report
+    )
+
+    assert report.review == (
+        ["lsp: npm lsp@1.0.0 is past its cooldown; its pinException can go"] if review else []
+    )

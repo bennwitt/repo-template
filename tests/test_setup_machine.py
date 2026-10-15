@@ -70,12 +70,12 @@ AZD = (  # azd itself, as its release ships it
     'echo "azd $*" >>"$HOME/calls.log"\n'
     '[ "$1" != version ] || echo "azd version 1.2.3 (commit abc)"\n'
 )
-PINS = {
-    "codex": ("@openai/codex", "0.1.0"),
-    "playwright-cli": ("@playwright/cli", "0.1.2"),
-    "pyright": ("pyright", "1.1.4"),
-    "typescript": ("typescript", "6.0.3"),
-    "typescript-language-server": ("typescript-language-server", "5.3.0"),
+PINS = {  # package, version, published
+    "codex": ("@openai/codex", "0.1.0", "2026-09-20T23:30:00Z"),
+    "playwright-cli": ("@playwright/cli", "0.1.2", "2026-09-02T10:00:00Z"),
+    "pyright": ("pyright", "1.1.4", "2026-09-09T20:42:01Z"),
+    "typescript": ("typescript", "6.0.3", "2026-04-16T23:38:27Z"),
+    "typescript-language-server": ("typescript-language-server", "5.3.0", "2026-05-21T06:35:07Z"),
 }
 
 
@@ -108,8 +108,8 @@ def machine(tmp_path: Path) -> dict[str, Path]:
     origin.mkdir()  # the standards repository, as GitHub has it
     (origin / "pyproject.toml").write_text('[project]\nname = "repo-template"\nversion = "9.9.9"\n')
     tools: dict[str, object] = {
-        name: {"registry": "npm", "package": package, "version": version}
-        for name, (package, version) in PINS.items()
+        name: {"registry": "npm", "package": package, "version": version, "publishedAt": published}
+        for name, (package, version, published) in PINS.items()
     }
     tools["azd"] = {
         "registry": "github",
@@ -496,6 +496,13 @@ def _tool_calls(home: Path) -> list[str]:
     return [call for call in _calls(home) if not call.startswith(("uv ", "repo-template "))]
 
 
+def _snapshot(home: Path) -> list[tuple[str, int, int]]:
+    """Every file under home, with its size and modification time."""
+    return sorted(
+        (str(p), p.lstat().st_size, p.lstat().st_mtime_ns) for p in home.rglob("*") if p.is_file()
+    )
+
+
 def _installed(stubs: Path, name: str, body: str) -> None:
     (stubs / name).write_text("#!/bin/sh\n" + body)
     (stubs / name).chmod(0o755)
@@ -507,8 +514,8 @@ def test_check_reports_a_machine_that_is_set_up_and_changes_nothing(
     home, stubs = machine["home"], machine["stubs"]
     target = _set_up(machine)
     _installed(stubs, "azd", AZD)
-    before = sorted(str(p) for p in home.rglob("*"))
-    everything = {name: version for name, (_, version) in PINS.items()}
+    before = _snapshot(home)
+    everything = {name: version for name, (_, version, _) in PINS.items()}
 
     result = _run(
         machine, "--check",
@@ -528,7 +535,7 @@ def test_check_reports_a_machine_that_is_set_up_and_changes_nothing(
         "azd version",
     ]
     (home / "calls.log").unlink()
-    assert sorted(str(p) for p in home.rglob("*")) == before  # nothing else written
+    assert _snapshot(home) == before  # nothing else written, not even Git's index
 
 
 def test_check_lists_each_problem_and_fails(machine: dict[str, Path]) -> None:
@@ -550,11 +557,12 @@ def test_check_lists_each_problem_and_fails(machine: dict[str, Path]) -> None:
         "!   GitHub's main has moved on: run this script, or git pull",
         f"!   AI_DEV_STANDARDS isn't {target} in this shell: open a new terminal",
         "!   globals has changes to make: 'repo-template globals --check' lists them",
-        "!   typescript 5.9.0: the pin is 6.0.3 (this script installs it)",
-        "!   azd: 'azd version 1.0.0 (commit abc)', but the pin is 1.2.3 (this script installs it)",
+        "!   typescript 5.9.0: the pin is 6.0.3 (run this script and answer yes to install it)",
+        f"!   {stubs}/azd is 'azd version 1.0.0 (commit abc)', not the pinned azd 1.2.3: remove "
+        "it (Homebrew: brew uninstall azd), then run this script and answer yes to Azure",
     ]
     assert "==> 6 to fix" in result.stdout
-    assert "pyright: not installed (optional; this script installs 1.1.4)" in result.stdout
+    assert "pyright: not installed (optional; this script offers 1.1.4)" in result.stdout
 
 
 def test_check_without_a_standards_link_says_how_to_set_up(machine: dict[str, Path]) -> None:
@@ -579,11 +587,13 @@ def test_the_tools_install_at_their_pins_and_azd_only_with_its_checksum(
 
     assert code == 0, shown
     npm, codex, download, *rest = _tool_calls(home)
-    assert npm == (
-        "npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 "
-        "pyright@1.1.4 @playwright/cli@0.1.2"
+    assert npm == (  # dependencies too: none newer than the end of the newest pin's day
+        "npm install -g --ignore-scripts --before=2026-09-10T00:00:00Z "
+        "typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.4 @playwright/cli@0.1.2"
     )
-    assert codex == "npm install -g --ignore-scripts @openai/codex@0.1.0"
+    assert codex == (
+        "npm install -g --ignore-scripts --before=2026-09-21T00:00:00Z @openai/codex@0.1.0"
+    )
     assert download.startswith("curl -fsSL -o ") and download.endswith(
         " https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_1.2.3/"
         "azd-linux-amd64.tar.gz"
@@ -606,6 +616,146 @@ def test_an_azd_download_that_doesnt_match_its_pin_isnt_installed(
     )  # fmt: skip
 
     assert code == 0, shown  # an optional tool: reported, never fatal
-    assert "not the pinned" in shown and "Installing azd didn't work" in shown
+    assert "not the pinned" in shown and "run this script again and answer yes to Azure" in shown
+    assert "install_azd" not in shown  # a function of the script's, not a command to run
     assert not (home / ".local/bin/azd").exists()
     assert [call.split(" ")[0] for call in _tool_calls(home)] == ["curl", "az"]
+
+
+def _check(machine: dict[str, Path], *args: str, **env: str) -> subprocess.CompletedProcess[str]:
+    home, stubs = machine["home"], machine["stubs"]
+    return _run(machine, "--check", *args, PATH=f"{stubs}:{home}/.local/bin:/usr/bin:/bin", **env)
+
+
+def _problems(result: subprocess.CompletedProcess[str]) -> list[str]:
+    return [line.strip() for line in result.stdout.splitlines() if line.startswith("    !")]
+
+
+def test_check_reports_an_origin_it_cant_reach_and_goes_on(
+    machine: dict[str, Path], tmp_path: Path
+) -> None:
+    _set_up(machine)
+    machine["origin"].rename(tmp_path / "gone")  # offline, or GitHub down
+
+    result = _check(machine)
+
+    assert result.returncode == 1
+    assert "!   its origin couldn't be reached (--offline skips this)" in _problems(result)
+    assert "to fix (the ! lines)" in result.stdout  # every check after it ran
+
+
+def test_check_tells_a_checkout_ahead_of_github_to_push(machine: dict[str, Path]) -> None:
+    target = _set_up(machine)
+    _git(target, "commit", "-q", "--allow-empty", "-m", "mine, not pushed")
+
+    result = _check(machine)
+
+    assert "!   its main has commits GitHub's doesn't: push them, or move them to a branch" in (
+        _problems(result)
+    )
+    assert "moved on" not in result.stdout
+
+
+def test_check_goes_on_when_a_tool_fails_to_run(machine: dict[str, Path]) -> None:
+    _set_up(machine)
+    _installed(machine["stubs"], "node", "exit 1\n")  # a version manager's shim, say
+    _installed(machine["stubs"], "azd", "exit 1\n")
+
+    result = _check(machine, "--offline")
+
+    assert result.returncode == 1
+    assert "!   node on PATH: its version can't be read" in _problems(result)
+    assert any(line.startswith(f"!   {machine['stubs']}/azd is ''") for line in _problems(result))
+    assert "to fix (the ! lines)" in result.stdout
+
+
+def test_a_folder_reached_through_a_link_is_recorded_as_its_real_path(
+    machine: dict[str, Path], tmp_path: Path
+) -> None:
+    home = machine["home"]
+    (tmp_path / "data/code").mkdir(parents=True)
+    (home / "code").symlink_to(tmp_path / "data/code")
+    real = tmp_path / "data/code/std"
+
+    result = _run(machine, "--yes", "--dir", "~/code/std", "--no-globals", "--no-tools")
+
+    assert result.returncode == 0, result.stderr
+    assert f'export AI_DEV_STANDARDS="{real}"' in (home / ".zshrc").read_text()
+    (home / ".agents").symlink_to(real / ".agents")  # as globals links it
+    checked = _check(machine, "--offline", AI_DEV_STANDARDS=str(home / "code/std"))
+    assert "ok  AI_DEV_STANDARDS is set" in checked.stdout
+
+
+def test_an_azd_that_isnt_the_pin_is_replaced(machine: dict[str, Path]) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+    (home / ".local/bin/azd").write_text("#!/bin/sh\n" + AZD.replace("1.2.3", "1.0.0"))
+    (home / ".local/bin/azd").chmod(0o755)
+
+    code, shown = _converse(
+        machine,
+        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+        PATH=f"{machine['stubs']}:{home}/.local/bin:/usr/bin:/bin",
+    )  # fmt: skip
+
+    assert code == 0, shown
+    asked, download, *rest = _tool_calls(home)
+    assert asked == "azd version" and download.startswith("curl ")
+    assert rest == ["az account show", "azd config set auth.useAzCliAuth true"]
+    assert "1.2.3" in (home / ".local/bin/azd").read_text()
+    assert "brew uninstall" not in shown  # it was ours, in ~/.local/bin
+
+
+def test_another_azd_first_on_path_is_named_and_the_pin_installed(
+    machine: dict[str, Path],
+) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+    _installed(machine["stubs"], "azd", AZD.replace("1.2.3", "1.0.0"))  # Homebrew's, say
+
+    code, shown = _converse(
+        machine,
+        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+    )  # fmt: skip
+
+    assert code == 0, shown
+    assert f"{machine['stubs']}/azd is azd 'azd version 1.0.0 (commit abc)'" in shown
+    assert "brew uninstall azd" in shown and "1.2.3" in (home / ".local/bin/azd").read_text()
+
+
+def test_an_azd_that_cant_be_written_isnt_reported_as_installed(
+    machine: dict[str, Path],
+) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+    (home / ".local/bin").chmod(0o555)  # owned by root after a sudo install, say
+    try:
+        code, shown = _converse(
+            machine,
+            [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+            "--dir", str(target), "--no-globals",
+        )  # fmt: skip
+    finally:
+        (home / ".local/bin").chmod(0o755)
+
+    assert code == 0, shown
+    assert "installed azd" not in shown and "azd wasn't installed" in shown
+    assert not (home / ".local/bin/azd").exists()
+
+
+def test_python_never_imports_from_the_folder_it_runs_in(machine: dict[str, Path]) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+    (home / "json.py").write_text(f"open({str(home / 'planted')!r}, 'w').close()\n")
+
+    _check(machine, "--offline", NPM_LS="{}")
+    _converse(
+        machine,
+        [("language servers", "y"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+    )  # fmt: skip
+
+    assert not (home / "planted").exists()
+    assert any("--before=" in call for call in _tool_calls(home))  # the pins were read

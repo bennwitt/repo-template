@@ -73,21 +73,25 @@ To do these steps by hand instead, see [Appendix A](#appendix-a-setting-up-a-mac
 The script offers each of these, at the versions `.agents/machine-tools.json` pins: each the
 newest release at least 7 days old, except `typescript-language-server` 5.3 and TypeScript 6,
 held back on purpose (6 needs Node 22.22, and TypeScript 7 has no `tsserver`; see the README's
-Per-machine tools). The commands below are for installing one by hand.
+Per-machine tools). The commands below are for installing one by hand; `--before` (the day
+after the newest pin in the command was published) keeps each package's dependencies to
+releases that old too.
 
 | Tool | For | macOS | Linux |
 | --- | --- | --- | --- |
-| Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill | `npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
+| Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill | `npm install -g --ignore-scripts --before=2026-09-29T00:00:00Z typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
 | Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
 | Azure Developer CLI (`azd`) 1.35.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
 | GitHub token | the `github` plugin | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
-| Codex CLI | Codex | `npm install -g --ignore-scripts @openai/codex@0.161.0` | the same |
+| Codex CLI | Codex | `npm install -g --ignore-scripts --before=2026-10-08T00:00:00Z @openai/codex@0.161.0` | the same |
 
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
   `az account set --subscription "<name>"`. On a Mac the script installs `az` with Homebrew
   (install it first from [brew.sh](https://brew.sh)), which takes the current release: the one
-  exception to the 7-day rule. It installs `azd` as `~/.local/bin/azd`, only once the
-  download's SHA-256 matches the pin, then runs `azd config set auth.useAzCliAuth true`. By
+  exception to the 7-day rule. It installs `azd` as `~/.local/bin/azd` whenever the one on
+  your `PATH` isn't the pinned version, only once the download's SHA-256 matches the pin, then
+  runs `azd config set auth.useAzCliAuth true`. An `azd` elsewhere (Homebrew's, say) is named,
+  for you to remove, so the pinned one runs. By
   hand, compare the asset's SHA-256 (`shasum -a 256` on a Mac, `sha256sum` on Linux) with its
   `sha256` in `.agents/machine-tools.json` before you put `azd` on your `PATH`.
 - **GitHub token on Linux:**

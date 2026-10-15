@@ -206,72 +206,93 @@ case "$(uname -m)" in
 esac
 if [ "$os" = mac ]; then platform="darwin-$arch"; else platform="linux-$arch"; fi
 
-# pinned CHECKOUT NAME: an npm tool's package@version; a GitHub tool's "file sha256 url" for this
-# platform. From the checkout's .agents/machine-tools.json.
-pinned() {
-  uv run --no-project --quiet python -c '
+# pin CHECKOUT KIND NAME...: from the checkout's .agents/machine-tools.json, by KIND:
+#   npm      npm install's arguments for these npm tools: --before the end of the day the newest
+#            of them was published (UTC), so their dependencies wait out the cooldown too, then
+#            each package@version
+#   asset    a GitHub tool's "file sha256 url" for this platform
+#   version  the version pinned
+# Python runs isolated (-I): nothing in the current folder is imported.
+pin() {
+  local checkout=$1 kind=$2
+  shift 2
+  uv run --no-project --quiet python -I -c '
 import json, sys
-tool = json.load(open(sys.argv[1]))["tools"][sys.argv[2]]
-if tool["registry"] == "npm":
-    print(tool["package"] + "@" + tool["version"])
-else:
-    asset = tool["assets"][sys.argv[3]]
+from datetime import datetime, timedelta, timezone
+tools = json.load(open(sys.argv[1]))["tools"]
+kind, platform, picked = sys.argv[2], sys.argv[3], [tools[name] for name in sys.argv[4:]]
+if kind == "version":
+    print(picked[0]["version"])
+elif kind == "asset":
+    tool = picked[0]
+    asset = tool["assets"][platform]
     tag = tool["tag"].replace("{version}", tool["version"])
-    url = "https://github.com/" + tool["package"] + "/releases/download/" + tag + "/" + asset["file"]
-    print(asset["file"], asset["sha256"], url)
-' "$1/.agents/machine-tools.json" "$2" "$platform"
+    print(asset["file"], asset["sha256"],
+          "https://github.com/" + tool["package"] + "/releases/download/" + tag + "/" + asset["file"])
+else:
+    if not picked or any(tool["registry"] != "npm" for tool in picked):
+        sys.exit("not npm tools")
+    day = max(datetime.fromisoformat(tool["publishedAt"].replace("Z", "+00:00"))
+              .astimezone(timezone.utc).date() for tool in picked)
+    print("--before=" + (day + timedelta(days=1)).isoformat() + "T00:00:00Z")
+    for tool in picked:
+        print(tool["package"] + "@" + tool["version"])
+' "$checkout/.agents/machine-tools.json" "$kind" "$platform" "$@"
 }
 
-# npm_pins NAME...: each npm tool's package@version, from the standards repository at $dir
-npm_pins() {
-  local name
-  for name in "$@"; do
-    pinned "$dir" "$name" || {
-      warn "$dir/.agents/machine-tools.json has no pin for $name: not installed"
-      return 1
-    }
-  done
+# physical PATH: the folder's path with every link resolved, as `globals` records it
+physical() { (cd "$1" 2>/dev/null && pwd -P); }
+
+# azd_version: the first line `azd version` prints, without azd's update check or telemetry
+azd_version() { AZD_SKIP_UPDATE_CHECK=1 AZURE_DEV_COLLECT_TELEMETRY=no azd version 2>/dev/null | head -n 1; }
+
+# names_version TEXT VERSION: TEXT names VERSION as a word ("azd version 1.2.3 (commit ...)")
+names_version() {
+  case "$1" in
+    *" $2 "* | *" $2") return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
-# pin_version CHECKOUT NAME: the version machine-tools.json pins for a tool
-pin_version() {
-  uv run --no-project --quiet python -c \
-    'import json, sys; print(json.load(open(sys.argv[1]))["tools"][sys.argv[2]]["version"])' \
-    "$1/.agents/machine-tools.json" "$2"
-}
-
-# install_azd: azd at its pinned release, into ~/.local/bin, once the download's SHA-256 matches
-# shellcheck disable=SC2329 # it runs through `optional`
+# install_azd: azd at its pinned release, as ~/.local/bin/azd, once the download's SHA-256
+# matches the pin. On a failure it says why, installs nothing, and returns 1.
 install_azd() {
   local info file sha url work got binary
-  info=$(pinned "$dir" azd) || {
+  info=$(pin "$dir" asset azd 2>/dev/null) || {
     warn "no azd is pinned for $platform"
     return 1
   }
   read -r file sha url <<<"$info"
-  work=$(mktemp -d)
+  work=$(mktemp -d) || return 1
   if ! curl -fsSL -o "$work/$file" "$url"; then
+    warn "couldn't download $url"
     rm -rf "$work"
     return 1
   fi
   if have sha256sum; then got=$(sha256sum "$work/$file" | cut -d' ' -f1); else got=$(shasum -a 256 "$work/$file" | cut -d' ' -f1); fi
-  if [ "$got" != "$sha" ]; then
-    warn "$file has SHA-256 $got, not the pinned $sha: not installed"
+  if [ -z "$sha" ] || [ "$got" != "$sha" ]; then
+    warn "$file has SHA-256 $got, not the pinned $sha"
     rm -rf "$work"
     return 1
   fi
-  mkdir -p "$work/unpacked" "$HOME/.local/bin"
-  case "$file" in
-    *.zip) unzip -q "$work/$file" -d "$work/unpacked" ;;
-    *) tar -xzf "$work/$file" -C "$work/unpacked" ;;
-  esac
   binary="$work/unpacked/${file%%.*}"
-  if [ ! -f "$binary" ]; then
-    warn "$file holds no ${file%%.*}: not installed"
+  if ! mkdir -p "$work/unpacked" "$HOME/.local/bin"; then
     rm -rf "$work"
     return 1
   fi
-  install -m 755 "$binary" "$HOME/.local/bin/azd"
+  case "$file" in
+    *.zip) unzip -q "$work/$file" -d "$work/unpacked" || binary="" ;;
+    *) tar -xzf "$work/$file" -C "$work/unpacked" || binary="" ;;
+  esac
+  if [ -z "$binary" ] || [ ! -f "$binary" ]; then
+    warn "$file holds no ${file%%.*}"
+    rm -rf "$work"
+    return 1
+  fi
+  if ! install -m 755 "$binary" "$HOME/.local/bin/azd"; then
+    rm -rf "$work"
+    return 1
+  fi
   rm -rf "$work"
   note "installed azd ($file, SHA-256 checked) as ~/.local/bin/azd"
 }
@@ -289,11 +310,11 @@ check_machine() {
   if git --version >/dev/null 2>&1; then ok "$(git --version)"; else bad "git doesn't run"; fi
   if have uv; then ok "$(uv --version)"; else bad "uv isn't installed"; fi
   if have node; then
-    version=$(node --version)
+    version=$(node --version 2>/dev/null) || version=""
     major=${version#v}
     major=${major%%.*}
     case "$major" in
-      '' | *[!0-9]*) bad "node $version: its version can't be read" ;;
+      '' | *[!0-9]*) bad "node ${version:-on PATH}: its version can't be read" ;;
       *)
         if [ "$major" -ge 22 ]; then
           ok "node $version"
@@ -317,17 +338,22 @@ check_machine() {
     bad "$HOME/.agents isn't a link into a standards repository: run this script without --check"
   else
     ok "standards repository $checkout (repo-template $(version_of "$checkout"))"
-    branch=$(git -C "$checkout" rev-parse --abbrev-ref HEAD)
-    if [ "$branch" != main ]; then bad "it is on branch $branch, not main"; fi
-    if [ -n "$(git -C "$checkout" status --porcelain --untracked-files=no)" ]; then bad "it has uncommitted changes"; fi
-    if [ "$offline" = 0 ]; then
-      remote=$(git -C "$checkout" ls-remote origin refs/heads/main 2>/dev/null | cut -f1)
-      if [ -z "$remote" ]; then
-        bad "its origin couldn't be reached (--offline skips this)"
-      elif [ "$remote" = "$(git -C "$checkout" rev-parse HEAD)" ]; then
-        ok "up to date with GitHub's main"
-      else
-        bad "GitHub's main has moved on: run this script, or git pull"
+    if ! branch=$(git -C "$checkout" rev-parse --abbrev-ref HEAD 2>/dev/null); then
+      bad "git can't read it: 'git -C $checkout status' says why"
+    else
+      if [ "$branch" != main ]; then bad "it is on branch $branch, not main"; fi
+      if [ -n "$(git --no-optional-locks -C "$checkout" status --porcelain --untracked-files=no 2>/dev/null)" ]; then bad "it has uncommitted changes"; fi
+      if [ "$offline" = 0 ]; then
+        remote=$(git -C "$checkout" ls-remote origin refs/heads/main 2>/dev/null | cut -f1) || remote=""
+        if [ -z "$remote" ]; then
+          bad "its origin couldn't be reached (--offline skips this)"
+        elif [ "$remote" = "$(git -C "$checkout" rev-parse HEAD 2>/dev/null)" ]; then
+          ok "up to date with GitHub's main"
+        elif git -C "$checkout" merge-base --is-ancestor "$remote" HEAD 2>/dev/null; then
+          bad "its main has commits GitHub's doesn't: push them, or move them to a branch"
+        else
+          bad "GitHub's main has moved on: run this script, or git pull"
+        fi
       fi
     fi
     if have repo-template && repo-template --version 2>/dev/null | grep -qF "($checkout)"; then
@@ -335,7 +361,11 @@ check_machine() {
     else
       bad "repo-template on PATH doesn't run from it: run this script without --check"
     fi
-    if [ "${AI_DEV_STANDARDS:-}" = "$checkout" ]; then ok "AI_DEV_STANDARDS is set"; else bad "AI_DEV_STANDARDS isn't $checkout in this shell: open a new terminal"; fi
+    if [ -n "${AI_DEV_STANDARDS:-}" ] && [ "$(physical "$AI_DEV_STANDARDS")" = "$(physical "$checkout")" ]; then
+      ok "AI_DEV_STANDARDS is set"
+    else
+      bad "AI_DEV_STANDARDS isn't $checkout in this shell: open a new terminal"
+    fi
     if have repo-template && repo-template globals --check --standards-root "$checkout" >/dev/null 2>&1; then
       ok "globals: current (skills, settings, MCP servers, Git ignore)"
     else
@@ -346,10 +376,10 @@ check_machine() {
       while read -r state name want got; do
         case "$state" in
           ok) ok "$name $want" ;;
-          missing) note "$name: not installed (optional; this script installs $want)" ;;
-          *) bad "$name $got: the pin is $want (this script installs it)" ;;
+          missing) note "$name: not installed (optional; this script offers $want)" ;;
+          *) bad "$name $got: the pin is $want (run this script and answer yes to install it)" ;;
         esac
-      done < <(uv run --no-project --quiet python -c '
+      done < <(uv run --no-project --quiet python -I -c '
 import json, subprocess, sys
 pins = json.load(open(sys.argv[1]))["tools"]
 listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "--json"], capture_output=True, text=True)
@@ -362,12 +392,17 @@ for name, tool in sorted(pins.items()):
 ' "$tools_file" 2>/dev/null)
     fi
     if have azd; then
-      want=$(pin_version "$checkout" azd 2>/dev/null || true)
-      got=$(azd version 2>/dev/null | head -n 1)
-      case "$got" in
-        *" $want "* | *" $want") ok "azd $want" ;;
-        *) if [ -n "$want" ]; then bad "azd: '$got', but the pin is $want (this script installs it)"; else note "azd: $got (no pin to compare with)"; fi ;;
-      esac
+      want=$(pin "$checkout" version azd 2>/dev/null) || want=""
+      got=$(azd_version) || got=""
+      if [ -z "$want" ]; then
+        note "azd: ${got:-version unreadable} (no pin to compare with)"
+      elif names_version "$got" "$want"; then
+        ok "azd $want"
+      elif [ "$(command -v azd)" = "$HOME/.local/bin/azd" ]; then
+        bad "azd: '$got', not the pinned $want: run this script and answer yes to Azure"
+      else
+        bad "$(command -v azd) is '$got', not the pinned azd $want: remove it (Homebrew: brew uninstall azd), then run this script and answer yes to Azure"
+      fi
     else
       note "azd: not installed (optional; for the azure and foundry packs)"
     fi
@@ -467,10 +502,20 @@ if [ -z "$dir" ]; then
   fi
   dir=$(ask "Where should the standards repository live?" "$default")
 fi
+# plain_path PATH: refuse a path the shell profile couldn't hold as it is
+plain_path() {
+  case "$1" in
+    *[\"\$\`\\]*) die "choose a folder whose path has no quotes, \$, backticks or backslashes: $1" ;;
+  esac
+}
 dir=$(clean_path "$dir")
-case "$dir" in
-  *[\"\$\`\\]*) die "choose a folder whose path has no quotes, \$, backticks or backslashes: $dir" ;;
-esac
+plain_path "$dir"
+if [ -d "$dir" ]; then # with its links resolved, as globals records it
+  resolved=$(physical "$dir") || die "can't open $dir"
+  dir=$resolved
+  plain_path "$dir"
+fi
+if [ -n "$existing" ] && [ -d "$existing" ]; then existing=$(physical "$existing") || existing=""; fi
 if [ -n "$existing" ] && [ "$existing" != "$dir" ] && is_standards "$existing"; then
   warn "$HOME/.agents points into $existing; this run moves the machine to $dir"
 fi
@@ -504,6 +549,9 @@ else
   fi
   git clone --quiet "$REPO_URL" "$dir" || die "couldn't clone $REPO_URL (the error is above)"
   note "cloned $REPO_URL"
+  resolved=$(physical "$dir") || die "can't open $dir"
+  dir=$resolved
+  plain_path "$dir"
 fi
 note "repo-template $(version_of "$dir")"
 
@@ -628,17 +676,21 @@ fi
 if [ "$run_tools" = 1 ]; then
   say "Optional tools (each asks first; the default is no; the versions are pinned in .agents/machine-tools.json)"
   if have npm && confirm "Install the TypeScript and Python language servers and the Playwright CLI (global npm packages)?" n; then
-    if packages=$(npm_pins typescript-language-server typescript pyright playwright-cli); then
-      # shellcheck disable=SC2086 # one package@version per word
+    if packages=$(pin "$dir" npm typescript-language-server typescript pyright playwright-cli); then
+      # shellcheck disable=SC2086 # one argument per word
       optional "Installing the npm packages" npm install -g --ignore-scripts $packages
       if have playwright-cli; then optional "Downloading Chromium" playwright-cli install-browser chromium; fi
+    else
+      warn "$dir/.agents/machine-tools.json doesn't pin them (above): not installed"
     fi
   fi
   if have npm && confirm "Install the Codex CLI (a global npm package)?" n; then
-    if packages=$(npm_pins codex); then
-      # shellcheck disable=SC2086 # one package@version per word
+    if packages=$(pin "$dir" npm codex); then
+      # shellcheck disable=SC2086 # one argument per word
       optional "Installing Codex" npm install -g --ignore-scripts $packages
       note "run codex once, then this script again, so Codex gets its MCP servers"
+    else
+      warn "$dir/.agents/machine-tools.json doesn't pin Codex (above): not installed"
     fi
   fi
   if confirm "Set up the Azure CLI and azd, for the azure and foundry packs?" n; then
@@ -649,19 +701,31 @@ if [ "$run_tools" = 1 ]; then
         note "Install the Azure CLI: see section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md (on a Mac, install Homebrew first: https://brew.sh)"
       fi
     fi
-    if ! have azd; then optional "Installing azd" install_azd; fi
+    want=$(pin "$dir" version azd 2>/dev/null) || want=""
+    if [ -z "$want" ] || ! { have azd && names_version "$(azd_version)" "$want"; }; then
+      found=$(command -v azd || true)
+      if [ -n "$found" ] && [ "$found" != "$HOME/.local/bin/azd" ]; then
+        warn "$found is azd '$(azd_version)', not the pinned $want: remove it (Homebrew: brew uninstall azd), so the one installed in ~/.local/bin runs"
+      fi
+      install_azd || warn "azd wasn't installed (the reason is above): run this script again and answer yes to Azure, or install it by hand (section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md)"
+    fi
     PATH="$HOME/.local/bin:$PATH"
     if have az; then
       az account show >/dev/null 2>&1 || optional "az login" az login
       note "choose your subscription with: az account set --subscription \"<name>\""
     fi
     if have azd; then optional "azd's sign-in setting" azd config set auth.useAzCliAuth true; fi
-    azure_mcp=$(uv run --no-project --quiet python -c \
-      'import json, sys; p = json.load(open(sys.argv[1]))["servers"]["azure"]["pin"]; print(p["package"] + "==" + p["version"])' \
-      "$dir/.agents/mcp-servers.json" 2>/dev/null || true)
-    if [ -n "$azure_mcp" ]; then
-      note "fetching the Azure MCP server ($azure_mcp) once, so its first start doesn't time out"
-      optional "Fetching $azure_mcp" uvx --quiet --from "$azure_mcp" azmcp --version
+    azure_mcp=$(uv run --no-project --quiet python -I -c '
+import json, sys
+from datetime import datetime, timedelta, timezone
+pin = json.load(open(sys.argv[1]))["servers"]["azure"]["pin"]
+day = datetime.fromisoformat(pin["publishedAt"].replace("Z", "+00:00")).astimezone(timezone.utc).date()
+print((day + timedelta(days=1)).isoformat() + "T00:00:00Z", pin["package"] + "==" + pin["version"])
+' "$dir/.agents/mcp-servers.json" 2>/dev/null) || azure_mcp=""
+    if [ -n "$azure_mcp" ]; then # as the server runs: its dependencies wait out the cooldown too
+      read -r cutoff package <<<"$azure_mcp"
+      note "fetching the Azure MCP server ($package) once, so its first start doesn't time out"
+      optional "Fetching $package" uvx --quiet --exclude-newer "$cutoff" --from "$package" azmcp --version
     fi
   fi
   if [ "$os" = mac ] && confirm "Store a GitHub token in the Keychain for Claude Code's github plugin?" n; then

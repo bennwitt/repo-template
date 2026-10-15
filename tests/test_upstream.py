@@ -2086,3 +2086,19 @@ def test_a_name_shared_by_a_skill_and_a_server_means_the_skill_unless_prefixed(
 
     assert as_skill.repinned == [] and registry.asked == [("npm", "@x/mcp")]
     assert as_server.repinned == ["s"]
+
+
+def test_quitting_a_repin_still_lists_the_skills_named_with_it(tmp_path: Path) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    _with_servers(root, x=_npx("1.0.0", now - 60 * DAY))
+    registry = FakeRegistry({"@x/mcp": {"1.0.0": now - 60 * DAY, "1.2.0": now - 8 * DAY}})
+
+    outcome = _run(root, github, ["mcp:x", "s"], "q", registry=registry)
+
+    assert outcome.undecided == ["x", "s"] and outcome.repinned == []
+
+
+def test_clean_neutralises_the_runners_older_command_form_anywhere() -> None:
+    assert clean("  s: moved to ##[error]leaked/s") == "  s: moved to #\\#[error]leaked/s"

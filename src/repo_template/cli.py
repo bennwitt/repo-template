@@ -31,16 +31,26 @@ def _python_version(value: str) -> str:
     return value
 
 
+class _Version(argparse.Action):
+    """Prints the version line as it is: argparse's own would rewrap a long checkout path."""
+
+    def __init__(self, option_strings: list[str], dest: str, **kwargs: object) -> None:
+        super().__init__(option_strings, dest, nargs=0, help=str(kwargs.get("help", "")))
+
+    def __call__(self, parser: argparse.ArgumentParser, *_: object) -> None:
+        root = installed_root()
+        print(f"repo-template {__version__}" + (f" ({root})" if root else ""))
+        parser.exit()
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="repo-template",
         description="Create, update, and validate standardized repositories.",
     )
-    root = installed_root()
     parser.add_argument(
         "--version",
-        action="version",
-        version=f"repo-template {__version__}" + (f" ({root})" if root else ""),
+        action=_Version,
         help="show the version, and the standards repository this CLI runs from",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)

@@ -105,6 +105,7 @@ def clean(text: str) -> str:
     """Upstream text made safe to print: no control characters, and no line that a GitHub
     Actions runner would read as a workflow command (it strips leading whitespace first)."""
     text = "".join(char if char.isprintable() else "?" for char in text)
+    text = text.replace("##[", "#\\#[")  # the runner's older command form, anywhere in a line
     return "\\" + text if text.lstrip().startswith("::") else text
 
 
@@ -214,6 +215,14 @@ class GhApi:
         """The repository's recent releases (up to 100), as GitHub's API returns them."""
         data = self._get(f"repos/{source}/releases?per_page=100")
         return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
+
+    def release(self, source: str, tag: str) -> dict[str, Any] | None:
+        """The release with this tag, however old, or None when there is none."""
+        try:
+            data = self._get(f"repos/{source}/releases/tags/{urllib.parse.quote(tag, safe='')}")
+        except NotFound:
+            return None
+        return data if isinstance(data, dict) else None
 
     def latest_release(self, source: str) -> str | None:
         try:
@@ -1488,8 +1497,11 @@ def _upgrade(
     if servers:
         if registry is None:
             raise ValueError("re-pinning an MCP server needs npm and PyPI")
-        if _repin_servers(root, servers, outcome, registry, prompt) or not skills:
-            return  # quit, or only servers were named
+        if _repin_servers(root, servers, outcome, registry, prompt):
+            outcome.undecided += list(skills)  # quit, or npm or PyPI out of reach
+            return
+        if not skills:
+            return
     specs = skills
     snapshot = _snapshots(github)
     try:

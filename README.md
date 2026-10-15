@@ -93,10 +93,13 @@ Running `update` a second time changes nothing.
 - keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
   they work on every machine);
 - adds `.agents/`, `.claude/`, `.codex/`, `.playwright-cli/` and `.playwright-mcp/` to the
-  global ignore file Git reads (`core.excludesFile` when set, through includes, else
-  `$XDG_CONFIG_HOME/git/ignore`, else `~/.config/git/ignore`), in a marked block, so personal
-  agent configuration never leaks into project repositories. A linked file is written through,
-  and a block that lost one of its marker lines is left alone.
+  global ignore file Git reads (`core.excludesFile` when set, in the system or global config or
+  one they include, and expanded as Git expands it; else `$XDG_CONFIG_HOME/git/ignore`, else
+  `~/.config/git/ignore`), in a marked block, so personal agent configuration never leaks into
+  project repositories. Git is asked outside any repository, so an `includeIf` for some
+  repository doesn't decide it, and a relative `core.excludesFile` is reported, not guessed. A
+  linked file is written through, and a block that lost a marker line, or has them out of
+  order, is left alone.
 
 It never links `~/.claude` itself, so credentials, sessions, history, caches and Claude's
 `synced` directory stay on the machine. Anything it replaces is first moved to
@@ -206,9 +209,10 @@ The portable settings turn on plugins that need tools on each machine (language 
 Playwright CLI, `az` and `azd`, a GitHub token for the `github` plugin), and some skills drive
 CLIs. `.agents/machine-tools.json` pins each one once, to its newest final release at least 7
 days old (a short supply-chain cooldown); `below` keeps one under a major version the machines
-can't run yet, and `azd`'s entry records each platform's release asset with its SHA-256. The
-setup script offers each tool at its pin, and installs `azd` only once the download's SHA-256
-matches; [section 1.1 of the guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#11-optional-tools)
+can't run yet, a `pinException` says why a release inside its cooldown is pinned, and `azd`'s
+entry records each platform's release asset with its SHA-256. The setup script offers each tool
+at its pin, with npm's `--before` set to the end of the newest pin's day so dependencies wait out
+the cooldown too, and installs `azd` only once the download's SHA-256 matches; [section 1.1 of the guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#11-optional-tools)
 lists them with the macOS and Linux commands. `globals --upstream` reports a newer release past
 the cooldown, and an `azd` asset whose digest on GitHub differs from the recorded one; move a
 pin by editing its `version` and `publishedAt` (and each asset's `sha256`), in the same commit
@@ -815,10 +819,10 @@ It also checks each MCP server's pin (`.agents/mcp-servers.json`) against npm or
 final release at least 7 days old is reported as a change; a younger one is a note with the day
 its cooldown ends. Pre-releases, and releases yanked or deprecated, are never offered. A pin
 younger than 7 days needs a `pinException` giving the reason, and `--upstream` says when it no
-longer does. `globals --upgrade mcp:<name>` (or the bare name, when no skill has it) re-pins a
-server to its newest final release past the cooldown: the version in its args, its `version`
-and `publishedAt` move together and a `pinException` goes, after it shows the change and asks
-(`--no-input` applies it: you named it). It notes the server in `CHANGELOG.md`, and names any
+longer does. `globals --upgrade mcp:<name>` (or the bare name, when no vendored skill has it)
+re-pins a server to its newest final release past the cooldown: the version in its args, its
+`version` and `publishedAt` move together and a `pinException` goes, after it shows the change
+and asks (`--no-input` applies it: you named it). It notes the server in `CHANGELOG.md`, and names any
 catalog file still holding the old version (a skill from the same package) for you to update.
 The per-machine tools in `.agents/machine-tools.json` are checked the same way.
 

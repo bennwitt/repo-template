@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -27,6 +28,15 @@ CURRENT = [doc for doc in DOCS if doc != "CHANGELOG.md"]  # the changelog keeps 
 SCRIPT = ROOT / "setup-machine.sh"
 FLAG = re.compile(r"(?<![\w-])--[a-z][a-z-]*")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+# Flags the docs name for other tools: npm and uv, and the MCP server args the catalog refuses.
+OTHER_TOOLS = {"--before", "--locked", "--flag", "--index", "--namespace", "--package"} | {
+    "--read-only",
+    "--subscription",
+    "--transport",
+    "--with",
+    "--dangerously-",
+    "--insecure-",
+}
 
 
 def _text(doc: str) -> str:
@@ -54,8 +64,25 @@ def _anchors(path: Path) -> set[str]:
 
 
 def _flags(command: str) -> set[str]:
-    """The flags a documented command uses, before any comment or the next command."""
-    return set(FLAG.findall(re.split(r"\s#|&&|\|\||[|;]", command)[0]))
+    """The flags a documented command uses, before any comment."""
+    return set(FLAG.findall(re.split(r"\s#", command)[0]))
+
+
+def _commands(text: str) -> list[str]:
+    """Each command a document shows: in a code span or a code block line, split at `&&`, `||`,
+    `;` and `|`, with a leading `uv run` before `repo-template` dropped."""
+    shown = re.findall(r"`([^`\n]+)`", text)
+    fenced = False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif fenced:
+            shown.append(line)
+    commands = []
+    for snippet in shown:
+        for command in re.split(r"&&|\|\||;|\|", snippet):
+            commands.append(re.sub(r"^uv run (?:\S+ )*?(?=repo-template )", "", command.strip()))
+    return commands
 
 
 def _options(parser: argparse.ArgumentParser) -> set[str]:
@@ -82,26 +109,44 @@ def test_the_guide_installs_each_tool_at_its_pin() -> None:
                 assert f"`{asset.file}`" in guide, f"{GUIDE} doesn't name {asset.file}"
 
 
+def test_the_guides_npm_installs_wait_out_the_cooldown_as_the_script_does() -> None:
+    tools = load_machine_tools(ROOT / ".agents")
+    by_package = {tool.package: tool for tool in tools.values() if tool.registry == "npm"}
+    installs = [c for c in _commands(_text(GUIDE)) if c.startswith("npm install -g") and "@" in c]
+
+    assert len(installs) >= 2
+    for install in installs:
+        named = [by_package[p] for p in re.findall(r"(\S+)@[0-9]", install) if p in by_package]
+        newest = max(datetime.fromisoformat(t.published_at.replace("Z", "+00:00")) for t in named)
+        cutoff = f"{(newest.astimezone(UTC) + timedelta(days=1)).date()}T00:00:00Z"
+        assert f" --before={cutoff} " in install, f"{GUIDE}: `{install}` needs --before={cutoff}"
+
+
 def test_documented_commands_use_flags_that_exist() -> None:
     parser = _parser()
     commands = next(
         action for action in parser._actions if isinstance(action, argparse._SubParsersAction)
     ).choices
-    script_options = set(FLAG.findall(SCRIPT.read_text().split("\nwhile [ $# -gt 0 ]")[1][:900]))
-    assert {"--check", "--offline", "--yes", "--dir"} <= script_options
+    script = set(FLAG.findall(SCRIPT.read_text().split("\nwhile [ $# -gt 0 ]")[1][:900]))
+    assert {"--check", "--offline", "--yes", "--dir"} <= script
+    known = script | _options(parser) | {f for c in commands.values() for f in _options(c)}
     checked = 0
     for doc in CURRENT:
-        text = _text(doc)
-        for name, rest in re.findall(r"repo-template (new|update|check|globals)\b([^`\n]*)", text):
-            unknown = _flags(rest) - _options(commands[name])
-            assert not unknown, f"{doc}: `repo-template {name}{rest}` uses {sorted(unknown)}"
+        for command in _commands(_text(doc)):
+            sub = re.match(r"(?:repo-template )?(new|update|check|globals)\b(.*)", command)
+            if sub and (command.startswith("repo-template ") or " --" in command):
+                unknown = _flags(sub.group(2)) - _options(commands[sub.group(1)])
+            elif command.startswith("repo-template "):
+                unknown = _flags(command) - _options(parser)
+            elif "setup-machine.sh" in command:
+                unknown = _flags(command.split("setup-machine.sh", 1)[1]) - script
+            elif command.startswith("--"):  # a flag on its own: one of these, or another tool's
+                unknown = _flags(command) - known - OTHER_TOOLS
+            else:
+                continue
+            assert not unknown, f"{doc}: `{command}` uses {sorted(unknown)}"
             checked += 1
-        for flag in re.findall(r"repo-template (--[a-z-]+)", text):
-            assert flag in _options(parser), f"{doc}: `repo-template {flag}`"
-        for rest in re.findall(r"setup-machine\.sh\b([^`\n]*)", text):
-            unknown = _flags(rest) - script_options
-            assert not unknown, f"{doc}: `setup-machine.sh{rest}` uses {sorted(unknown)}"
-    assert checked > 30  # the patterns still find the commands
+    assert checked > 60  # the patterns still find the commands
 
 
 def test_the_ignore_entries_the_docs_list_are_the_ones_globals_writes() -> None:

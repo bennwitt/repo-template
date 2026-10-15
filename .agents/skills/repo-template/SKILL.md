@@ -97,16 +97,19 @@ where another system owns the Git hooks or the lockfile.
 
 1. **Find them.** Ask which folders hold the user's repositories, unless they said. Then list the
    adopted ones:
-   `find <folder>... -maxdepth 6 \( -name node_modules -o -name .venv \) -prune -o \( -name .repo-template.json -o -path '*/.git/repo-template.json' \) -print 2>/dev/null`.
-   Each repository is the folder holding `.repo-template.json`, or the one above `.git`. A
-   repository with neither isn't adopted: leave it out unless the user asks to adopt it.
+   `find -H <folder>... -maxdepth 7 \( -name node_modules -o -name .venv \) -prune -o \( -name .repo-template.json -o -path '*/.git/repo-template.json' \) -print 2>/dev/null`.
+   Each repository is the folder holding `.repo-template.json`, or the one above `.git`. Leave
+   out the standards checkout (`dirname "$(readlink ~/.agents)"`): `setup-machine.sh` keeps it
+   current on `main`. A repository with neither manifest isn't adopted: leave it out unless the
+   user asks to adopt it.
 2. **Plan.** `repo-template check <repo> <repo> ...` prints one line each: `current`, or what
    `update` would do there. Show the user the lines that aren't current; this step is done when
    they have said which to update (all of them, unless they say otherwise).
 3. **Update them one at a time**, each by the path its profile picks (**Choose the path
-   first**): a personal repository in place, the others on a branch, verified and committed as
-   step 4 of **Bring a repository to standard** says. A repository that stops on something only
-   the user can decide waits for the end; go on with the next.
+   first**): a personal repository in place; the others on a branch started from an up-to-date
+   default branch (`git switch main && git pull --ff-only`), verified and committed as step 4 of
+   **Bring a repository to standard** says. A repository that can't switch branches, or stops on
+   something only the user can decide, waits for the end; go on with the next.
 4. **Report** one row per repository: its profile, and the outcome (current; updated, with the
    branch and commit; or waiting, with the decision it needs). Pushing and opening pull requests
    stay with the user: offer them one repository at a time.

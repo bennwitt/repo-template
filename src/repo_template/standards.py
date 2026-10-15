@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import tomllib
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
@@ -39,7 +40,7 @@ from repo_template.mcp_globals import (
     sync_codex_mcp,
 )
 from repo_template.model import Result
-from repo_template.policies import merge_marked_block
+from repo_template.policies import marked_block_intact, merge_marked_block
 from repo_template.settings import SOURCE_NAME, sync_claude_settings
 from repo_template.skillfile import field_lines
 
@@ -647,44 +648,57 @@ def _merge_global_gitignore(existing: str) -> str:
 
 
 def global_ignore_file(home: Path) -> Path:
-    """The file Git reads its global ignores from: the one `core.excludesFile` names (in an
-    included config too), else $XDG_CONFIG_HOME/git/ignore, else ~/.config/git/ignore. For
-    another home (a test's), only that home's config counts."""
+    """The file Git reads its global ignores from: the one `core.excludesFile` names (in the
+    system or global config, or one they include; `~` expanded as Git does), else
+    $XDG_CONFIG_HOME/git/ignore, else ~/.config/git/ignore. Git is asked from an empty folder
+    outside any repository, so an `includeIf` for some repository never decides it. For another
+    home (a test's), only that home's config counts. Raises ValueError for a relative
+    excludesFile, which Git reads in each repository."""
     real = home == Path.home().expanduser().resolve()
     env = {**git_env(), "HOME": str(home)}
     if not real:
-        env.pop("XDG_CONFIG_HOME", None)
-    try:
-        done = subprocess.run(
-            ["git", "config", "--global", "--includes", "--get", "core.excludesFile"],
-            capture_output=True,
-            text=True,
-            check=False,
-            env=env,
-        )
-        named = done.stdout.strip() if done.returncode == 0 else ""
-    except FileNotFoundError:  # no Git: the default
-        named = ""
+        for name in ("XDG_CONFIG_HOME", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"):
+            env.pop(name, None)
+        env["GIT_CONFIG_NOSYSTEM"] = "1"
+    with tempfile.TemporaryDirectory() as outside:
+        env["GIT_CEILING_DIRECTORIES"] = str(Path(outside).parent)
+        try:
+            done = subprocess.run(
+                ["git", "config", "--includes", "--type=path", "--get", "core.excludesFile"],
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+                cwd=outside,
+            )
+            named = done.stdout.strip() if done.returncode == 0 else ""
+        except FileNotFoundError:  # no Git: the default
+            named = ""
     if named:
-        if named == "~" or named.startswith("~/"):
-            return home / named[2:]
-        return Path(named) if Path(named).is_absolute() else home / named
+        if not Path(named).is_absolute():
+            raise ValueError(
+                f"core.excludesFile is {named!r}, a relative path that Git reads in each "
+                f"repository; make it absolute, then run globals again"
+            )
+        return Path(named)
     xdg = os.environ.get("XDG_CONFIG_HOME") if real else None
     return (Path(xdg) if xdg else home / ".config") / "git" / "ignore"
 
 
 def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: str) -> None:
     """repo-template's block in the file Git reads (through a link, to the file it names),
-    backed up before it changes. A block without both markers is left alone."""
-    path = global_ignore_file(home)
+    backed up before it changes. A block without both markers, in order, is left alone."""
+    try:
+        path = global_ignore_file(home)
+    except ValueError as exc:
+        result.preserved.append(f"the global Git ignore ({exc})")
+        return
     try:
         existing = path.read_text() if path.exists() else ""
     except (OSError, UnicodeDecodeError) as exc:
         result.errors.append(f"cannot read {path}: {exc}")
         return
-    if existing.count(GITIGNORE_START) > 1 or (
-        existing.count(GITIGNORE_START) != existing.count(GITIGNORE_END)
-    ):
+    if not marked_block_intact(existing, GITIGNORE_START, GITIGNORE_END):
         result.preserved.append(f"{path} (repo-template's block has lost a marker line; kept)")
         return
     proposed = _merge_global_gitignore(existing)
