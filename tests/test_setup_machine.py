@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+NEEDS_PERMISSIONS = pytest.mark.skipif(os.geteuid() == 0, reason="root writes anything")
 SCRIPT = ROOT / "setup-machine.sh"
 GIT = [
     "git",
@@ -41,6 +42,7 @@ case "$1 $2" in
   "tool update-shell") ;;
   "run --no-project")  # uv run --no-project --no-config --no-python-downloads --quiet python ...
     [ "$PWD" = / ] || { echo "uv run from $PWD, whose .venv could decide" >&2; exit 9; }
+    [ -z "${VIRTUAL_ENV-}${CONDA_PREFIX-}" ] || { echo "uv run in an activated env" >&2; exit 9; }
     case " $* " in *" --no-config "*) ;; *) echo "uv run reads configuration" >&2; exit 9 ;; esac
     case " $* " in *" --no-python-downloads "*) ;; *) echo "uv run downloads" >&2; exit 9 ;; esac
     while [ "$1" != python ]; do shift; done
@@ -735,6 +737,7 @@ def test_another_azd_first_on_path_is_named_and_the_pin_installed(
     assert "brew uninstall azd" in shown and "1.2.3" in (home / ".local/bin/azd").read_text()
 
 
+@NEEDS_PERMISSIONS
 def test_an_azd_that_cant_be_written_isnt_reported_as_installed(
     machine: dict[str, Path],
 ) -> None:
@@ -848,3 +851,27 @@ def test_check_flags_a_claude_or_npm_that_doesnt_run(
     assert "!   claude is on PATH, but 'claude --version' fails" in _problems(result)
     assert "!   'npm ls -g' fails, so the npm tools can't be checked" in _problems(result)
     assert "this script offers" not in result.stdout  # npm said nothing about the tools
+
+
+def test_check_with_an_environment_activated_still_reads_the_pins(
+    machine: dict[str, Path], tmp_path: Path
+) -> None:
+    _set_up(machine)
+    project = tmp_path / "project/.venv"  # a project's, activated in this shell
+
+    result = _check(
+        machine, "--offline", NPM_LS="{}", VIRTUAL_ENV=str(project), CONDA_PREFIX=str(project)
+    )
+
+    assert "pyright: not installed (optional; this script offers 1.1.4)" in result.stdout
+
+
+def test_check_takes_an_empty_global_npm_folder_as_nothing_installed(
+    machine: dict[str, Path],
+) -> None:
+    _set_up(machine)  # npm's own prefix, with no lib/ yet: `npm ls -g` reports ENOENT
+
+    result = _check(machine, "--offline", NPM_LS='{"error": {"code": "ENOENT"}}', NPM_EXIT="254")
+
+    assert not any("npm" in line for line in _problems(result))
+    assert "pyright: not installed (optional; this script offers 1.1.4)" in result.stdout

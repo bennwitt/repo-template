@@ -206,10 +206,15 @@ case "$(uname -m)" in
 esac
 if [ "$os" = mac ]; then platform="darwin-$arch"; else platform="linux-$arch"; fi
 
-# uv_python ARG...: Python through uv, isolated from the folder you run this in: from /, so no
-# .venv or .python-version there decides the interpreter; reading no uv configuration; never
-# downloading one; and with -I, importing nothing from the current folder.
-uv_python() { (cd / && uv run --no-project --no-config --no-python-downloads --quiet python -I "$@"); }
+# uv_python ARG...: Python through uv, isolated from the folder you run this in: from /, with no
+# environment activated, so no .venv or .python-version there decides the interpreter; reading
+# no uv configuration; never downloading one; and with -I, importing nothing from that folder.
+uv_python() {
+  (
+    unset VIRTUAL_ENV CONDA_PREFIX UV_PYTHON
+    cd / && uv run --no-project --no-config --no-python-downloads --quiet python -I "$@"
+  )
+}
 
 # pin CHECKOUT KIND NAME...: from the checkout's .agents/machine-tools.json, by KIND:
 #   npm      npm install's arguments for these npm tools: --before the end of the day the newest
@@ -403,11 +408,15 @@ check_machine() {
 import json, subprocess, sys
 pins = json.load(open(sys.argv[1]))["tools"]
 listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "--json"], capture_output=True, text=True)
-try:  # npm ls exits 1 for a problem in the tree, yet lists it; a failure is an "error" object
+try:  # a tree, even with an "error" beside it (a problem in it); or an "error" object alone
     tree = json.loads(listed.stdout)
-    if "error" in tree or (listed.returncode and "dependencies" not in tree):
-        raise ValueError(listed.returncode)
-    have = {k: v.get("version") for k, v in tree.get("dependencies", {}).items()}
+    error = tree.get("error") or {}
+    if "dependencies" in tree:
+        have = {k: v.get("version") for k, v in tree["dependencies"].items()}
+    elif error.get("code") == "ENOENT" or not (error or listed.returncode):
+        have = {}  # ENOENT: a global folder with nothing installed in it yet
+    else:
+        raise ValueError(error)
 except (ValueError, AttributeError, TypeError):
     print("unreadable - - -")
     sys.exit()

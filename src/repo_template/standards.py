@@ -702,7 +702,7 @@ def conditional_ignore_files(home: Path) -> tuple[list[Path], list[str]]:
     relative path, which each repository reads on its own."""
     files: list[Path] = []
     notes: list[str] = []
-    seen: set[Path] = set()
+    seen: set[object] = set()
     scopes: list[tuple[str, ...]] = [("--global",)]
     while scopes:
         listed = _git_config(
@@ -715,9 +715,9 @@ def conditional_ignore_files(home: Path) -> tuple[list[Path], list[str]]:
             condition = key[len("includeif.") : -len(".path")]
             holder = Path(found_in.removeprefix("file:"))  # a relative path is relative to it
             source = Path(included) if Path(included).is_absolute() else holder.parent / included
-            if source.resolve() in seen:
+            if _same_file_key(source) in seen:
                 continue
-            seen.add(source.resolve())
+            seen.add(_same_file_key(source))
             scopes.append(("--file", str(source)))
             named = _git_config(
                 home, "--file", str(source), "--includes", "--type=path", "--get",
@@ -733,6 +733,21 @@ def conditional_ignore_files(home: Path) -> tuple[list[Path], list[str]]:
                     f'matching includeIf "{condition}"; each reads its own, so it is left alone'
                 )
     return files, notes
+
+
+def _same_file_key(path: Path) -> object:
+    """What makes two spellings the same file: its device and inode once it exists (through a
+    link, a hard link or another case), else its resolved path; the path itself when a link
+    loops."""
+    try:
+        found = path.stat()
+        return (found.st_dev, found.st_ino)
+    except (OSError, RuntimeError):
+        pass
+    try:
+        return path.resolve()
+    except (OSError, RuntimeError):  # a link loop: Python 3.11 and 3.12 raise RuntimeError
+        return path
 
 
 def _writable(path: Path) -> bool:
@@ -759,15 +774,15 @@ def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: st
     conditional, notes = conditional_ignore_files(home)
     result.notes.extend(notes)
     targets += [(path, False) for path in conditional]
-    seen: set[Path] = set()
+    seen: set[object] = set()
     for path, always in targets:
-        target = path.resolve()  # through a link, to the file it names
-        if target in seen:
+        if _same_file_key(path) in seen:
             continue
-        seen.add(target)
+        seen.add(_same_file_key(path))
         try:
+            target = path.resolve()  # through a link, to the file it names
             existing = path.read_text() if path.exists() else ""
-        except (OSError, UnicodeDecodeError) as exc:
+        except (OSError, RuntimeError, UnicodeDecodeError) as exc:
             result.errors.append(f"cannot read {path}: {exc}")
             continue
         if not marked_block_intact(existing, GITIGNORE_START, GITIGNORE_END):

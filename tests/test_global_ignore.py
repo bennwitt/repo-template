@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import getpass
+import os
 import pwd
 import subprocess
 from pathlib import Path
@@ -18,6 +19,8 @@ from repo_template.standards import (
     conditional_ignore_files,
     global_ignore_file,
 )
+
+NEEDS_PERMISSIONS = pytest.mark.skipif(os.geteuid() == 0, reason="root writes anything")
 
 
 def _sync(home: Path, *, check: bool = False) -> Result:
@@ -184,6 +187,7 @@ def test_an_ignore_file_named_for_some_repositories_gets_the_block_too(
     assert GITIGNORE_START in work.read_text() and GITIGNORE_START in always.read_text()
 
 
+@NEEDS_PERMISSIONS
 def test_a_file_this_user_cant_write_is_an_error_in_check_too(home: Path, tmp_path: Path) -> None:
     system = tmp_path / "etc-gitignore"  # the system config's, owned by root
     system.write_text("*.swp\n")
@@ -262,6 +266,7 @@ def test_a_file_named_twice_or_through_a_link_is_written_once(home: Path) -> Non
     assert work.read_text().count(GITIGNORE_START) == 1
 
 
+@NEEDS_PERMISSIONS
 def test_a_conditional_file_left_alone_doesnt_stop_the_rest(home: Path, tmp_path: Path) -> None:
     managed = tmp_path / "corp-ignore"  # a managed include's file, read-only to the user
     managed.write_text("*.swp\n")
@@ -281,3 +286,30 @@ def test_a_conditional_file_left_alone_doesnt_stop_the_rest(home: Path, tmp_path
     assert planned.notes == applied.notes and len(applied.notes) == 2
     assert "relative core.excludesFile (.git/info/local-ignore)" in applied.notes[0]
     assert applied.notes[1].startswith(f"{managed} (Git reads its ignores there in some")
+
+
+def test_a_stale_include_that_loops_is_skipped_not_a_crash(home: Path) -> None:
+    (home / "loop-a").symlink_to(home / "loop-b")
+    (home / "loop-b").symlink_to(home / "loop-a")
+    (home / ".gitconfig").write_text('[includeIf "gitdir:~/old/"]\n\tpath = ~/loop-a\n')
+
+    result = _sync(home, check=True)
+
+    assert result.created == [str(home / ".config/git/ignore")] and not result.errors
+
+
+def test_a_hard_link_is_the_same_file(home: Path) -> None:
+    work = _work_ignore(home)
+    work.write_text("*.swp\n")
+    os.link(work, home / ".work-ignore-hard")
+    (home / ".gitconfig-hard").write_text(f"[core]\n\texcludesFile = {home}/.work-ignore-hard\n")
+    (home / ".gitconfig").write_text(
+        '[includeIf "gitdir:~/work/"]\n\tpath = ~/.gitconfig-work\n'
+        '[includeIf "gitdir:~/more/"]\n\tpath = ~/.gitconfig-hard\n'
+    )
+
+    planned = _sync(home, check=True)
+    applied = _sync(home)
+
+    assert planned.updated == applied.updated == [str(work)]
+    assert work.read_text().count(GITIGNORE_START) == 1

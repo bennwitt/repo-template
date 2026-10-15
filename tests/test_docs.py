@@ -73,13 +73,19 @@ def _code(text: str) -> tuple[list[str], list[str]]:
     prose: list[str] = []
     code: list[str] = []
     fence, indent = "", 0
+    content = -1  # the column a list item's content starts at, or -1 outside any list
     for line in text.splitlines():
         if not fence:
+            item = re.match(r" *(?:[-*+]|\d+[.)]) +", line)
+            if item:
+                content = len(item.group(0))
+            elif line.strip() and not line.startswith(" "):
+                content = -1  # a paragraph at the margin ends the list
             opened = re.match(r"( *)(`{3,}(?=[^`]*$)|~{3,})", line)
-            if opened:
+            if opened and len(opened.group(1)) <= max(content, 0) + 3:
                 indent, fence = len(opened.group(1)), opened.group(2)
             else:
-                prose.append(line)
+                prose.append(line)  # four spaces more is an indented code block's line
         elif re.fullmatch(rf" {{0,{indent + 3}}}{re.escape(fence[0])}{{{len(fence)},}}\s*", line):
             fence = ""
         else:
@@ -212,9 +218,16 @@ def test_the_fence_reader_follows_list_items_and_inline_runs() -> None:
         "```\n"
         "~~~\n"
         "## After\n"
+        "\n"
+        "Type three backticks:\n"
+        "\n"
+        "    ```\n"
+        "\n"
+        "## Still a heading\n"
     )
 
     prose, code = _code(text)
 
     assert code == ["     repo-template update --nested .", "```"]
-    assert prose[0].startswith("```` ```!") and prose[-1] == "## After"
+    assert prose[0].startswith("```` ```!") and prose[-1] == "## Still a heading"
+    assert "## After" in prose and "    ```" in prose
