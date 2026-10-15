@@ -124,45 +124,73 @@ def check_pins(
         except NotFound:
             report.review.append(f"{label} isn't on {pin.registry} any more")
             continue
-        by_key = {_key(version): when for version, when in releases.items()}
-        published = by_key.get(_key(pin.version))
-        recorded = _time(pin.published_at)
-        if published is None:
-            report.review.append(
-                f"{label}@{pin.version} was yanked or deprecated, or never published; pin "
-                f"another release"
-            )
-        elif (
-            abs(published - recorded) > timedelta(minutes=1)
-            or recorded.astimezone(UTC).date() != published.astimezone(UTC).date()
-        ):  # the cutoff a pin runs with is the UTC midnight after its recorded day
-            report.review.append(
-                f"{label}@{pin.version} was published {_stamp(published)}, not "
-                f"{pin.published_at} as {MCP_SERVERS_NAME} records"
-            )
-        elif now - published < COOLDOWN and not pin.exception:
-            report.review.append(
-                f"{label}@{pin.version} is inside its cooldown until "
-                f"{_stamp(published + COOLDOWN)}; pin an older release or give a pinException"
-            )
-        elif now - published >= COOLDOWN and pin.exception:
-            report.review.append(
-                f"{label}@{pin.version} is past its cooldown; its pinException can go"
-            )
-        newer = {v: when for v, when in releases.items() if _key(v) > _key(pin.version)}
-        ripe = [v for v, when in newer.items() if now - when >= COOLDOWN]
-        best = max(ripe, key=_key) if ripe else pin.version
-        if ripe:
-            report.changed.append(
-                f"{label} {best} is newer than the pinned {pin.version}; re-pin it in "
-                f"{MCP_SERVERS_NAME} (args and pin) with publishedAt {_stamp(newer[best])}"
-            )
-            report.pin_changes += 1
-        else:
-            report.pins.append(f"{name}: {pin.package}@{pin.version}")
-        waiting = [v for v in newer if _key(v) > _key(best)]  # newer than any ripe one: young
-        if waiting:
-            soon = max(waiting, key=_key)
-            report.notes.append(
-                f"{label} {soon} is in its cooldown until {_stamp(newer[soon] + COOLDOWN)}"
-            )
+        check_pin(
+            name,
+            label,
+            pin.version,
+            pin.published_at,
+            releases,
+            now,
+            report,
+            record=MCP_SERVERS_NAME,
+            move=f"re-pin it with `repo-template globals --upgrade mcp:{name}`",
+            exception=pin.exception,
+        )
+
+
+def check_pin(
+    name: str,
+    label: str,
+    version: str,
+    published_at: str,
+    releases: Mapping[str, datetime],
+    now: datetime,
+    report: Report,
+    *,
+    record: str,
+    move: str,
+    exception: str | None = None,
+    below: str | None = None,
+) -> None:
+    """One pin against its package's final releases (`releases`, version -> published): `record`
+    is the file that holds it, `move` how to move it; `below` bounds the versions offered."""
+    by_key = {_key(release): when for release, when in releases.items()}
+    published = by_key.get(_key(version))
+    recorded = _time(published_at)
+    if published is None:
+        report.review.append(
+            f"{label}@{version} was yanked or deprecated, or never published; pin another release"
+        )
+    elif (
+        abs(published - recorded) > timedelta(minutes=1)
+        or recorded.astimezone(UTC).date() != published.astimezone(UTC).date()
+    ):  # the cutoff a pin runs with is the UTC midnight after its recorded day
+        report.review.append(
+            f"{label}@{version} was published {_stamp(published)}, not {published_at} as "
+            f"{record} records"
+        )
+    elif now - published < COOLDOWN and not exception:
+        report.review.append(
+            f"{label}@{version} is inside its cooldown until {_stamp(published + COOLDOWN)}; pin "
+            f"an older release or give a pinException"
+        )
+    elif now - published >= COOLDOWN and exception:
+        report.review.append(f"{label}@{version} is past its cooldown; its pinException can go")
+    newer = {
+        release: when
+        for release, when in releases.items()
+        if _key(release) > _key(version) and (below is None or _key(release) < _key(below))
+    }
+    ripe = [release for release, when in newer.items() if now - when >= COOLDOWN]
+    best = max(ripe, key=_key) if ripe else version
+    if ripe:
+        report.changed.append(f"{label} {best} is newer than the pinned {version}; {move}")
+        report.pin_changes += 1
+    else:
+        report.pins.append(f"{name}: {label.split(' ', 2)[-1]}@{version}")
+    waiting = [release for release in newer if _key(release) > _key(best)]  # all still young
+    if waiting:
+        soon = max(waiting, key=_key)
+        report.notes.append(
+            f"{label} {soon} is in its cooldown until {_stamp(newer[soon] + COOLDOWN)}"
+        )

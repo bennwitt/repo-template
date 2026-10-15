@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "tools": {
+    "azd": {
+      "registry": "github",
+      "package": "Azure/azure-dev",
+      "tag": "azure-dev-cli_{version}",
+      "version": "1.35.0",
+      "publishedAt": "2026-09-30T23:46:10Z",
+      "assets": {
+        "darwin-amd64": {
+          "file": "azd-darwin-amd64.zip",
+          "sha256": "3f8a035c29e4b0c7569bfcd54a9904efeab53168d8cc685b4e2ef90e7c9512d0"
+        },
+        "darwin-arm64": {
+          "file": "azd-darwin-arm64.zip",
+          "sha256": "e42f663c61e6c4bce5887f7e4edea9fe53a4772c875df2561a25cbc5cef3c681"
+        },
+        "linux-amd64": {
+          "file": "azd-linux-amd64.tar.gz",
+          "sha256": "967c58dea693d42256fbefaee48ac2f812f134528998f7fa9f4f542cbf7feda1"
+        },
+        "linux-arm64": {
+          "file": "azd-linux-arm64.tar.gz",
+          "sha256": "583e0a5a8c5902cb82f7c1212757d8bfb8038b760ece7fbe54d2885e5532a128"
+        }
+      },
+      "why": "The Azure Developer CLI, for the azure and foundry packs."
+    },
+    "codex": {
+      "registry": "npm",
+      "package": "@openai/codex",
+      "version": "0.161.0",
+      "publishedAt": "2026-10-07T16:04:02Z",
+      "why": "The Codex CLI."
+    },
+    "playwright-cli": {
+      "registry": "npm",
+      "package": "@playwright/cli",
+      "version": "0.1.22",
+      "publishedAt": "2026-09-28T23:24:31Z",
+      "why": "Drives the browser for the playwright-cli skill, which is vendored at the same version: move both together."
+    },
+    "pyright": {
+      "registry": "npm",
+      "package": "pyright",
+      "version": "1.1.414",
+      "publishedAt": "2026-09-09T20:42:01Z",
+      "why": "The pyright-lsp plugin's language server."
+    },
+    "typescript": {
+      "registry": "npm",
+      "package": "typescript",
+      "version": "6.0.3",
+      "publishedAt": "2026-04-16T23:38:27Z",
+      "below": "7",
+      "why": "tsserver, for typescript-language-server. TypeScript 7 is the native compiler and has no tsserver."
+    },
+    "typescript-language-server": {
+      "registry": "npm",
+      "package": "typescript-language-server",
+      "version": "5.3.0",
+      "publishedAt": "2026-05-21T06:35:07Z",
+      "below": "6",
+      "why": "The typescript-lsp plugin's language server. 6 needs Node 22.22 or later; 5.3 runs on Node 20."
+    }
+  }
+}

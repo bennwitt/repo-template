@@ -47,6 +47,15 @@ def digest(content: str) -> str:
     return hashlib.sha256(content.encode()).hexdigest()
 
 
+def marked_block_intact(existing: str, start: str, end: str) -> bool:
+    """No block, or exactly one, its `start` before its `end`: a block merge_marked_block can
+    replace without leaving a stray marker behind."""
+    starts, ends = existing.count(start), existing.count(end)
+    if (starts, ends) == (0, 0):
+        return True
+    return (starts, ends) == (1, 1) and existing.index(start) < existing.index(end)
+
+
 def merge_marked_block(existing: str, content: str, start: str, end: str) -> str:
     """Replace the block between `start` and `end` markers, or append it after a blank line."""
     block = f"{start}\n{content.rstrip()}\n{end}\n"

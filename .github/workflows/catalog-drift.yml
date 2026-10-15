@@ -1,11 +1,13 @@
 name: Catalog drift
 
 # Weekly, compare every vendored skill and license text with its upstream repository, and each
-# MCP server's pin with npm or PyPI. Read-only: the report goes to this log; upgrading a skill is
-# a reviewed, local `repo-template globals --upgrade`, and re-pinning is an edit to
-# .agents/mcp-servers.json. Exit 1 means updates are available (a skill, or a pin with a release
-# past its 7-day cooldown); 2 means one needs review (removed, moved, a license changed, a pin
-# yanked or mis-recorded); 3 means GitHub, npm or PyPI couldn't be reached. Each fails the run.
+# MCP server's pin with npm or PyPI. Read-only: the report goes to this log and to the run's
+# summary page; upgrading a skill or re-pinning a server is a reviewed, local
+# `repo-template globals --upgrade`. Exit 1 means updates are available (a skill, or a pin with a
+# release past its 7-day cooldown); 2 means one needs review (removed, moved, a license changed,
+# a pin yanked or mis-recorded); 3 means GitHub, npm or PyPI couldn't be reached. Each fails the
+# run. The report's upstream text is already cleaned by the CLI; it is replayed into the log with
+# workflow commands stopped, and reaches the summary only through a file, never an expression.
 
 on:
   schedule:
@@ -37,4 +39,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_TELEMETRY: "0"
-        run: uv run --no-sync repo-template globals --upstream --standards-root .
+        run: |
+          set +e
+          uv run --no-sync repo-template globals --upstream --standards-root . >report.txt 2>&1
+          code=$?
+          set -e
+          token=$(openssl rand -hex 16) # no line of the report can run a workflow command
+          echo "::stop-commands::$token"
+          cat report.txt
+          echo "::$token::"
+          {
+            echo "## Catalog drift"
+            echo
+            case "$code" in
+              0) echo "Everything is current." ;;
+              1) echo "Updates are available: follow each line of the report below, locally (skills: \`repo-template globals --upgrade\`; MCP servers: \`--upgrade mcp:<name>\`; per-machine tools: edit \`.agents/machine-tools.json\`)." ;;
+              2) echo "Something needs review (a skill removed or moved, a license changed, or a pin to fix)." ;;
+              3) echo "GitHub, npm or PyPI couldn't be reached: run it again later." ;;
+              *) echo "The check failed (exit $code)." ;;
+            esac
+            echo
+            echo '```text'
+            sed 's/```/` ` `/g' report.txt
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+          exit "$code"

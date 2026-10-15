@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import tomllib
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
@@ -39,7 +40,7 @@ from repo_template.mcp_globals import (
     sync_codex_mcp,
 )
 from repo_template.model import Result
-from repo_template.policies import merge_marked_block
+from repo_template.policies import marked_block_intact, merge_marked_block
 from repo_template.settings import SOURCE_NAME, sync_claude_settings
 from repo_template.skillfile import field_lines
 
@@ -90,6 +91,11 @@ def _installed_root() -> Path | None:
         if _is_this_project(parent):
             return parent
     return None
+
+
+def installed_root() -> Path | None:
+    """The standards repository this CLI runs from, when it is an editable install of one."""
+    return _installed_root()
 
 
 def find_standards_root(explicit: Path | None = None) -> Path:
@@ -641,17 +647,176 @@ def _merge_global_gitignore(existing: str) -> str:
     return merge_marked_block(existing, GITIGNORE_CONTENT, GITIGNORE_START, GITIGNORE_END)
 
 
-def _sync_global_gitignore(home: Path, result: Result, *, check: bool) -> None:
-    path = home / ".config/git/ignore"
-    existing = path.read_text() if path.exists() else ""
-    proposed = _merge_global_gitignore(existing)
-    if proposed == existing:
-        result.unchanged.append(str(path))
-        return
-    (result.updated if path.exists() else result.created).append(str(path))
-    if not check:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(proposed)
+def _git_config(home: Path, *args: str) -> str:
+    """`git config ARGS` as this machine's Git sees it for `home`, asked from an empty folder
+    outside any repository (so an `includeIf` for some repository never decides it); stdout, or
+    "" when Git has no answer. For another home (a test's), only that home's config counts."""
+    real = home == Path.home().expanduser().resolve()
+    env = {**git_env(), "HOME": str(home)}
+    if not real:
+        for name in ("XDG_CONFIG_HOME", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"):
+            env.pop(name, None)
+        env["GIT_CONFIG_NOSYSTEM"] = "1"
+    with tempfile.TemporaryDirectory() as outside:
+        env["GIT_CEILING_DIRECTORIES"] = str(Path(outside).parent)
+        try:
+            done = subprocess.run(
+                ["git", "config", *args],
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+                cwd=outside,
+            )
+        except FileNotFoundError:  # no Git
+            return ""
+    return done.stdout if done.returncode == 0 else ""
+
+
+def _absolute(named: str, setting: str) -> Path:
+    if not Path(named).is_absolute():
+        raise ValueError(
+            f"{setting} is {named!r}, a relative path that Git reads in each repository; make it "
+            f"absolute, then run globals again"
+        )
+    return Path(named)
+
+
+def global_ignore_file(home: Path) -> Path:
+    """The file Git reads its global ignores from: the one `core.excludesFile` names (in the
+    system or global config, or one they include; `~` expanded as Git does), else
+    $XDG_CONFIG_HOME/git/ignore, else ~/.config/git/ignore. Raises ValueError for a relative
+    excludesFile, which Git reads in each repository."""
+    named = _git_config(home, "--includes", "--type=path", "--get", "core.excludesFile").strip()
+    if named:
+        return _absolute(named, "core.excludesFile")
+    real = home == Path.home().expanduser().resolve()
+    xdg = os.environ.get("XDG_CONFIG_HOME") if real else None
+    return (Path(xdg) if xdg else home / ".config") / "git" / "ignore"
+
+
+def conditional_ignore_files(home: Path) -> tuple[list[Path], list[str]]:
+    """The ignore files Git reads only in some repositories: the core.excludesFile of each file
+    an `includeIf` brings in, wherever that includeIf is (the global config, a file it includes,
+    or another included file). Also returns a note for each one repo-template leaves alone: a
+    relative path, which each repository reads on its own."""
+    files: list[Path] = []
+    notes: list[str] = []
+    seen: set[object] = set()
+    scopes: list[tuple[str, ...]] = [("--global",)]
+    while scopes:
+        listed = _git_config(
+            home, *scopes.pop(0), "--includes", "--show-origin", "-z", "--type=path",
+            "--get-regexp", r"^includeif\..*\.path$",
+        )  # fmt: skip
+        records = listed.split("\0")  # file:<origin> NUL <key> LF <value> NUL ...
+        for found_in, entry in zip(records[0::2], records[1::2], strict=False):
+            key, _, included = entry.partition("\n")
+            condition = key[len("includeif.") : -len(".path")]
+            holder = Path(found_in.removeprefix("file:"))  # a relative path is relative to it
+            source = Path(included) if Path(included).is_absolute() else holder.parent / included
+            if _same_file_key(source) in seen:
+                continue
+            seen.add(_same_file_key(source))
+            scopes.append(("--file", str(source)))
+            named = _git_config(
+                home, "--file", str(source), "--includes", "--type=path", "--get",
+                "core.excludesFile",
+            ).strip()  # fmt: skip
+            if not named:
+                continue
+            if Path(named).is_absolute():
+                files.append(Path(named))
+            else:
+                notes.append(
+                    f"{source} names a relative core.excludesFile ({named}) for repositories "
+                    f'matching includeIf "{condition}"; each reads its own, so it is left alone'
+                )
+    return files, notes
+
+
+def _same_file_key(path: Path) -> object:
+    """What makes two spellings the same file: its device and inode once it exists (through a
+    link, a hard link or another case), else its resolved path; the path itself when a link
+    loops."""
+    try:
+        found = path.stat()
+        return (found.st_dev, found.st_ino)
+    except (OSError, RuntimeError):
+        pass
+    try:
+        return path.resolve()
+    except (OSError, RuntimeError):  # a link loop: Python 3.11 and 3.12 raise RuntimeError
+        return path
+
+
+def _writable(path: Path) -> bool:
+    """Whether `path` (a file, or where it would be made) can be written by this user."""
+    if path.exists():
+        return os.access(path, os.W_OK)
+    parent = path.parent
+    while not parent.exists() and parent != parent.parent:
+        parent = parent.parent
+    return os.access(parent, os.W_OK | os.X_OK)
+
+
+def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: str) -> None:
+    """repo-template's block in each file Git reads its global ignores from: the one it always
+    reads, and those an `includeIf` names for some repositories. Each is written through a link
+    to the file it names, after a backup. A block without both markers, in order, is left
+    alone. The always-read file this user can't write is an error (in --check too); one Git
+    reads only in some repositories gets a note instead, as it can't be pointed elsewhere."""
+    targets: list[tuple[Path, bool]] = []  # each file, and whether Git always reads it
+    try:
+        targets.append((global_ignore_file(home), True))
+    except ValueError as exc:
+        result.preserved.append(f"the global Git ignore ({exc})")
+    conditional, notes = conditional_ignore_files(home)
+    result.notes.extend(notes)
+    targets += [(path, False) for path in conditional]
+    seen: set[object] = set()
+    for path, always in targets:
+        if _same_file_key(path) in seen:
+            continue
+        seen.add(_same_file_key(path))
+        try:
+            target = path.resolve()  # through a link, to the file it names
+            existing = path.read_text() if path.exists() else ""
+        except (OSError, RuntimeError, UnicodeDecodeError) as exc:
+            result.errors.append(f"cannot read {path}: {exc}")
+            continue
+        if not marked_block_intact(existing, GITIGNORE_START, GITIGNORE_END):
+            result.preserved.append(f"{path} (repo-template's block has lost a marker line; kept)")
+            continue
+        proposed = _merge_global_gitignore(existing)
+        if proposed == existing:
+            result.unchanged.append(str(path))
+            continue
+        if not _writable(target):
+            if always:
+                result.errors.append(
+                    f"cannot write {path} (Git reads its ignores there): add repo-template's "
+                    f"block to it yourself, or point a global core.excludesFile at a file you own"
+                )
+            else:
+                result.notes.append(
+                    f"{path} (Git reads its ignores there in some repositories) can't be written "
+                    f"here: add repo-template's block to it yourself"
+                )
+            continue
+        (result.updated if path.exists() else result.created).append(str(path))
+        if check:
+            continue
+        try:
+            if target.exists():
+                name = "git-ignore" if len(seen) == 1 else f"git-ignore-{len(seen)}"
+                backup = home / ".repo-template" / "backups" / stamp / name
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(target, backup)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(proposed)
+        except OSError as exc:
+            result.errors.append(f"cannot write {path}: {exc.strerror or exc}")
 
 
 def sync_globals(
@@ -712,5 +877,5 @@ def sync_globals(
     )
     _sync_mirror(standards_root, global_names, result, check=check)
 
-    _sync_global_gitignore(home, result, check=check)
+    _sync_global_gitignore(home, result, check=check, stamp=stamp)
     return result

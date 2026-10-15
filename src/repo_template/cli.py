@@ -6,13 +6,15 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from repo_template import __version__
 from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
 from repo_template.pins import HttpRegistry, check_pins
 from repo_template.repository import SUBPROCESS, create_repository, update_repository
 from repo_template.resolve import TerminalPrompt, resolve_conflicts
 from repo_template.scaffold import manifest_version, normalize_project_name
-from repo_template.standards import find_standards_root, sync_globals
+from repo_template.standards import find_standards_root, installed_root, sync_globals
+from repo_template.tools import check_machine_tools, load_machine_tools
 from repo_template.upstream import (
     GhApi,
     HeadScanner,
@@ -29,10 +31,27 @@ def _python_version(value: str) -> str:
     return value
 
 
+class _Version(argparse.Action):
+    """Prints the version line as it is: argparse's own would rewrap a long checkout path."""
+
+    def __init__(self, option_strings: list[str], dest: str, **kwargs: object) -> None:
+        super().__init__(option_strings, dest, nargs=0, help=str(kwargs.get("help", "")))
+
+    def __call__(self, parser: argparse.ArgumentParser, *_: object) -> None:
+        root = installed_root()
+        print(f"repo-template {__version__}" + (f" ({root})" if root else ""))
+        parser.exit()
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="repo-template",
         description="Create, update, and validate standardized repositories.",
+    )
+    parser.add_argument(
+        "--version",
+        action=_Version,
+        help="show the version, and the standards repository this CLI runs from",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -45,7 +64,9 @@ def _parser() -> argparse.ArgumentParser:
         help="parent directory (default: current directory)",
     )
     create.add_argument("--description", help="one-line project description")
-    create.add_argument("--python", type=_python_version, default="3.12")
+    create.add_argument(
+        "--python", type=_python_version, default="3.12", help="Python version (default: 3.12)"
+    )
     create.add_argument("--no-git", action="store_true", help="do not initialize Git")
     create.add_argument("--no-lock", action="store_true", help="do not create uv.lock")
     create.add_argument(
@@ -57,7 +78,13 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     update = subparsers.add_parser("update", help="add missing standards safely")
-    update.add_argument("path", type=Path, nargs="?", default=Path.cwd())
+    update.add_argument(
+        "path",
+        type=Path,
+        nargs="?",
+        default=Path.cwd(),
+        help="the repository (default: the current directory)",
+    )
     update.add_argument(
         "--no-hooks", action="store_true", help="do not configure the repository hook path"
     )
@@ -122,19 +149,26 @@ def _parser() -> argparse.ArgumentParser:
     globals_parser = subparsers.add_parser(
         "globals", help="connect global Codex and Claude configuration to this standards repo"
     )
-    globals_parser.add_argument("--standards-root", type=Path)
+    globals_parser.add_argument(
+        "--standards-root",
+        type=Path,
+        help="the standards repository (default: $AI_DEV_STANDARDS, else the checkout this CLI "
+        "is installed from)",
+    )
     mode = globals_parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="report changes without applying them")
     mode.add_argument(
         "--upstream",
         action="store_true",
-        help="compare the vendored skills and license texts with upstream (network; read-only)",
+        help="compare the vendored skills, license texts and MCP pins with upstream (GitHub, npm "
+        "and PyPI; read-only)",
     )
     mode.add_argument(
         "--upgrade",
         action="store_true",
         help="vendor skills from upstream, each verified, scanned and shown before it goes live: "
-        "the SKILLs named, or every changed one",
+        "the SKILLs named, or every changed one; a name that is an MCP server (or mcp:NAME) "
+        "re-pins it to its newest release at least 7 days old",
     )
     globals_parser.add_argument(
         "skills",
@@ -311,6 +345,9 @@ def _upstream(root: Path) -> int:
         if (root / ".agents" / MCP_SERVERS_NAME).is_file():
             servers = load_mcp_servers(root / ".agents")
             check_pins(servers, HttpRegistry(), datetime.now(UTC), report)
+        tools = load_machine_tools(root / ".agents")
+        if tools:
+            check_machine_tools(tools, HttpRegistry(), GhApi(), datetime.now(UTC), report)
     except NetworkError as exc:
         print(f"repo-template: error: {exc}", file=sys.stderr)
         return 3
@@ -325,7 +362,7 @@ def _upstream(root: Path) -> int:
             for line in lines:
                 print(f"  {clean(line)}")
     if report.exit_code == 0:
-        pins = f" and {len(report.pins)} MCP pins" if report.pins else ""
+        pins = f" and {len(report.pins)} pins (MCP servers, tools)" if report.pins else ""
         print(f"All {len(report.current)} vendored skills{pins} are current.")
     elif len(report.changed) > report.pin_changes:
         print("Run `repo-template globals --upgrade` to review and apply the skills.")
@@ -348,6 +385,7 @@ def _upgrade(root: Path, args: argparse.Namespace) -> int:
             scanner=scanner,
             prompt=None if args.no_input else TerminalPrompt(),
             allow_findings=args.allow_findings,
+            registry=HttpRegistry(),
         )
     if outcome.result.needs_attention:
         _print_result(outcome.result)
@@ -355,6 +393,7 @@ def _upgrade(root: Path, args: argparse.Namespace) -> int:
         ("Refreshed", outcome.applied),
         ("Added", outcome.added),
         ("Removed", outcome.removed),
+        ("Re-pinned MCP servers", outcome.repinned),
         ("Left as they are", outcome.undecided),
     ):
         if names:

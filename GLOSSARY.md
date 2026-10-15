@@ -37,6 +37,25 @@ each file as generated. A personal repository's is `.git/repo-template.json`, wi
 records (those are in `~/.repo-template/globals-state.json`).
 _Avoid_: lock, state file
 
+**Profile**:
+What a manifest says repo-template manages: `python-uv` (the full project baseline),
+`packs-only` (skill packs and their MCP servers) or `personal` (the same, for one person). It is
+recorded on adoption, and later runs follow it.
+
+**Adoption**:
+The first `update` of a repository the baseline didn't create; it records the profile.
+_Avoid_: onboarding, migration
+
+**Preserved file**:
+A file `update` (or `globals`) leaves for a decision instead of changing it: a `!` line under
+"Preserved for manual review", and exit 2.
+_Avoid_: conflict, kept file
+
+**Project-owned file**:
+A path in the manifest's `project_owned`: `update` never changes or recreates it. A seed file
+belongs to the project too, but isn't project-owned until listed.
+_Avoid_: owned file
+
 **Accepted difference**:
 A managed file the project keeps in its own form, recorded in the manifest with its hash and the
 baseline's hash, so `update` stays quiet until either one changes.
@@ -92,6 +111,16 @@ Upstream skill revisions don't wait; they are reviewed and scanned instead.
 `.agents/mcp-servers.json`: each MCP server once, with what it runs, its pin, its denied tools
 and why. A global server is installed on every machine; a pack server comes with a pack.
 
+**Tool pins**:
+`.agents/machine-tools.json`: the CLIs the skills and plugins drive on each machine, each pinned
+once (npm by version, a GitHub release by version and each platform's asset SHA-256).
+`setup-machine.sh` installs from it; `globals --upstream` reports newer releases.
+_Avoid_: machine tools list, tool versions file
+
+**Re-pin**:
+`globals --upgrade mcp:<name>`: moving an MCP server's pin to its newest final release past the
+cooldown, its args, version and `publishedAt` together.
+
 **Kept entry**:
 An MCP entry repo-template would manage but leaves alone, because it was changed or removed by
 hand: reported once, then recorded (in `globals-state.json`, or a repository's `mcp_kept`).
@@ -119,7 +148,8 @@ text of each field it replaces and the upstream SKILL.md's blob SHA, marked in t
 re-applied by `globals` after the skill is vendored again.
 
 **Skill mirror**:
-`.claude/skills/` in the standards repository: one relative link per catalog skill.
+`.claude/skills/` in the standards repository: one relative link per global skill (pack skills
+aren't mirrored).
 
 **Receipt policy**:
 `.ai/receipt-policy.json`: whether a repository records skill receipts, and where.

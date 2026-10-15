@@ -12,7 +12,7 @@ from repo_template.templates import project_files
 
 ROOT = Path(__file__).resolve().parents[1]
 # Dev dependencies this repository needs for its own tests that generated repositories don't.
-STANDARDS_ONLY_DEV = {"hypothesis"}
+STANDARDS_ONLY_DEV = {"hypothesis", "shellcheck-py"}
 
 
 def _baseline() -> dict[str, str]:

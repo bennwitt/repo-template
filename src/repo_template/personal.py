@@ -20,7 +20,7 @@ from pathlib import Path
 
 from repo_template.mcp_project import BLOCK, CODEX_FILE
 from repo_template.model import Result
-from repo_template.policies import merge_marked_block, remove_marked_block
+from repo_template.policies import marked_block_intact, merge_marked_block, remove_marked_block
 from repo_template.standards import Paths, git_env, repository_path
 
 EXCLUDE_FILE = ".git/info/exclude"
@@ -210,10 +210,7 @@ def plan_exclude(root: Path, patterns: list[str]) -> ExcludePlan:
     git = (root / ".git").resolve()
     if git not in path.resolve().parents:  # through a link to a file or folder elsewhere
         return ExcludePlan(path, existing, existing, damaged=True, why=OUTSIDE)
-    starts, ends = existing.count(EXCLUDE_START), existing.count(EXCLUDE_END)
-    if (starts, ends) not in ((0, 0), (1, 1)) or (
-        starts and existing.index(EXCLUDE_START) > existing.index(EXCLUDE_END)
-    ):
+    if not marked_block_intact(existing, EXCLUDE_START, EXCLUDE_END):
         return ExcludePlan(path, existing, existing, damaged=True)
     if patterns:
         proposed = merge_marked_block(existing, "\n".join(patterns), EXCLUDE_START, EXCLUDE_END)

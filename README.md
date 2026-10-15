@@ -92,8 +92,17 @@ Running `update` a second time changes nothing.
   that were deleted or moved into a pack;
 - keeps this repository's `.claude/skills/` mirror in step with the catalog (relative links, so
   they work on every machine);
-- adds `.agents/`, `.claude/` and `.codex/` to your global Git ignore, so personal agent
-  configuration never leaks into project repositories.
+- adds `.agents/`, `.claude/`, `.codex/`, `.playwright-cli/` and `.playwright-mcp/` to the
+  global ignore file Git reads (`core.excludesFile` when set, in the system or global config or
+  one they include, and expanded as Git expands it; else `$XDG_CONFIG_HOME/git/ignore`, else
+  `~/.config/git/ignore`), in a marked block, so personal agent configuration never leaks into
+  project repositories. Git is asked outside any repository, so an `includeIf` for some
+  repositories doesn't decide it; the ignore file such an `includeIf` brings in (from the global
+  config, a file it includes, or another included file) gets the block too. A relative
+  `core.excludesFile` is reported, not guessed: as a problem for the file Git always reads, as a
+  note for one it reads in some repositories. The always-read file being one you can't write (a
+  system one) is an error naming it; a conditional one gets a note. A linked file is written
+  through, and a block that lost a marker line, or has them out of order, is left alone.
 
 It never links `~/.claude` itself, so credentials, sessions, history, caches and Claude's
 `synced` directory stay on the machine. Anything it replaces is first moved to
@@ -151,13 +160,13 @@ so Claude Code wrote `/model`, `/effort` and `/plugin` changes from every machin
 file. That file is gone in 0.4.2. On each machine:
 
 ```bash
-cd "$AI_DEV_STANDARDS"                     # this repository's checkout
-cp .claude/settings.json ~/claude-settings-before-0.4.2.json   # this machine's view
-git checkout -- .claude/settings.json      # changes Claude Code wrote through the link block the pull
-git pull                                   # removes .claude/settings.json: the link now dangles
-cp ~/claude-settings-before-0.4.2.json .claude/settings.json   # Git ignores it now
-repo-template globals
-rm .claude/settings.json
+link=$(readlink ~/.claude/settings.json) &&      # <checkout>/.claude/settings.json
+  cd "${link%/.claude/settings.json}" &&          # this repository's checkout
+  cp .claude/settings.json ~/claude-settings-before-0.4.2.json &&   # this machine's view
+  git checkout -- .claude/settings.json &&        # changes written through the link block the pull
+  git pull &&                                     # removes .claude/settings.json: the link dangles
+  cp ~/claude-settings-before-0.4.2.json .claude/settings.json &&   # Git ignores it now
+  repo-template globals && rm .claude/settings.json
 ```
 
 Putting the saved copy back before `globals` lets the migration see this machine's settings
@@ -172,68 +181,53 @@ Code on that machine has no user settings: no deny rules, plugins or receipt hoo
 
 ### Install (once per machine)
 
-Keep this repository at a stable path. On a Mac, `~/aiDevStandards` is the recommended location
-(macOS doesn't let you create a folder at the top of the disk); on the Linux workstation it lives
-at `/ai/Moore/repo-template`. [HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md)
-walks through a machine and its repositories step by step.
-
-The quick way is [`setup-machine.sh`](setup-machine.sh): download it, read it, run it.
-It asks where the repository goes, then does the steps below, and you can run it again any
-time:
+Run [`setup-machine.sh`](setup-machine.sh) on macOS or Linux: download it, read it, run it. It
+asks where this repository goes (`~/aiDevStandards` on a new machine), installs the CLI, applies
+`globals` once you agree, and offers the per-machine tools. Run it again any time to update;
+`--check` reports what is set up and what isn't, and changes nothing.
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/bennwitt/repo-template/main/setup-machine.sh
 less setup-machine.sh && bash setup-machine.sh
 ```
 
-By hand:
+`repo-template --version` prints the version and the standards repository the CLI runs from.
 
-```bash
-git clone https://github.com/bennwitt/repo-template.git ~/aiDevStandards
-cd ~/aiDevStandards
-uv tool install --editable .
-repo-template globals --standards-root ~/aiDevStandards --check   # preview
-repo-template globals --standards-root ~/aiDevStandards           # apply
-```
+[HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md) has the
+prerequisites, the per-machine tools for each OS, the same setup by hand, and how to update or
+adopt your repositories.
 
-Because the install is editable, a `git pull` updates the CLI and its templates without a
-reinstall. Set `AI_DEV_STANDARDS="$HOME/aiDevStandards"` in your shell profile to omit
-`--standards-root`. A root named either way must be a standards repository, or the command stops
-with an error. Without either, `globals` uses the checkout the CLI is installed from, so running
-it inside some other repository (which may well have `.agents/skills/` of its own, from
-`npx skills add`) never relinks `~/.agents` there. If you're inside a second
-repo-template checkout, it stops and asks you to pass `--standards-root`.
+The CLI is an editable install, so a `git pull` updates it and its templates without a
+reinstall. `globals` finds this repository through `--standards-root`, else `AI_DEV_STANDARDS`
+(the setup script sets it in your shell profile), else the checkout the CLI is installed from.
+A root named either way must be a standards repository, or the command stops with an error, so
+running it inside some other repository (which may well have `.agents/skills/` of its own, from
+`npx skills add`) never relinks `~/.agents` there. With neither set, if you're inside a second
+repo-template checkout, it stops and asks you to pass `--standards-root`. To work on another
+checkout of this repository, name it: `repo-template globals --standards-root .`.
 
 ### Per-machine tools
 
-The portable settings turn on plugins that need tools on each machine, and some skills drive
-CLIs. Pin each one to its newest release at least 7 days old (a short supply-chain cooldown);
-these were current on 2026-10-13:
-
-```bash
-# language servers for the typescript-lsp and pyright-lsp plugins
-npm install -g --ignore-scripts typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414
-# Playwright CLI, in step with the playwright-cli skill, and the browser it drives
-npm install -g --ignore-scripts @playwright/cli@0.1.22
-playwright-cli install-browser chromium
-# Azure Developer CLI 1.35.0: download azd-linux-amd64.tar.gz from its GitHub release, check
-# its SHA-256 against the release's digest, put azd on PATH, then reuse the az sign-in:
-azd config set auth.useAzCliAuth true
-# the azure and foundry packs' MCP server: fetch its 62 MB wheel once, so the first session
-# doesn't time out waiting for it
-uvx --exclude-newer 2026-10-13T00:00:00Z --from msmcp-azure==3.0.0 azmcp --version
-```
+The portable settings turn on plugins that need tools on each machine (language servers, the
+Playwright CLI, `az` and `azd`, a GitHub token for the `github` plugin), and some skills drive
+CLIs. `.agents/machine-tools.json` pins each one once, to its newest final release at least 7
+days old (a short supply-chain cooldown); `below` keeps one under a major version the machines
+can't run yet, a `pinException` says why a release inside its cooldown is pinned, and `azd`'s
+entry records each platform's release asset with its SHA-256. The setup script offers each tool
+at its pin, with npm's `--before` set to the end of the newest pin's day so dependencies wait out
+the cooldown too, and installs `azd` only once the download's SHA-256 matches; [section 1.1 of the guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#11-optional-tools)
+lists them with the macOS and Linux commands. `globals --upstream` reports a newer release past
+the cooldown, and an `azd` asset whose digest on GitHub differs from the recorded one; move a
+pin by editing its `version` and `publishedAt` (and each asset's `sha256`), in the same commit
+as the guide's commands. The Azure CLI is the exception: Homebrew and Microsoft's packages
+install the current release.
 
 - `typescript-language-server` 6 needs Node 22.22 or later; 5.3 is the newest that runs on Node
-  20, which is past its end of life, so move to Node 22 or 24 LTS when you can. TypeScript 7 is
-  the native compiler and has no `tsserver`, so the language server needs TypeScript 6.
-- Codex: `codex update` takes the very latest release. For a release at least 7 days old,
-  install its `codex-package-<target>.tar.gz` from GitHub (checking the digest) beside the
-  current one under `~/.codex/packages/standalone/releases/`, and repoint `current`.
-- The `github` plugin connects to GitHub's MCP server with `$GITHUB_PERSONAL_ACCESS_TOKEN`. Set
-  it (a fine-grained, read-only token is enough) in the environment Claude Code starts in, or
-  the plugin fails to connect with "Authorization header is badly formatted". The token never
-  goes in this repository.
+  20, which is past its end of life. TypeScript 7 is the native compiler and has no `tsserver`,
+  so the language server needs TypeScript 6.
+- The `github` plugin fails to connect with "Authorization header is badly formatted" until
+  `GITHUB_PERSONAL_ACCESS_TOKEN` is set in the environment Claude Code starts in. The token
+  never goes in this repository.
 - The Azure skills run `az` and `azd`, and the MCP server signs in through `az login`
   (`AZURE_TOKEN_CREDENTIALS=AzureCliCredential`); nothing stores an Azure key. The server is
   read-only; deploys, deletes, role assignments, admin consent, credential resets, extension
@@ -380,7 +374,7 @@ the links and the Codex file like any ignored file; `update` puts them back.
 | `new` | created | created, but a Git or uv step failed | n/a |
 | `update` | applied cleanly | an error was reported: a Git or uv step failed, or a listed skill pack isn't defined or lists a skill that isn't installed | files preserved for manual review |
 | `check` | current (every path, when given several) | something would change, or an error was reported | n/a |
-| `globals` | applied cleanly | an error was reported (for example an override for a missing skill, or settings that aren't valid JSON) | something was preserved: a portable setting changed on this machine (reported once), a link at `~/.claude/settings.json` that repo-template didn't create, or a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
+| `globals` | applied cleanly | an error was reported (for example an override for a missing skill, or settings that aren't valid JSON) | something was preserved: a portable setting or an MCP server entry changed or removed on this machine (reported once), a link at `~/.claude/settings.json` that repo-template didn't create, or a real folder in this repository's `.claude/skills/` mirror where a skill link belongs |
 | `globals --check` | current | a link or setting would change, or something is reported for review (once: a setting changed on this machine, a link repo-template didn't create) | n/a |
 | `globals --upstream` | every vendored skill and MCP pin is current | a skill changed upstream, or an MCP pin has a newer release past its cooldown | something needs review: a skill removed or moved upstream, a license text changed, a recorded commit that doesn't hold the vendored folder, or an MCP pin that was yanked, is recorded with the wrong time, or is younger than the cooldown without a `pinException` (or no longer needs one) |
 | `globals --upgrade` (`130` if interrupted, after listing what it applied) | applied, or nothing to do | a skill was refused (it failed verification or the scan, or runs commands when it loads), or an error was reported | a skill was left as it is (skipped, kept though gone upstream, or with `--no-input` not named or not ready to apply unattended), or something was preserved while linking |
@@ -771,6 +765,7 @@ repo-template globals --upgrade                     # one of: review each change
 repo-template globals --upgrade tdd wizard          #   or only these,
 repo-template globals --upgrade owner/repo@a-skill  #   or add one (a folder path, if it isn't
                                                     #   named after the skill; #v1.2 pins a tag)
+repo-template globals --upgrade mcp:shadcn          # re-pin an MCP server (see below)
 uv run pytest
 git add .agents README.md THIRD_PARTY_NOTICES.md CHANGELOG.md .claude/skills
 git commit -m "Upgrade skills: tdd, wizard"
@@ -824,10 +819,15 @@ newer release is out, with the command that re-pins it. A repository that is its
 (`SKILL.md` at its root) can't be vendored yet.
 
 It also checks each MCP server's pin (`.agents/mcp-servers.json`) against npm or PyPI. A newer
-final release at least 7 days old is reported as a change, to re-pin with its `publishedAt`; a
-younger one is a note with the day its cooldown ends. Pre-releases, and releases yanked or
-deprecated, are never offered. A pin younger than 7 days needs a `pinException` giving the
-reason, and `--upstream` says when it no longer does.
+final release at least 7 days old is reported as a change; a younger one is a note with the day
+its cooldown ends. Pre-releases, and releases yanked or deprecated, are never offered. A pin
+younger than 7 days needs a `pinException` giving the reason, and `--upstream` says when it no
+longer does. `globals --upgrade mcp:<name>` (or the bare name, when no vendored skill has it)
+re-pins a server to its newest final release past the cooldown: the version in its args, its
+`version` and `publishedAt` move together and a `pinException` goes, after it shows the change
+and asks (`--no-input` applies it: you named it). It notes the server in `CHANGELOG.md`, and names any
+catalog file still holding the old version (a skill from the same package) for you to update.
+The per-machine tools in `.agents/machine-tools.json` are checked the same way.
 
 A weekly workflow (`.github/workflows/catalog-drift.yml`) runs `globals --upstream` with a
 read-only token and fails when something changed, so drift shows up without anyone looking.
@@ -899,6 +899,10 @@ uv run ruff check .
 uv run mypy src
 uv run repo-template --help
 ```
+
+CI runs the tests on Linux, and on macOS under its `/bin/bash` 3.2 and BSD tools, which is what
+`setup-machine.sh` meets on a Mac; `tests/test_setup_machine.py` also runs `shellcheck` (a dev
+dependency) on it.
 
 - Template content: `src/repo_template/templates.py`, one `add()` call per file with its policy.
 - What each policy may do to a file (managed, seed, merged): `src/repo_template/policies.py`,

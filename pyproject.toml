@@ -1,6 +1,6 @@
 [project]
 name = "repo-template"
-version = "0.5.3"
+version = "0.5.4"
 description = "Create and safely update opinionated Python repositories and shared AI development standards."
 readme = "README.md"
 license = "MIT"
@@ -22,6 +22,7 @@ dev = [
     "ruff>=0.13",
     "pytest-cov>=7.0",
     "hypothesis==6.168.3",
+    "shellcheck-py==0.11.0.1",
 ]
 
 [tool.pytest.ini_options]

@@ -18,17 +18,27 @@ project-owned files. `globals` also installs the global MCP servers, through
 repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`; for a personal
 repository Claude Code's local scope instead of `.mcp.json`, plus `.git/repo-template.json` and a
 block in `.git/info/exclude`). Only
-`globals --upstream` (read-only: GitHub, npm and PyPI) and `globals --upgrade` use the network;
-`--upgrade` records the files it vendors (skills and license copies) with `git add -N` and
-leaves committing to you.
+`globals --upstream` (read-only: GitHub, npm and PyPI) and `globals --upgrade` (skills, and MCP
+server re-pins) use the network; `--upgrade` records the files it vendors (skills and license
+copies) with `git add -N` and leaves committing to you.
+
+`setup-machine.sh` (macOS and Linux) sets up a machine in one run: it clones or pulls the standards
+repository (only a clean `main`), installs the CLI with `uv tool install --editable`, previews
+`globals` before applying it, and offers the optional tools at the versions
+`.agents/machine-tools.json` pins (`azd` only once its download's SHA-256 matches). Every
+install it offers asks first, with optional tools defaulting to no. In a shell profile it writes
+only its marked block, after a backup in `~/.repo-template/backups/`. `--check` reports what is
+set up and changes nothing.
 
 ## Commands
 
 - Install: `uv sync --dev`
 - Test: `uv run pytest`
 - Lint: `uv run ruff check .`
+- Format: `uv run ruff format .` (CI and the pre-commit hook run `ruff format --check .`)
 - Type-check: `uv run mypy src`
-- Exercise the CLI: `uv run repo-template --help`
+- Self-check: `uv run repo-template check .` prints "Standards are current."
+- Catalog, read-only: `uv run repo-template globals --check --standards-root .`
 
 ## Design rules
 
@@ -37,11 +47,22 @@ leaves committing to you.
 - A clean `check` means `update` has nothing to do.
 - Keep project-specific instructions in generated `AGENTS.md`; keep reusable workflows in global skills.
 - Never copy Claude credentials, history, caches, or machine state into this repository.
-- Add tests for any change to rendering, update conflict handling, or symlink behavior.
+- Add tests for any change to rendering, update conflict handling, symlink behavior, personal
+  adoption, or `setup-machine.sh` (`tests/test_setup_machine.py`: stand-ins for `uv`,
+  `repo-template` and the tools it installs, a temporary HOME, and `_converse` for answers typed
+  in a terminal).
+- Try commands against temporary folders: `check` and `update` on a repository made in
+  `mktemp -d`, and `HOME=$(mktemp -d) uv run repo-template globals --check --standards-root .`.
+  A plain `globals` or a real `setup-machine.sh` run changes this machine: run one only when the
+  user asks.
+- A change users can see goes into `CHANGELOG.md` (Unreleased) and into every document that
+  shows it: `README.md`, `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md`, the `repo-template` skill, and
+  `GLOSSARY.md` for a new term.
 - Every skill is recorded and licensed: vendored ones in the lock (and byte-identical to it,
   except the frontmatter fields an override changes), local ones in
-  `.agents/skill-sources.json`. Run `repo-template globals` after catalog changes; it records
-  overrides and, once the catalog is clean, regenerates the README catalog and notices.
+  `.agents/skill-sources.json`. Run `repo-template globals --standards-root .` after catalog
+  changes; it records overrides and, once the catalog is clean, regenerates the README catalog
+  and notices.
 
 ## Safety invariants
 
