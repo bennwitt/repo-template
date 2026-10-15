@@ -15,6 +15,7 @@ from repo_template.standards import (
     GITIGNORE_END,
     GITIGNORE_START,
     _sync_global_gitignore,
+    conditional_ignore_files,
     global_ignore_file,
 )
 
@@ -195,3 +196,88 @@ def test_a_file_this_user_cant_write_is_an_error_in_check_too(home: Path, tmp_pa
     assert planned.errors == applied.errors and len(applied.errors) == 1
     assert applied.errors[0].startswith(f"cannot write {system}") and not applied.updated
     assert system.read_text() == "*.swp\n"
+
+
+def _work_ignore(home: Path, config: str = "~/.gitconfig-work") -> Path:
+    """A config file, `config`, that sets core.excludesFile to ~/.work-ignore."""
+    work = home / ".work-ignore"
+    (home / config.removeprefix("~/")).write_text(f"[core]\n\texcludesFile = {work}\n")
+    return work
+
+
+@pytest.mark.parametrize(
+    "layout", ["a condition with a space", "through [include]", "nested in an includeIf"]
+)
+def test_includeifs_are_found_however_the_config_is_laid_out(home: Path, layout: str) -> None:
+    work = _work_ignore(home)
+    if layout == "a condition with a space":
+        gitconfig = '[includeIf "gitdir:~/My Projects/"]\n\tpath = ~/.gitconfig-work\n'
+    elif layout == "through [include]":
+        (home / ".dotfiles").mkdir()
+        (home / ".dotfiles/gitconfig").write_text(
+            '[includeIf "gitdir:~/work/"]\n\tpath = ../.gitconfig-work\n'  # relative to its file
+        )
+        gitconfig = "[include]\n\tpath = ~/.dotfiles/gitconfig\n"
+    else:
+        (home / ".gitconfig-outer").write_text(
+            '[includeIf "onbranch:main"]\n\tpath = ~/.gitconfig-work\n'
+        )
+        gitconfig = '[includeIf "gitdir:~/work/"]\n\tpath = ~/.gitconfig-outer\n'
+    (home / ".gitconfig").write_text(gitconfig)
+
+    result = _sync(home)
+
+    assert str(work) in result.created and GITIGNORE_START in work.read_text()
+
+
+def test_a_global_config_whose_path_git_would_quote(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = home / "José/config"
+    config.parent.mkdir()
+    work = _work_ignore(home)
+    (home / "José/work").write_text(f"[core]\n\texcludesFile = {work}\n")
+    config.write_text('[includeIf "gitdir:~/work/"]\n\tpath = work\n')  # beside the config
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(config))
+
+    assert conditional_ignore_files(home) == ([work], [])
+
+
+def test_a_file_named_twice_or_through_a_link_is_written_once(home: Path) -> None:
+    work = _work_ignore(home)
+    (home / ".work-ignore-link").symlink_to(work)
+    (home / ".gitconfig-link").write_text(f"[core]\n\texcludesFile = {home}/.work-ignore-link\n")
+    (home / ".gitconfig").write_text(
+        '[includeIf "gitdir:~/work/"]\n\tpath = ~/.gitconfig-work\n'
+        '[includeIf "gitdir:~/clients/"]\n\tpath = ~/.gitconfig-work\n'
+        '[includeIf "gitdir:~/more/"]\n\tpath = ~/.gitconfig-link\n'
+    )
+
+    planned = _sync(home, check=True)
+    applied = _sync(home)
+
+    always = home / ".config/git/ignore"
+    assert planned.created == applied.created == [str(always), str(work)]
+    assert work.read_text().count(GITIGNORE_START) == 1
+
+
+def test_a_conditional_file_left_alone_doesnt_stop_the_rest(home: Path, tmp_path: Path) -> None:
+    managed = tmp_path / "corp-ignore"  # a managed include's file, read-only to the user
+    managed.write_text("*.swp\n")
+    managed.chmod(0o444)
+    (home / ".gitconfig-corp").write_text(f"[core]\n\texcludesFile = {managed}\n")
+    (home / ".gitconfig-oss").write_text("[core]\n\texcludesFile = .git/info/local-ignore\n")
+    (home / ".gitconfig").write_text(
+        '[includeIf "gitdir:~/corp/"]\n\tpath = ~/.gitconfig-corp\n'
+        '[includeIf "gitdir:~/oss/"]\n\tpath = ~/.gitconfig-oss\n'
+    )
+
+    planned = _sync(home, check=True)
+    applied = _sync(home)
+
+    assert planned.created == applied.created == [str(home / ".config/git/ignore")]
+    assert not applied.errors and not applied.preserved  # globals still exits 0
+    assert planned.notes == applied.notes and len(applied.notes) == 2
+    assert "relative core.excludesFile (.git/info/local-ignore)" in applied.notes[0]
+    assert applied.notes[1].startswith(f"{managed} (Git reads its ignores there in some")

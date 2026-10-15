@@ -50,11 +50,8 @@ def _slug(heading: str) -> str:
 
 def _anchors(path: Path) -> set[str]:
     anchors: set[str] = set()
-    fenced = False
-    for line in path.read_text().splitlines():
-        if line.startswith("```"):
-            fenced = not fenced
-        elif not fenced and (heading := re.match(r"#{1,6} (.+)", line)):
+    for line in _code(path.read_text())[0]:
+        if heading := re.match(r"#{1,6} (.+)", line):
             slug, n = _slug(heading.group(1)), 1
             while slug in anchors:  # a repeated heading gets -1, -2, ...
                 slug = f"{_slug(heading.group(1))}-{n}"
@@ -70,19 +67,20 @@ def _flags(command: str) -> set[str]:
 
 def _code(text: str) -> tuple[list[str], list[str]]:
     """A document's prose lines and its fenced code lines, by CommonMark's fence rules: an
-    opening run of three or more backticks (with no backtick after it) or tildes, closed by a
-    run of the same character at least as long, alone on its line."""
+    opening run of three or more backticks (with no backtick after it) or tildes, indented as
+    deep as its list item needs, closed by a run of the same character at least as long, alone
+    on its line and indented at most three spaces more."""
     prose: list[str] = []
     code: list[str] = []
-    fence = ""
+    fence, indent = "", 0
     for line in text.splitlines():
         if not fence:
-            opened = re.match(r" {0,3}(`{3,}(?=[^`]*$)|~{3,})", line)
+            opened = re.match(r"( *)(`{3,}(?=[^`]*$)|~{3,})", line)
             if opened:
-                fence = opened.group(1)
+                indent, fence = len(opened.group(1)), opened.group(2)
             else:
                 prose.append(line)
-        elif re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}\s*", line):
+        elif re.fullmatch(rf" {{0,{indent + 3}}}{re.escape(fence[0])}{{{len(fence)},}}\s*", line):
             fence = ""
         else:
             code.append(line)
@@ -200,3 +198,23 @@ def test_the_setup_scripts_links_into_the_guide_resolve() -> None:
         assert anchor in anchors, f"setup-machine.sh links to #{anchor}"
     for section in sections:
         assert any(a.startswith(section.replace(".", "") + "-") for a in anchors), section
+
+
+def test_the_fence_reader_follows_list_items_and_inline_runs() -> None:
+    text = (
+        "```` ```! ```` is prose\n"
+        "1. step\n"
+        "   - a:\n"
+        "     ```bash\n"
+        "     repo-template update --nested .\n"
+        "     ```\n"
+        "~~~\n"
+        "```\n"
+        "~~~\n"
+        "## After\n"
+    )
+
+    prose, code = _code(text)
+
+    assert code == ["     repo-template update --nested .", "```"]
+    assert prose[0].startswith("```` ```!") and prose[-1] == "## After"

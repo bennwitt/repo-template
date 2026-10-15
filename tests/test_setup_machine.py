@@ -40,6 +40,7 @@ case "$1 $2" in
   "tool dir") echo "$HOME/.local/bin" ;;
   "tool update-shell") ;;
   "run --no-project")  # uv run --no-project --no-config --no-python-downloads --quiet python ...
+    [ "$PWD" = / ] || { echo "uv run from $PWD, whose .venv could decide" >&2; exit 9; }
     case " $* " in *" --no-config "*) ;; *) echo "uv run reads configuration" >&2; exit 9 ;; esac
     case " $* " in *" --no-python-downloads "*) ;; *) echo "uv run downloads" >&2; exit 9 ;; esac
     while [ "$1" != python ]; do shift; done
@@ -65,7 +66,8 @@ TOOLS = {
     "node": "echo v22.11.0\n",
     "claude": "echo '2.1.0 (Claude Code)'\n",
     "az": 'echo "az $*" >>"$HOME/calls.log"\n',
-    "npm": 'echo "npm $*" >>"$HOME/calls.log"\n[ "$1" != ls ] || printf "%s" "${NPM_LS-}"\n',
+    "npm": 'echo "npm $*" >>"$HOME/calls.log"\n'
+    '[ "$1" != ls ] || { printf "%s" "${NPM_LS-}"; exit "${NPM_EXIT:-0}"; }\n',
     "curl": 'echo "curl $*" >>"$HOME/calls.log"\n'
     'while [ "$1" != -o ]; do shift; done\n'
     'cp "$RELEASE/${3##*/}" "$2"\n',  # curl -fsSL -o FILE URL: the release's file
@@ -831,11 +833,18 @@ def test_check_on_a_branch_doesnt_call_main_ahead(machine: dict[str, Path]) -> N
     assert not any("commits GitHub's doesn't" in line for line in _problems(result))
 
 
-def test_check_flags_a_claude_or_npm_that_doesnt_run(machine: dict[str, Path]) -> None:
+@pytest.mark.parametrize(
+    ("listing", "code"),
+    [("npm ERR! something broke", "1"), ('{"error": {"code": "ENOTDIR"}}', "236")],
+)
+def test_check_flags_a_claude_or_npm_that_doesnt_run(
+    machine: dict[str, Path], listing: str, code: str
+) -> None:
     _set_up(machine)
     _installed(machine["stubs"], "claude", "exit 1\n")
 
-    result = _check(machine, "--offline", NPM_LS="npm ERR! something broke")
+    result = _check(machine, "--offline", NPM_LS=listing, NPM_EXIT=code)
 
     assert "!   claude is on PATH, but 'claude --version' fails" in _problems(result)
     assert "!   'npm ls -g' fails, so the npm tools can't be checked" in _problems(result)
+    assert "this script offers" not in result.stdout  # npm said nothing about the tools

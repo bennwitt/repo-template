@@ -13,9 +13,9 @@
     wait out the cooldown too, and `azd` from its GitHub release only once the download's
     SHA-256 matches. An `azd` that isn't the pinned version is replaced, and one elsewhere on
     `PATH` (Homebrew's) is named for you to remove once the pinned one is in; a checkout that
-    pins no `azd` leaves it alone. Its Python one-liners run isolated, with uv reading no
-    configuration, so nothing in the folder you run it from (a `json.py`, a `.python-version`)
-    decides what runs.
+    pins no `azd` leaves it alone. Its Python one-liners run isolated, from `/`, with uv reading
+    no configuration, so nothing in the folder you run it from (a `json.py`, a `.python-version`,
+    a `.venv`) decides what runs.
   - `--check` (with `--offline`) reports what is set up and what isn't, one line each, and
     changes nothing (not even Git's index); it exits 1 while something needs fixing, and goes on
     past an origin it can't reach or a tool that doesn't run (which gets its own `!` line).
@@ -31,10 +31,11 @@
 - `globals` writes its ignore block to the file Git reads: `core.excludesFile` (from the system
   or global config or one they include, expanded as Git expands it, asked outside any
   repository so an `includeIf` doesn't decide it), else `$XDG_CONFIG_HOME/git/ignore`, else
-  `~/.config/git/ignore`; a file an `includeIf` names for some repositories gets the block too.
-  A relative `core.excludesFile` is reported instead, and a file you can't write is an error. It
-  writes through a link, backs the file up first, and leaves a block that lost a marker line, or
-  has them out of order, alone. Before, it always wrote `~/.config/git/ignore`, which Git doesn't read when
+  `~/.config/git/ignore`; the ignore file an `includeIf` brings in for some repositories gets
+  the block too, wherever the `includeIf` is. A relative `core.excludesFile` is reported instead,
+  and so is a file you can't write (an error for the always-read file, a note for a conditional
+  one). It writes through a link, backs the file up first, and leaves a block that lost a marker
+  line, or has them out of order, alone. Before, it always wrote `~/.config/git/ignore`, which Git doesn't read when
   `core.excludesFile` names another file. The tests no longer reach a real `XDG_CONFIG_HOME` or
   system Git config.
 - `.agents/machine-tools.json` pins the per-machine CLIs once (the TypeScript and Python language

@@ -206,18 +206,21 @@ case "$(uname -m)" in
 esac
 if [ "$os" = mac ]; then platform="darwin-$arch"; else platform="linux-$arch"; fi
 
+# uv_python ARG...: Python through uv, isolated from the folder you run this in: from /, so no
+# .venv or .python-version there decides the interpreter; reading no uv configuration; never
+# downloading one; and with -I, importing nothing from the current folder.
+uv_python() { (cd / && uv run --no-project --no-config --no-python-downloads --quiet python -I "$@"); }
+
 # pin CHECKOUT KIND NAME...: from the checkout's .agents/machine-tools.json, by KIND:
 #   npm      npm install's arguments for these npm tools: --before the end of the day the newest
 #            of them was published (UTC), so their dependencies wait out the cooldown too, then
 #            each package@version
 #   asset    a GitHub tool's "file sha256 url" for this platform
 #   version  the version pinned
-# Python runs isolated (-I), and uv reads no configuration (--no-config): nothing in the current
-# folder, not even a .python-version, decides what runs.
 pin() {
   local checkout=$1 kind=$2
   shift 2
-  uv run --no-project --no-config --no-python-downloads --quiet python -I -c '
+  uv_python -c '
 import json, sys
 from datetime import datetime, timedelta, timezone
 tools = json.load(open(sys.argv[1]))["tools"]
@@ -396,13 +399,16 @@ check_machine() {
           unreadable) bad "'npm ls -g' fails, so the npm tools can't be checked" ;;
           *) bad "$name $got: the pin is $want (run this script and answer yes to install it)" ;;
         esac
-      done < <(uv run --no-project --no-config --no-python-downloads --quiet python -I -c '
+      done < <(uv_python -c '
 import json, subprocess, sys
 pins = json.load(open(sys.argv[1]))["tools"]
 listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "--json"], capture_output=True, text=True)
-try:  # npm ls exits 1 for a problem in the tree, yet lists it
-    have = {k: v.get("version") for k, v in json.loads(listed.stdout).get("dependencies", {}).items()}
-except (ValueError, AttributeError):
+try:  # npm ls exits 1 for a problem in the tree, yet lists it; a failure is an "error" object
+    tree = json.loads(listed.stdout)
+    if "error" in tree or (listed.returncode and "dependencies" not in tree):
+        raise ValueError(listed.returncode)
+    have = {k: v.get("version") for k, v in tree.get("dependencies", {}).items()}
+except (ValueError, AttributeError, TypeError):
     print("unreadable - - -")
     sys.exit()
 for name, tool in sorted(pins.items()):
@@ -745,7 +751,7 @@ if [ "$run_tools" = 1 ]; then
       note "choose your subscription with: az account set --subscription \"<name>\""
     fi
     if have azd; then optional "azd's sign-in setting" azd config set auth.useAzCliAuth true; fi
-    azure_mcp=$(uv run --no-project --no-config --no-python-downloads --quiet python -I -c '
+    azure_mcp=$(uv_python -c '
 import json, sys
 from datetime import datetime, timedelta, timezone
 pin = json.load(open(sys.argv[1]))["servers"]["azure"]["pin"]

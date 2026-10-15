@@ -97,10 +97,12 @@ Running `update` a second time changes nothing.
   one they include, and expanded as Git expands it; else `$XDG_CONFIG_HOME/git/ignore`, else
   `~/.config/git/ignore`), in a marked block, so personal agent configuration never leaks into
   project repositories. Git is asked outside any repository, so an `includeIf` for some
-  repositories doesn't decide it; a file such an `includeIf` names gets the block too. A
-  relative `core.excludesFile` is reported, not guessed, and a file you can't write (a system
-  one) is an error naming it. A linked file is written through, and a block that lost a marker
-  line, or has them out of order, is left alone.
+  repositories doesn't decide it; the ignore file such an `includeIf` brings in (from the global
+  config, a file it includes, or another included file) gets the block too. A relative
+  `core.excludesFile` is reported, not guessed: as a problem for the file Git always reads, as a
+  note for one it reads in some repositories. The always-read file being one you can't write (a
+  system one) is an error naming it; a conditional one gets a note. A linked file is written
+  through, and a block that lost a marker line, or has them out of order, is left alone.
 
 It never links `~/.claude` itself, so credentials, sessions, history, caches and Claude's
 `synced` directory stay on the machine. Anything it replaces is first moved to

@@ -695,26 +695,44 @@ def global_ignore_file(home: Path) -> Path:
     return (Path(xdg) if xdg else home / ".config") / "git" / "ignore"
 
 
-def conditional_ignore_files(home: Path) -> list[tuple[str, Path]]:
-    """The ignore files the global config names only for some repositories: each
-    `includeIf "<condition>".path` whose file sets core.excludesFile, as (condition, file).
-    Raises ValueError for a relative excludesFile."""
-    found: list[tuple[str, Path]] = []
-    listed = _git_config(
-        home, "--global", "--show-origin", "--type=path", "--get-regexp", r"^includeif\..*\.path$"
-    )
-    for line in listed.splitlines():
-        origin, _, entry = line.partition("\t")
-        key, _, included = entry.partition(" ")
-        condition = key[len("includeif.") : -len(".path")]
-        holder = Path(origin.removeprefix("file:"))  # a relative path is relative to it
-        source = Path(included) if Path(included).is_absolute() else holder.parent / included
-        named = _git_config(
-            home, "--file", str(source), "--includes", "--type=path", "--get", "core.excludesFile"
-        ).strip()
-        if named:
-            found.append((condition, _absolute(named, f"core.excludesFile in {source}")))
-    return found
+def conditional_ignore_files(home: Path) -> tuple[list[Path], list[str]]:
+    """The ignore files Git reads only in some repositories: the core.excludesFile of each file
+    an `includeIf` brings in, wherever that includeIf is (the global config, a file it includes,
+    or another included file). Also returns a note for each one repo-template leaves alone: a
+    relative path, which each repository reads on its own."""
+    files: list[Path] = []
+    notes: list[str] = []
+    seen: set[Path] = set()
+    scopes: list[tuple[str, ...]] = [("--global",)]
+    while scopes:
+        listed = _git_config(
+            home, *scopes.pop(0), "--includes", "--show-origin", "-z", "--type=path",
+            "--get-regexp", r"^includeif\..*\.path$",
+        )  # fmt: skip
+        records = listed.split("\0")  # file:<origin> NUL <key> LF <value> NUL ...
+        for found_in, entry in zip(records[0::2], records[1::2], strict=False):
+            key, _, included = entry.partition("\n")
+            condition = key[len("includeif.") : -len(".path")]
+            holder = Path(found_in.removeprefix("file:"))  # a relative path is relative to it
+            source = Path(included) if Path(included).is_absolute() else holder.parent / included
+            if source.resolve() in seen:
+                continue
+            seen.add(source.resolve())
+            scopes.append(("--file", str(source)))
+            named = _git_config(
+                home, "--file", str(source), "--includes", "--type=path", "--get",
+                "core.excludesFile",
+            ).strip()  # fmt: skip
+            if not named:
+                continue
+            if Path(named).is_absolute():
+                files.append(Path(named))
+            else:
+                notes.append(
+                    f"{source} names a relative core.excludesFile ({named}) for repositories "
+                    f'matching includeIf "{condition}"; each reads its own, so it is left alone'
+                )
+    return files, notes
 
 
 def _writable(path: Path) -> bool:
@@ -731,14 +749,22 @@ def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: st
     """repo-template's block in each file Git reads its global ignores from: the one it always
     reads, and those an `includeIf` names for some repositories. Each is written through a link
     to the file it names, after a backup. A block without both markers, in order, is left
-    alone; a file this user can't write is an error, in --check too."""
+    alone. The always-read file this user can't write is an error (in --check too); one Git
+    reads only in some repositories gets a note instead, as it can't be pointed elsewhere."""
+    targets: list[tuple[Path, bool]] = []  # each file, and whether Git always reads it
     try:
-        paths = [global_ignore_file(home)]
-        paths += [path for _, path in conditional_ignore_files(home) if path not in paths]
+        targets.append((global_ignore_file(home), True))
     except ValueError as exc:
         result.preserved.append(f"the global Git ignore ({exc})")
-        return
-    for position, path in enumerate(paths):
+    conditional, notes = conditional_ignore_files(home)
+    result.notes.extend(notes)
+    targets += [(path, False) for path in conditional]
+    seen: set[Path] = set()
+    for path, always in targets:
+        target = path.resolve()  # through a link, to the file it names
+        if target in seen:
+            continue
+        seen.add(target)
         try:
             existing = path.read_text() if path.exists() else ""
         except (OSError, UnicodeDecodeError) as exc:
@@ -751,19 +777,24 @@ def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: st
         if proposed == existing:
             result.unchanged.append(str(path))
             continue
-        target = path.resolve()
         if not _writable(target):
-            result.errors.append(
-                f"cannot write {path} (Git reads its ignores there): add repo-template's block "
-                f"to it yourself, or point a global core.excludesFile at a file you own"
-            )
+            if always:
+                result.errors.append(
+                    f"cannot write {path} (Git reads its ignores there): add repo-template's "
+                    f"block to it yourself, or point a global core.excludesFile at a file you own"
+                )
+            else:
+                result.notes.append(
+                    f"{path} (Git reads its ignores there in some repositories) can't be written "
+                    f"here: add repo-template's block to it yourself"
+                )
             continue
         (result.updated if path.exists() else result.created).append(str(path))
         if check:
             continue
         try:
             if target.exists():
-                name = "git-ignore" if position == 0 else f"git-ignore-{position + 1}"
+                name = "git-ignore" if len(seen) == 1 else f"git-ignore-{len(seen)}"
                 backup = home / ".repo-template" / "backups" / stamp / name
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(target, backup)
