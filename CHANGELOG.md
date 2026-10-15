@@ -13,9 +13,10 @@
     wait out the cooldown too, and `azd` from its GitHub release only once the download's
     SHA-256 matches. An `azd` that isn't the pinned version is replaced, and one elsewhere on
     `PATH` (Homebrew's) is named for you to remove once the pinned one is in; a checkout that
-    pins no `azd` leaves it alone. Its Python one-liners run isolated, from `/`, with no
-    environment activated and uv reading no configuration, so nothing in the folder you run it
-    from (a `json.py`, a `.python-version`, a `.venv`) decides what runs.
+    pins no `azd` leaves it alone. Its Python one-liners run isolated (`-I -S`), from `/`, with
+    no environment activated and uv reading no configuration, so nothing in the folder you run it
+    from (a `json.py`, a `.python-version`, a `.venv`) decides what runs; a uv that can't run
+    Python is reported, not taken for missing pins.
   - `--check` (with `--offline`) reports what is set up and what isn't, one line each, and
     changes nothing (not even Git's index); it exits 1 while something needs fixing, and goes on
     past an origin it can't reach or a tool that doesn't run (which gets its own `!` line).

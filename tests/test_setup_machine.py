@@ -43,8 +43,12 @@ case "$1 $2" in
   "run --no-project")  # uv run --no-project --no-config --no-python-downloads --quiet python ...
     [ "$PWD" = / ] || { echo "uv run from $PWD, whose .venv could decide" >&2; exit 9; }
     [ -z "${VIRTUAL_ENV-}${CONDA_PREFIX-}" ] || { echo "uv run in an activated env" >&2; exit 9; }
+    case ":$PATH:" in *"/.venv/bin:"*) echo "an activated env's bin on PATH" >&2; exit 9 ;; esac
+    [ "${UV_PYTHON-}" = "${KEEP_UV_PYTHON-}" ] || { echo "UV_PYTHON changed" >&2; exit 9; }
+    [ -z "${UV_RUN_FAILS-}" ] || { echo "error: No interpreter found" >&2; exit 2; }
     case " $* " in *" --no-config "*) ;; *) echo "uv run reads configuration" >&2; exit 9 ;; esac
     case " $* " in *" --no-python-downloads "*) ;; *) echo "uv run downloads" >&2; exit 9 ;; esac
+    case " $* " in *" python -I -S "*) ;; *) echo "python runs site or the cwd" >&2; exit 9 ;; esac
     while [ "$1" != python ]; do shift; done
     shift; exec "$PYTHON" "$@" ;;
   *) echo "uv stub: $*" >&2; exit 9 ;;
@@ -859,9 +863,12 @@ def test_check_with_an_environment_activated_still_reads_the_pins(
     _set_up(machine)
     project = tmp_path / "project/.venv"  # a project's, activated in this shell
 
-    result = _check(
-        machine, "--offline", NPM_LS="{}", VIRTUAL_ENV=str(project), CONDA_PREFIX=str(project)
-    )
+    result = _run(
+        machine, "--check", "--offline", NPM_LS="{}",
+        VIRTUAL_ENV=str(project), CONDA_PREFIX=str(project),
+        PATH=f"{project}/bin:{machine['stubs']}:{machine['home']}/.local/bin:/usr/bin:/bin",
+        UV_PYTHON="/opt/python3", KEEP_UV_PYTHON="/opt/python3",  # the owner's choice: kept
+    )  # fmt: skip
 
     assert "pyright: not installed (optional; this script offers 1.1.4)" in result.stdout
 
@@ -875,3 +882,24 @@ def test_check_takes_an_empty_global_npm_folder_as_nothing_installed(
 
     assert not any("npm" in line for line in _problems(result))
     assert "pyright: not installed (optional; this script offers 1.1.4)" in result.stdout
+
+
+def test_a_uv_that_cant_run_python_is_reported_not_taken_for_no_pins(
+    machine: dict[str, Path],
+) -> None:
+    target = _set_up(machine)
+    _installed(machine["stubs"], "azd", AZD.replace("1.2.3", "1.0.0"))
+
+    checked = _check(machine, "--offline", NPM_LS="{}", UV_RUN_FAILS="1")
+    code, shown = _converse(
+        machine,
+        [("language servers", "y"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals", UV_RUN_FAILS="1",
+    )  # fmt: skip
+
+    assert checked.returncode == 1 and any("uv can't run Python" in p for p in _problems(checked))
+    assert "All set" not in checked.stdout
+    assert "uv can't run Python" in shown and "pins no azd" not in shown
+    assert not any(
+        call.startswith(("npm install", "curl")) for call in _tool_calls(machine["home"])
+    )

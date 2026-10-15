@@ -74,13 +74,17 @@ def _code(text: str) -> tuple[list[str], list[str]]:
     code: list[str] = []
     fence, indent = "", 0
     content = -1  # the column a list item's content starts at, or -1 outside any list
-    for line in text.splitlines():
+    blank = True  # the line before was blank
+    for line in (raw.expandtabs(4) for raw in text.splitlines()):
         if not fence:
             item = re.match(r" *(?:[-*+]|\d+[.)]) +", line)
             if item:
                 content = len(item.group(0))
-            elif line.strip() and not line.startswith(" "):
-                content = -1  # a paragraph at the margin ends the list
+            elif (line.strip() and not line.startswith(" ")) and (
+                blank or re.match(r"#|>|```|~~~|---|\*\*\*|<", line)
+            ):  # a new block at the margin ends the list; a lazy continuation line doesn't
+                content = -1
+            blank = not line.strip()
             opened = re.match(r"( *)(`{3,}(?=[^`]*$)|~{3,})", line)
             if opened and len(opened.group(1)) <= max(content, 0) + 3:
                 indent, fence = len(opened.group(1)), opened.group(2)
@@ -224,10 +228,21 @@ def test_the_fence_reader_follows_list_items_and_inline_runs() -> None:
         "    ```\n"
         "\n"
         "## Still a heading\n"
+        "\n"
+        "1. a long first line that wraps\n"
+        "onto the margin (a lazy continuation):\n"
+        "\n"
+        "    ```bash\n"
+        "    repo-template update --lazy .\n"
+        "    ```\n"
     )
 
     prose, code = _code(text)
 
-    assert code == ["     repo-template update --nested .", "```"]
-    assert prose[0].startswith("```` ```!") and prose[-1] == "## Still a heading"
+    assert code == [
+        "     repo-template update --nested .",
+        "```",
+        "    repo-template update --lazy .",
+    ]
+    assert prose[0].startswith("```` ```!") and "## Still a heading" in prose
     assert "## After" in prose and "    ```" in prose

@@ -207,13 +207,30 @@ esac
 if [ "$os" = mac ]; then platform="darwin-$arch"; else platform="linux-$arch"; fi
 
 # uv_python ARG...: Python through uv, isolated from the folder you run this in: from /, with no
-# environment activated, so no .venv or .python-version there decides the interpreter; reading
-# no uv configuration; never downloading one; and with -I, importing nothing from that folder.
+# environment activated (nor its bin/ on PATH), so no .venv or .python-version decides the
+# interpreter; reading no uv configuration; never downloading one; and with -I -S, importing
+# nothing from that folder and running no sitecustomize. UV_PYTHON, your own choice, is kept.
 uv_python() {
   (
-    unset VIRTUAL_ENV CONDA_PREFIX UV_PYTHON
-    cd / && uv run --no-project --no-config --no-python-downloads --quiet python -I "$@"
+    set -f
+    kept="" old_ifs=$IFS
+    IFS=:
+    for part in $PATH; do
+      case "$part" in
+        "${VIRTUAL_ENV:-/-}/bin" | "${CONDA_PREFIX:-/-}/bin") ;;
+        *) kept="${kept:+$kept:}$part" ;;
+      esac
+    done
+    IFS=$old_ifs
+    unset VIRTUAL_ENV CONDA_PREFIX
+    cd / && PATH=$kept uv run --no-project --no-config --no-python-downloads --quiet python -I -S "$@"
   )
+}
+
+# pins_readable CHECKOUT: uv can run Python and read the checkout's machine-tools.json
+pins_readable() {
+  uv_python -c 'import json, sys; json.load(open(sys.argv[1]))["tools"]' \
+    "$1/.agents/machine-tools.json" >/dev/null 2>&1
 }
 
 # pin CHECKOUT KIND NAME...: from the checkout's .agents/machine-tools.json, by KIND:
@@ -314,7 +331,7 @@ bad() {
   problems=$((problems + 1))
 }
 check_machine() {
-  local version major checkout branch remote local_main tools_file state name want got
+  local version major checkout branch remote local_main tools_file pins_ok state name want got
   say "Checking this machine ($os, $platform); nothing is changed"
   if git --version >/dev/null 2>&1; then ok "$(git --version)"; else bad "git doesn't run"; fi
   if ! have uv; then
@@ -396,7 +413,15 @@ check_machine() {
       bad "globals has changes to make: 'repo-template globals --check' lists them"
     fi
     tools_file="$checkout/.agents/machine-tools.json"
-    if [ -f "$tools_file" ] && have npm && have uv; then
+    pins_ok=0
+    if [ ! -f "$tools_file" ]; then
+      note "this checkout has no .agents/machine-tools.json: the tools aren't checked"
+    elif have uv && pins_readable "$checkout"; then
+      pins_ok=1
+    else
+      bad "uv can't run Python to read $tools_file ('uv run python' fails), so the tools aren't checked"
+    fi
+    if [ "$pins_ok" = 1 ] && have npm; then
       while read -r state name want got; do
         case "$state" in
           ok) ok "$name $want" ;;
@@ -429,7 +454,7 @@ for name, tool in sorted(pins.items()):
     elif ! have npm; then
       note "npm isn't installed (it comes with Node), so the npm tools aren't checked"
     fi
-    if have azd; then
+    if have azd && [ "$pins_ok" = 1 ]; then
       want=$(pin "$checkout" version azd 2>/dev/null) || want=""
       got=$(azd_version) || got=""
       if [ -z "$want" ]; then
@@ -441,7 +466,7 @@ for name, tool in sorted(pins.items()):
       else
         bad "$(command -v azd) is '$got', not the pinned azd $want: remove it (Homebrew: brew uninstall azd), then run this script and answer yes to Azure"
       fi
-    else
+    elif ! have azd; then
       note "azd: not installed (optional; for the azure and foundry packs)"
     fi
   fi
@@ -713,13 +738,16 @@ fi
 
 if [ "$run_tools" = 1 ]; then
   say "Optional tools (each asks first; the default is no; the versions are pinned in .agents/machine-tools.json)"
+  if ! pins_readable "$dir"; then
+    warn "uv can't run Python to read $dir/.agents/machine-tools.json ('uv run python' fails): the pinned tools can't be installed"
+  fi
   if have npm && confirm "Install the TypeScript and Python language servers and the Playwright CLI (global npm packages)?" n; then
     if packages=$(pin "$dir" npm typescript-language-server typescript pyright playwright-cli); then
       # shellcheck disable=SC2086 # one argument per word
       optional "Installing the npm packages" npm install -g --ignore-scripts $packages
       if have playwright-cli; then optional "Downloading Chromium" playwright-cli install-browser chromium; fi
     else
-      warn "$dir/.agents/machine-tools.json doesn't pin them (above): not installed"
+      warn "their pins couldn't be read from $dir/.agents/machine-tools.json (above): not installed"
     fi
   elif ! have npm; then
     note "npm isn't installed (it comes with Node): the language servers and Codex need it"
@@ -730,7 +758,7 @@ if [ "$run_tools" = 1 ]; then
       optional "Installing Codex" npm install -g --ignore-scripts $packages
       note "run codex once, then this script again, so Codex gets its MCP servers"
     else
-      warn "$dir/.agents/machine-tools.json doesn't pin Codex (above): not installed"
+      warn "Codex's pin couldn't be read from $dir/.agents/machine-tools.json (above): not installed"
     fi
   fi
   if confirm "Set up the Azure CLI and azd, for the azure and foundry packs?" n; then
@@ -742,8 +770,10 @@ if [ "$run_tools" = 1 ]; then
       fi
     fi
     want=$(pin "$dir" version azd 2>/dev/null) || want=""
-    if [ -z "$want" ]; then
+    if [ -z "$want" ] && pins_readable "$dir"; then
       note "this checkout pins no azd (pull it, then run this again): azd left as it is"
+    elif [ -z "$want" ]; then
+      note "azd's pin couldn't be read (above): azd left as it is"
     elif ! { have azd && names_version "$(azd_version)" "$want"; }; then
       if install_azd; then
         found=$(command -v azd || true) # on the PATH you had: is ours the one that runs?
