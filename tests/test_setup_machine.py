@@ -39,7 +39,11 @@ case "$1 $2" in
     cp "$STUBS/repo-template.stub" "$HOME/.local/bin/repo-template" ;;
   "tool dir") echo "$HOME/.local/bin" ;;
   "tool update-shell") ;;
-  "run --no-project") shift 4; exec "$PYTHON" "$@" ;;  # uv run --no-project --quiet python ...
+  "run --no-project")  # uv run --no-project --no-config --no-python-downloads --quiet python ...
+    case " $* " in *" --no-config "*) ;; *) echo "uv run reads configuration" >&2; exit 9 ;; esac
+    case " $* " in *" --no-python-downloads "*) ;; *) echo "uv run downloads" >&2; exit 9 ;; esac
+    while [ "$1" != python ]; do shift; done
+    shift; exec "$PYTHON" "$@" ;;
   *) echo "uv stub: $*" >&2; exit 9 ;;
 esac
 """
@@ -66,8 +70,10 @@ TOOLS = {
     'while [ "$1" != -o ]; do shift; done\n'
     'cp "$RELEASE/${3##*/}" "$2"\n',  # curl -fsSL -o FILE URL: the release's file
 }
-AZD = (  # azd itself, as its release ships it
+AZD = (  # azd itself, as its release ships it; `version` also notes its update check and telemetry
     'echo "azd $*" >>"$HOME/calls.log"\n'
+    '[ "$1" != version ] || echo "${AZD_SKIP_UPDATE_CHECK:-checks}'
+    ' ${AZURE_DEV_COLLECT_TELEMETRY:-sends}" >>"$HOME/azd-version.log"\n'
     '[ "$1" != version ] || echo "azd version 1.2.3 (commit abc)"\n'
 )
 PINS = {  # package, version, published
@@ -525,7 +531,7 @@ def test_check_reports_a_machine_that_is_set_up_and_changes_nothing(
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert "!" not in result.stdout and "==> All set" in result.stdout
-    for line in ("up to date with GitHub's main", "repo-template on PATH runs from it",
+    for line in ("its main is up to date with GitHub's", "repo-template on PATH runs from it",
                  "globals: current", "typescript 6.0.3", "azd 1.2.3"):  # fmt: skip
         assert f"ok  {line}" in result.stdout
     assert _calls(home) == [  # only reads
@@ -534,7 +540,9 @@ def test_check_reports_a_machine_that_is_set_up_and_changes_nothing(
         "npm ls -g --depth=0 --json",
         "azd version",
     ]
+    assert (home / "azd-version.log").read_text() == "1 no\n"  # no update check, no telemetry
     (home / "calls.log").unlink()
+    (home / "azd-version.log").unlink()
     assert _snapshot(home) == before  # nothing else written, not even Git's index
 
 
@@ -721,7 +729,7 @@ def test_another_azd_first_on_path_is_named_and_the_pin_installed(
     )  # fmt: skip
 
     assert code == 0, shown
-    assert f"{machine['stubs']}/azd is azd 'azd version 1.0.0 (commit abc)'" in shown
+    assert f"{machine['stubs']}/azd is another azd ('azd version 1.0.0 (commit abc)')" in shown
     assert "brew uninstall azd" in shown and "1.2.3" in (home / ".local/bin/azd").read_text()
 
 
@@ -759,3 +767,75 @@ def test_python_never_imports_from_the_folder_it_runs_in(machine: dict[str, Path
 
     assert not (home / "planted").exists()
     assert any("--before=" in call for call in _tool_calls(home))  # the pins were read
+
+
+def test_another_azd_is_left_alone_when_nothing_replaces_it(machine: dict[str, Path]) -> None:
+    target = _set_up(machine)
+    _installed(machine["stubs"], "azd", AZD.replace("1.2.3", "1.0.0"))  # Homebrew's, say
+    (machine["release"] / "azd-linux-amd64.tar.gz").write_bytes(b"not the release")
+
+    code, shown = _converse(
+        machine,
+        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+    )  # fmt: skip
+
+    assert code == 0, shown
+    assert "azd wasn't installed" in shown and "brew uninstall" not in shown
+
+
+def test_a_checkout_that_pins_no_azd_leaves_azd_as_it_is(machine: dict[str, Path]) -> None:
+    home = machine["home"]
+    target = _set_up(machine)
+    pins = json.loads((target / ".agents/machine-tools.json").read_text())
+    del pins["tools"]["azd"]  # an older checkout, not pulled
+    (target / ".agents/machine-tools.json").write_text(json.dumps(pins))
+    _installed(machine["stubs"], "azd", AZD.replace("1.2.3", "1.0.0"))
+
+    code, shown = _converse(
+        machine,
+        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        "--dir", str(target), "--no-globals",
+    )  # fmt: skip
+
+    assert code == 0, shown
+    assert "pins no azd" in shown and "brew uninstall" not in shown
+    assert not any(call.startswith("curl") for call in _tool_calls(home))
+
+
+def test_a_folder_with_dot_dot_after_a_link_is_the_one_the_system_opens(
+    machine: dict[str, Path], tmp_path: Path
+) -> None:
+    home = machine["home"]
+    (tmp_path / "data/code").mkdir(parents=True)
+    (home / "code").symlink_to(tmp_path / "data/code")
+    _git(tmp_path, "clone", "-q", str(machine["origin"]), str(tmp_path / "data/std"))
+    (home / "std").mkdir()  # what the text ~/code/../std would name instead
+
+    result = _run(machine, "--yes", "--dir", "~/code/../std", "--no-globals", "--no-tools")
+
+    assert result.returncode == 0, result.stderr
+    assert f"Standards repository: {tmp_path / 'data/std'}" in result.stdout
+    assert not any((home / "std").iterdir())
+
+
+def test_check_on_a_branch_doesnt_call_main_ahead(machine: dict[str, Path]) -> None:
+    target = _set_up(machine)
+    _git(target, "switch", "-q", "-c", "fix")
+    _git(target, "commit", "-q", "--allow-empty", "-m", "on a branch")
+
+    result = _check(machine)
+
+    assert "!   it is on branch fix, not main" in _problems(result)
+    assert "ok  its main is up to date with GitHub's" in result.stdout
+    assert not any("commits GitHub's doesn't" in line for line in _problems(result))
+
+
+def test_check_flags_a_claude_or_npm_that_doesnt_run(machine: dict[str, Path]) -> None:
+    _set_up(machine)
+    _installed(machine["stubs"], "claude", "exit 1\n")
+
+    result = _check(machine, "--offline", NPM_LS="npm ERR! something broke")
+
+    assert "!   claude is on PATH, but 'claude --version' fails" in _problems(result)
+    assert "!   'npm ls -g' fails, so the npm tools can't be checked" in _problems(result)

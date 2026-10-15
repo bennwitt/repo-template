@@ -68,21 +68,34 @@ def _flags(command: str) -> set[str]:
     return set(FLAG.findall(re.split(r"\s#", command)[0]))
 
 
+def _code(text: str) -> tuple[list[str], list[str]]:
+    """A document's prose lines and its fenced code lines, by CommonMark's fence rules: an
+    opening run of three or more backticks (with no backtick after it) or tildes, closed by a
+    run of the same character at least as long, alone on its line."""
+    prose: list[str] = []
+    code: list[str] = []
+    fence = ""
+    for line in text.splitlines():
+        if not fence:
+            opened = re.match(r" {0,3}(`{3,}(?=[^`]*$)|~{3,})", line)
+            if opened:
+                fence = opened.group(1)
+            else:
+                prose.append(line)
+        elif re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}\s*", line):
+            fence = ""
+        else:
+            code.append(line)
+    assert not fence, "the document ends inside a code block"
+    return prose, code
+
+
 def _commands(text: str) -> list[str]:
     """Each command a document shows: in a code span or a code block line, split at `&&`, `||`,
-    `;` and `|`, with a leading `uv run` before `repo-template` dropped."""
-    shown = re.findall(r"`([^`\n]+)`", text)
-    fenced = False
-    for line in text.splitlines():
-        if line.lstrip().startswith("```"):
-            fenced = not fenced
-        elif fenced:
-            shown.append(line)
-    commands = []
-    for snippet in shown:
-        for command in re.split(r"&&|\|\||;|\|", snippet):
-            commands.append(re.sub(r"^uv run (?:\S+ )*?(?=repo-template )", "", command.strip()))
-    return commands
+    `;` and `|`."""
+    prose, code = _code(text)
+    shown = [span for line in prose for span in re.findall(r"`([^`]+)`", line)] + code
+    return [command.strip() for snippet in shown for command in re.split(r"&&|\|\||;|\|", snippet)]
 
 
 def _options(parser: argparse.ArgumentParser) -> set[str]:
@@ -133,11 +146,13 @@ def test_documented_commands_use_flags_that_exist() -> None:
     checked = 0
     for doc in CURRENT:
         for command in _commands(_text(doc)):
-            sub = re.match(r"(?:repo-template )?(new|update|check|globals)\b(.*)", command)
-            if sub and (command.startswith("repo-template ") or " --" in command):
-                unknown = _flags(sub.group(2)) - _options(commands[sub.group(1)])
-            elif command.startswith("repo-template "):
-                unknown = _flags(command) - _options(parser)
+            named = re.search(r"(?:^|[\s/])repo-template (new|update|check|globals)\b(.*)", command)
+            found = named or re.match(r"(new|update|check|globals) (.*--.*)", command)
+            if found:
+                sub, rest = found.groups()
+                unknown = _flags(rest) - _options(commands[sub])
+            elif re.search(r"(?:^|[\s/])repo-template --", command):
+                unknown = _flags(command.split("repo-template", 1)[1]) - _options(parser)
             elif "setup-machine.sh" in command:
                 unknown = _flags(command.split("setup-machine.sh", 1)[1]) - script
             elif command.startswith("--"):  # a flag on its own: one of these, or another tool's

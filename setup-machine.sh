@@ -212,11 +212,12 @@ if [ "$os" = mac ]; then platform="darwin-$arch"; else platform="linux-$arch"; f
 #            each package@version
 #   asset    a GitHub tool's "file sha256 url" for this platform
 #   version  the version pinned
-# Python runs isolated (-I): nothing in the current folder is imported.
+# Python runs isolated (-I), and uv reads no configuration (--no-config): nothing in the current
+# folder, not even a .python-version, decides what runs.
 pin() {
   local checkout=$1 kind=$2
   shift 2
-  uv run --no-project --quiet python -I -c '
+  uv run --no-project --no-config --no-python-downloads --quiet python -I -c '
 import json, sys
 from datetime import datetime, timedelta, timezone
 tools = json.load(open(sys.argv[1]))["tools"]
@@ -241,7 +242,7 @@ else:
 }
 
 # physical PATH: the folder's path with every link resolved, as `globals` records it
-physical() { (cd "$1" 2>/dev/null && pwd -P); }
+physical() { (cd -P -- "$1" 2>/dev/null && pwd -P); }
 
 # azd_version: the first line `azd version` prints, without azd's update check or telemetry
 azd_version() { AZD_SKIP_UPDATE_CHECK=1 AZURE_DEV_COLLECT_TELEMETRY=no azd version 2>/dev/null | head -n 1; }
@@ -305,10 +306,16 @@ bad() {
   problems=$((problems + 1))
 }
 check_machine() {
-  local version major checkout branch remote tools_file state name want got
+  local version major checkout branch remote local_main tools_file state name want got
   say "Checking this machine ($os, $platform); nothing is changed"
   if git --version >/dev/null 2>&1; then ok "$(git --version)"; else bad "git doesn't run"; fi
-  if have uv; then ok "$(uv --version)"; else bad "uv isn't installed"; fi
+  if ! have uv; then
+    bad "uv isn't installed"
+  elif version=$(uv --version 2>/dev/null) && [ -n "$version" ]; then
+    ok "$version"
+  else
+    bad "uv is on PATH, but 'uv --version' fails"
+  fi
   if have node; then
     version=$(node --version 2>/dev/null) || version=""
     major=${version#v}
@@ -328,7 +335,13 @@ check_machine() {
   else
     bad "node isn't installed: the MCP servers started with npx need it"
   fi
-  if have claude; then ok "claude $(claude --version 2>/dev/null | head -n 1)"; else bad "claude isn't on PATH"; fi
+  if ! have claude; then
+    bad "claude isn't on PATH"
+  elif version=$(claude --version 2>/dev/null) && [ -n "$version" ]; then
+    ok "claude $(printf '%s\n' "$version" | head -n 1)"
+  else
+    bad "claude is on PATH, but 'claude --version' fails"
+  fi
   checkout=""
   if [ -L "$HOME/.agents" ]; then
     checkout=$(readlink "$HOME/.agents")
@@ -345,11 +358,14 @@ check_machine() {
       if [ -n "$(git --no-optional-locks -C "$checkout" status --porcelain --untracked-files=no 2>/dev/null)" ]; then bad "it has uncommitted changes"; fi
       if [ "$offline" = 0 ]; then
         remote=$(git -C "$checkout" ls-remote origin refs/heads/main 2>/dev/null | cut -f1) || remote=""
+        local_main=$(git -C "$checkout" rev-parse --verify -q refs/heads/main 2>/dev/null) || local_main=""
         if [ -z "$remote" ]; then
           bad "its origin couldn't be reached (--offline skips this)"
-        elif [ "$remote" = "$(git -C "$checkout" rev-parse HEAD 2>/dev/null)" ]; then
-          ok "up to date with GitHub's main"
-        elif git -C "$checkout" merge-base --is-ancestor "$remote" HEAD 2>/dev/null; then
+        elif [ -z "$local_main" ]; then
+          bad "it has no main branch: git -C $checkout switch main"
+        elif [ "$remote" = "$local_main" ]; then
+          ok "its main is up to date with GitHub's"
+        elif git -C "$checkout" merge-base --is-ancestor "$remote" "$local_main" 2>/dev/null; then
           bad "its main has commits GitHub's doesn't: push them, or move them to a branch"
         else
           bad "GitHub's main has moved on: run this script, or git pull"
@@ -377,19 +393,26 @@ check_machine() {
         case "$state" in
           ok) ok "$name $want" ;;
           missing) note "$name: not installed (optional; this script offers $want)" ;;
+          unreadable) bad "'npm ls -g' fails, so the npm tools can't be checked" ;;
           *) bad "$name $got: the pin is $want (run this script and answer yes to install it)" ;;
         esac
-      done < <(uv run --no-project --quiet python -I -c '
+      done < <(uv run --no-project --no-config --no-python-downloads --quiet python -I -c '
 import json, subprocess, sys
 pins = json.load(open(sys.argv[1]))["tools"]
 listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "--json"], capture_output=True, text=True)
-have = {k: v.get("version") for k, v in json.loads(listed.stdout or "{}").get("dependencies", {}).items()}
+try:  # npm ls exits 1 for a problem in the tree, yet lists it
+    have = {k: v.get("version") for k, v in json.loads(listed.stdout).get("dependencies", {}).items()}
+except (ValueError, AttributeError):
+    print("unreadable - - -")
+    sys.exit()
 for name, tool in sorted(pins.items()):
     if tool["registry"] == "npm":
         got = have.get(tool["package"])
         state = "ok" if got == tool["version"] else ("missing" if got is None else "other")
         print(state, name, tool["version"], got or "-")
 ' "$tools_file" 2>/dev/null)
+    elif ! have npm; then
+      note "npm isn't installed (it comes with Node), so the npm tools aren't checked"
     fi
     if have azd; then
       want=$(pin "$checkout" version azd 2>/dev/null) || want=""
@@ -683,6 +706,8 @@ if [ "$run_tools" = 1 ]; then
     else
       warn "$dir/.agents/machine-tools.json doesn't pin them (above): not installed"
     fi
+  elif ! have npm; then
+    note "npm isn't installed (it comes with Node): the language servers and Codex need it"
   fi
   if have npm && confirm "Install the Codex CLI (a global npm package)?" n; then
     if packages=$(pin "$dir" npm codex); then
@@ -702,12 +727,17 @@ if [ "$run_tools" = 1 ]; then
       fi
     fi
     want=$(pin "$dir" version azd 2>/dev/null) || want=""
-    if [ -z "$want" ] || ! { have azd && names_version "$(azd_version)" "$want"; }; then
-      found=$(command -v azd || true)
-      if [ -n "$found" ] && [ "$found" != "$HOME/.local/bin/azd" ]; then
-        warn "$found is azd '$(azd_version)', not the pinned $want: remove it (Homebrew: brew uninstall azd), so the one installed in ~/.local/bin runs"
+    if [ -z "$want" ]; then
+      note "this checkout pins no azd (pull it, then run this again): azd left as it is"
+    elif ! { have azd && names_version "$(azd_version)" "$want"; }; then
+      if install_azd; then
+        found=$(command -v azd || true) # on the PATH you had: is ours the one that runs?
+        if [ -n "$found" ] && [ "$found" != "$HOME/.local/bin/azd" ]; then
+          warn "$found is another azd ('$(azd_version)'): remove it (Homebrew: brew uninstall azd), so the pinned one in ~/.local/bin runs"
+        fi
+      else
+        warn "azd wasn't installed (the reason is above): run this script again and answer yes to Azure, or install it by hand (section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md)"
       fi
-      install_azd || warn "azd wasn't installed (the reason is above): run this script again and answer yes to Azure, or install it by hand (section 1.1 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md)"
     fi
     PATH="$HOME/.local/bin:$PATH"
     if have az; then
@@ -715,7 +745,7 @@ if [ "$run_tools" = 1 ]; then
       note "choose your subscription with: az account set --subscription \"<name>\""
     fi
     if have azd; then optional "azd's sign-in setting" azd config set auth.useAzCliAuth true; fi
-    azure_mcp=$(uv run --no-project --quiet python -I -c '
+    azure_mcp=$(uv run --no-project --no-config --no-python-downloads --quiet python -I -c '
 import json, sys
 from datetime import datetime, timedelta, timezone
 pin = json.load(open(sys.argv[1]))["servers"]["azure"]["pin"]

@@ -163,3 +163,35 @@ def test_markers_in_the_wrong_order_are_a_broken_block(home: Path) -> None:
 
     assert target.read_text() == broken and planned.preserved == applied.preserved
     assert applied.preserved == [f"{target} (repo-template's block has lost a marker line; kept)"]
+
+
+@pytest.mark.parametrize("included", ["~/.gitconfig-work", ".gitconfig-work"])
+def test_an_ignore_file_named_for_some_repositories_gets_the_block_too(
+    home: Path, included: str
+) -> None:
+    work = home / ".work-ignore"
+    (home / ".gitconfig-work").write_text(f"[core]\n\texcludesFile = {work}\n")
+    (home / ".gitconfig").write_text(f'[includeIf "gitdir:~/work/"]\n\tpath = {included}\n')
+
+    planned = _sync(home, check=True)
+    applied = _sync(home)
+    again = _sync(home)
+
+    always = home / ".config/git/ignore"
+    assert planned.created == applied.created == [str(always), str(work)]
+    assert again.unchanged == [str(always), str(work)]
+    assert GITIGNORE_START in work.read_text() and GITIGNORE_START in always.read_text()
+
+
+def test_a_file_this_user_cant_write_is_an_error_in_check_too(home: Path, tmp_path: Path) -> None:
+    system = tmp_path / "etc-gitignore"  # the system config's, owned by root
+    system.write_text("*.swp\n")
+    system.chmod(0o444)
+    (home / ".gitconfig").write_text(f"[core]\n\texcludesFile = {system}\n")
+
+    planned = _sync(home, check=True)
+    applied = _sync(home)
+
+    assert planned.errors == applied.errors and len(applied.errors) == 1
+    assert applied.errors[0].startswith(f"cannot write {system}") and not applied.updated
+    assert system.read_text() == "*.swp\n"

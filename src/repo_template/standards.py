@@ -647,13 +647,10 @@ def _merge_global_gitignore(existing: str) -> str:
     return merge_marked_block(existing, GITIGNORE_CONTENT, GITIGNORE_START, GITIGNORE_END)
 
 
-def global_ignore_file(home: Path) -> Path:
-    """The file Git reads its global ignores from: the one `core.excludesFile` names (in the
-    system or global config, or one they include; `~` expanded as Git does), else
-    $XDG_CONFIG_HOME/git/ignore, else ~/.config/git/ignore. Git is asked from an empty folder
-    outside any repository, so an `includeIf` for some repository never decides it. For another
-    home (a test's), only that home's config counts. Raises ValueError for a relative
-    excludesFile, which Git reads in each repository."""
+def _git_config(home: Path, *args: str) -> str:
+    """`git config ARGS` as this machine's Git sees it for `home`, asked from an empty folder
+    outside any repository (so an `includeIf` for some repository never decides it); stdout, or
+    "" when Git has no answer. For another home (a test's), only that home's config counts."""
     real = home == Path.home().expanduser().resolve()
     env = {**git_env(), "HOME": str(home)}
     if not real:
@@ -664,57 +661,116 @@ def global_ignore_file(home: Path) -> Path:
         env["GIT_CEILING_DIRECTORIES"] = str(Path(outside).parent)
         try:
             done = subprocess.run(
-                ["git", "config", "--includes", "--type=path", "--get", "core.excludesFile"],
+                ["git", "config", *args],
                 capture_output=True,
                 text=True,
                 check=False,
                 env=env,
                 cwd=outside,
             )
-            named = done.stdout.strip() if done.returncode == 0 else ""
-        except FileNotFoundError:  # no Git: the default
-            named = ""
+        except FileNotFoundError:  # no Git
+            return ""
+    return done.stdout if done.returncode == 0 else ""
+
+
+def _absolute(named: str, setting: str) -> Path:
+    if not Path(named).is_absolute():
+        raise ValueError(
+            f"{setting} is {named!r}, a relative path that Git reads in each repository; make it "
+            f"absolute, then run globals again"
+        )
+    return Path(named)
+
+
+def global_ignore_file(home: Path) -> Path:
+    """The file Git reads its global ignores from: the one `core.excludesFile` names (in the
+    system or global config, or one they include; `~` expanded as Git does), else
+    $XDG_CONFIG_HOME/git/ignore, else ~/.config/git/ignore. Raises ValueError for a relative
+    excludesFile, which Git reads in each repository."""
+    named = _git_config(home, "--includes", "--type=path", "--get", "core.excludesFile").strip()
     if named:
-        if not Path(named).is_absolute():
-            raise ValueError(
-                f"core.excludesFile is {named!r}, a relative path that Git reads in each "
-                f"repository; make it absolute, then run globals again"
-            )
-        return Path(named)
+        return _absolute(named, "core.excludesFile")
+    real = home == Path.home().expanduser().resolve()
     xdg = os.environ.get("XDG_CONFIG_HOME") if real else None
     return (Path(xdg) if xdg else home / ".config") / "git" / "ignore"
 
 
+def conditional_ignore_files(home: Path) -> list[tuple[str, Path]]:
+    """The ignore files the global config names only for some repositories: each
+    `includeIf "<condition>".path` whose file sets core.excludesFile, as (condition, file).
+    Raises ValueError for a relative excludesFile."""
+    found: list[tuple[str, Path]] = []
+    listed = _git_config(
+        home, "--global", "--show-origin", "--type=path", "--get-regexp", r"^includeif\..*\.path$"
+    )
+    for line in listed.splitlines():
+        origin, _, entry = line.partition("\t")
+        key, _, included = entry.partition(" ")
+        condition = key[len("includeif.") : -len(".path")]
+        holder = Path(origin.removeprefix("file:"))  # a relative path is relative to it
+        source = Path(included) if Path(included).is_absolute() else holder.parent / included
+        named = _git_config(
+            home, "--file", str(source), "--includes", "--type=path", "--get", "core.excludesFile"
+        ).strip()
+        if named:
+            found.append((condition, _absolute(named, f"core.excludesFile in {source}")))
+    return found
+
+
+def _writable(path: Path) -> bool:
+    """Whether `path` (a file, or where it would be made) can be written by this user."""
+    if path.exists():
+        return os.access(path, os.W_OK)
+    parent = path.parent
+    while not parent.exists() and parent != parent.parent:
+        parent = parent.parent
+    return os.access(parent, os.W_OK | os.X_OK)
+
+
 def _sync_global_gitignore(home: Path, result: Result, *, check: bool, stamp: str) -> None:
-    """repo-template's block in the file Git reads (through a link, to the file it names),
-    backed up before it changes. A block without both markers, in order, is left alone."""
+    """repo-template's block in each file Git reads its global ignores from: the one it always
+    reads, and those an `includeIf` names for some repositories. Each is written through a link
+    to the file it names, after a backup. A block without both markers, in order, is left
+    alone; a file this user can't write is an error, in --check too."""
     try:
-        path = global_ignore_file(home)
+        paths = [global_ignore_file(home)]
+        paths += [path for _, path in conditional_ignore_files(home) if path not in paths]
     except ValueError as exc:
         result.preserved.append(f"the global Git ignore ({exc})")
         return
-    try:
-        existing = path.read_text() if path.exists() else ""
-    except (OSError, UnicodeDecodeError) as exc:
-        result.errors.append(f"cannot read {path}: {exc}")
-        return
-    if not marked_block_intact(existing, GITIGNORE_START, GITIGNORE_END):
-        result.preserved.append(f"{path} (repo-template's block has lost a marker line; kept)")
-        return
-    proposed = _merge_global_gitignore(existing)
-    if proposed == existing:
-        result.unchanged.append(str(path))
-        return
-    (result.updated if path.exists() else result.created).append(str(path))
-    if check:
-        return
-    target = path.resolve()
-    if target.exists():
-        backup = home / ".repo-template" / "backups" / stamp / "git-ignore"
-        backup.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(target, backup)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(proposed)
+    for position, path in enumerate(paths):
+        try:
+            existing = path.read_text() if path.exists() else ""
+        except (OSError, UnicodeDecodeError) as exc:
+            result.errors.append(f"cannot read {path}: {exc}")
+            continue
+        if not marked_block_intact(existing, GITIGNORE_START, GITIGNORE_END):
+            result.preserved.append(f"{path} (repo-template's block has lost a marker line; kept)")
+            continue
+        proposed = _merge_global_gitignore(existing)
+        if proposed == existing:
+            result.unchanged.append(str(path))
+            continue
+        target = path.resolve()
+        if not _writable(target):
+            result.errors.append(
+                f"cannot write {path} (Git reads its ignores there): add repo-template's block "
+                f"to it yourself, or point a global core.excludesFile at a file you own"
+            )
+            continue
+        (result.updated if path.exists() else result.created).append(str(path))
+        if check:
+            continue
+        try:
+            if target.exists():
+                name = "git-ignore" if position == 0 else f"git-ignore-{position + 1}"
+                backup = home / ".repo-template" / "backups" / stamp / name
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(target, backup)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(proposed)
+        except OSError as exc:
+            result.errors.append(f"cannot write {path}: {exc.strerror or exc}")
 
 
 def sync_globals(

@@ -95,13 +95,14 @@ where another system owns the Git hooks or the lockfile.
 
 ## Every repository on this machine
 
-1. **Find them.** Ask which folders hold the user's repositories, unless they said. Then list the
-   adopted ones:
-   `find -H <folder>... -maxdepth 7 \( -name node_modules -o -name .venv \) -prune -o \( -name .repo-template.json -o -path '*/.git/repo-template.json' \) -print 2>/dev/null`.
-   Each repository is the folder holding `.repo-template.json`, or the one above `.git`. Leave
-   out the standards checkout (`dirname "$(readlink ~/.agents)"`): `setup-machine.sh` keeps it
-   current on `main`. A repository with neither manifest isn't adopted: leave it out unless the
-   user asks to adopt it.
+1. **Find them.** Ask which folders hold the user's repositories, unless they said. Resolve
+   each folder's links first (`cd <folder> && pwd -P`), then list the adopted repositories in
+   the resolved folders:
+   `find <resolved>... -maxdepth 6 \( -name node_modules -o -name .venv \) -prune -o -name .git -type d -prune -exec sh -c 'test -f "$1/repo-template.json"' sh {} \; -print -o -name .repo-template.json -print 2>/dev/null`.
+   Each repository is the folder above a printed path (a `.git` folder is a personal
+   repository's). Leave out the standards checkout, `dirname "$(readlink ~/.agents)"`:
+   `setup-machine.sh` keeps it current on `main`. A repository with no manifest isn't adopted:
+   leave it out unless the user asks to adopt it.
 2. **Plan.** `repo-template check <repo> <repo> ...` prints one line each: `current`, or what
    `update` would do there. Show the user the lines that aren't current; this step is done when
    they have said which to update (all of them, unless they say otherwise).
