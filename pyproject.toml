@@ -19,7 +19,7 @@ build-backend = "uv_build"
 dev = [
     "mypy>=1.18",
     "pytest>=8.4",
-    "ruff>=0.13",
+    "ruff>=0.17.0",
     "pytest-cov>=7.0",
     "hypothesis==6.168.3",
     "shellcheck-py==0.11.0.1",
