@@ -188,6 +188,9 @@ git log --format='%an' | sort | uniq -c | sort -rn | head
 | yours, another stack (TypeScript, say) | packs only | `.repo-template.json`, `.mcp.json` if a pack has servers |
 
 Pick packs from the [pack table](README.md#catalog-every-skill-where-it-applies-and-where-it-comes-from).
+`dev-workflows` overlaps skills every machine already has (code review, debugging, tests,
+architecture, requirements): add it only where you want both. `atlassian` needs an Atlassian
+MCP server you connect and sign in to yourself; the pack brings none.
 
 **Personal** (also other people's repository):
 
@@ -256,6 +259,7 @@ Later runs need no flag: `repo-template update .`
 | Codex doesn't see a repository's servers | Codex reads `.codex/config.toml` only in a project you trust |
 | the pre-commit hook blocks a commit | it runs the checks: fix what it reports |
 | a pull request's description isn't filled in | read `.git/pr-description.log`: the pre-push hook needs `claude` and `gh` signed in (with a `gh` account that can edit the pull request), and leaves a description someone wrote alone |
+| a workflow of the repository's own also fills in pull request descriptions | keep one: they race for a blank description. To keep the workflow, delete `.githooks/pre-push` and add it to `project_owned` |
 | `globals` reports `changed on this machine; kept` or `configured by hand; kept` | yours wins; set it back to the standard's value to follow the standard again |
 
 ## Appendix A: setting up a machine by hand
