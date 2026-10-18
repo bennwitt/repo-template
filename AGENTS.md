@@ -13,7 +13,9 @@ The CLI creates and updates Python/uv repository scaffolding (or, with `--packs-
 repository's skill packs and their MCP servers; with `--personal`, those for one person, in
 a repository whose tracked and visible files it never changes) and installs global symlinks. It
 does not create GitHub repositories, commit or push, copy secrets, or overwrite conflicting
-project-owned files. `globals` also installs the global MCP servers, through
+project-owned files. The one generated file that writes to GitHub is the baseline's pre-push
+hook: after a push, a read-only `claude -p` fills in the pull request's description, which
+`gh pr edit` saves. `globals` also installs the global MCP servers, through
 `claude mcp add-json --scope user` and into `~/.codex/config.toml`, and `update` writes a
 repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`; for a personal
 repository Claude Code's local scope instead of `.mcp.json`, plus `.git/repo-template.json` and a
@@ -48,9 +50,10 @@ set up and changes nothing.
 - Keep project-specific instructions in generated `AGENTS.md`; keep reusable workflows in global skills.
 - Never copy Claude credentials, history, caches, or machine state into this repository.
 - Add tests for any change to rendering, update conflict handling, symlink behavior, personal
-  adoption, or `setup-machine.sh` (`tests/test_setup_machine.py`: stand-ins for `uv`,
+  adoption, `setup-machine.sh` (`tests/test_setup_machine.py`: stand-ins for `uv`,
   `repo-template` and the tools it installs, a temporary HOME, and `_converse` for answers typed
-  in a terminal).
+  in a terminal), or the pre-push hook (`tests/test_pr_description.py`: stand-ins for `gh` and
+  `claude` that keep a pull request's state in files).
 - Try commands against temporary folders: `check` and `update` on a repository made in
   `mktemp -d`, and `HOME=$(mktemp -d) uv run repo-template globals --check --standards-root .`.
   A plain `globals` or a real `setup-machine.sh` run changes this machine: run one only when the
@@ -72,6 +75,9 @@ set up and changes nothing.
   merged into `~/.claude/settings.json` without overwriting entries changed on the machine.
 - Generated repositories never commit `.agents`, `.claude`, `.codex`, `.env`, or private keys.
 - Hooks in the portable settings always exit 0, so they can never block a session.
+- The generated pre-push hook always exits 0 and works in the background, so it can never block
+  a push, and it writes only over a description nobody wrote: empty, the untouched template,
+  the commit messages alone, or its own unedited one.
 - MCP servers are keyless and read-only, defined once in `.agents/mcp-servers.json`, and each
   denied tool is denied in both clients. repo-template never writes approval settings
   (`enableAllProjectMcpServers`, `enabledMcpjsonServers`) or Codex `[projects]`, trust,

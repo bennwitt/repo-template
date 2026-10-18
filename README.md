@@ -882,7 +882,8 @@ and follow `writing-for-agents`.
   branch's commit messages (`gh pr create --fill`), or its own that nobody has edited since;
   anything else is left alone. It skips the default branch, tags, deletions and machines
   without `claude` and `gh`; `PR_DESCRIPTION=0` turns it off, and `.git/pr-description.log`
-  says what it did.
+  says what it did. To keep a repository without it, delete it and add `.githooks/pre-push` to
+  `project_owned` (deleted alone, `update` puts it back).
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
 
 ## Current limitations
