@@ -48,7 +48,7 @@ Read the profile: `grep -h '"profile"' <repo>/.repo-template.json <repo>/.git/re
    - Exit 2: go to step 3.
 3. **Resolve every preserved file** (each `!` line), by case:
    - **A managed file that differs** (CI workflow, Dependabot config, PR template, pre-commit
-     hook): render a pristine baseline with
+     or pre-push hook): render a pristine baseline with
      `repo-template new <name> --parent "$(mktemp -d)" --no-git --no-lock` and diff the two.
      In a repository the baseline didn't generate, every differing managed file lands here,
      because no generation hash proves it unedited. Decide each file:

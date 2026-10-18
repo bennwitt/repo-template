@@ -7,7 +7,8 @@ agents (Claude Code, Codex) find what they need and do their best work.**
 
 1. **A CLI that creates and safely updates Python/uv repositories.** A new repository comes out
    ready to work in: uv, pytest, Ruff, strict mypy, CI, Dependabot, a pre-commit secret scan,
-   and the context files agents read first (`AGENTS.md`, `GLOSSARY.md`, `docs/adr/`). Existing
+   a pre-push hook that fills in pull request descriptions, and the context files agents read
+   first (`AGENTS.md`, `GLOSSARY.md`, `docs/adr/`). Existing
    repositories move toward the same standard without losing local changes.
 2. **A versioned catalog of agent skills and settings.** `.agents/skills/` (and `.agents/packs/`
    for skills only some repositories want) holds the skills you rely on: test-driven development, bug diagnosis, architecture review, spec → tickets →
@@ -57,7 +58,7 @@ Every file in the project baseline has a policy that decides what `update` may d
 
 | Policy | Files | What `update` does |
 | --- | --- | --- |
-| **Managed** | CI workflow, Dependabot, PR template, pre-commit hook, `.editorconfig`, `.gitattributes`, `.python-version`, `CLAUDE.md` | Upgrades the file to the current standard **only if** it is unchanged since it was generated. Edited files are left alone and reported. |
+| **Managed** | CI workflow, Dependabot, PR template, pre-commit and pre-push hooks, `.editorconfig`, `.gitattributes`, `.python-version`, `CLAUDE.md` | Upgrades the file to the current standard **only if** it is unchanged since it was generated. Edited files are left alone and reported. |
 | **Seed** | `README.md`, `AGENTS.md`, `GLOSSARY.md`, `CHANGELOG.md`, `.env.example`, issue templates, `docs/adr/README.md`, package `__init__.py`, smoke test | Created whenever it is missing (also after you delete it), then the file is yours: `update` never changes one that exists. To delete one for good, add it to `project_owned`. |
 | **Merged** | `pyproject.toml`, `.gitignore`, `.vscode/*.json` | Adds what is missing and never removes anything: dev dependencies and tool tables in `pyproject.toml`, a marked block in `.gitignore`, missing keys, extension recommendations and tasks in VS Code files. Project metadata and dependencies are not touched. |
 
@@ -407,6 +408,7 @@ my-service/
 ├── src/my_service/        # __init__.py, py.typed
 ├── tests/test_smoke.py
 ├── .githooks/pre-commit   # secret scan, uv lock --check, ruff, mypy, pytest
+├── .githooks/pre-push     # fills in the pull request's description after each push
 ├── .github/               # CI, Dependabot (uv and Actions), PR and issue templates
 ├── .vscode/               # interpreter, pytest, Ruff on save, tasks
 ├── .env.example           # .env, *.pem and *.key are ignored
@@ -873,6 +875,14 @@ and follow `writing-for-agents`.
   Meta API key in its usual form; it doesn't look inside files Git treats as binary, or at a
   key split across lines. Its checks run without Git's repository variables, so a commit from a
   worktree can't have tests write into the repository.
+- The pre-push hook never stops or slows a push. In the background, once the pushed commit
+  shows in an open pull request, it has `claude -p` (read-only: the pull request's diff, checks
+  and the repository's files) fill in the PR template, and saves it with `gh pr edit`. It
+  writes only over a description that is empty, the untouched template, nothing but the
+  branch's commit messages (`gh pr create --fill`), or its own that nobody has edited since;
+  anything else is left alone. It skips the default branch, tags, deletions and machines
+  without `claude` and `gh`; `PR_DESCRIPTION=0` turns it off, and `.git/pr-description.log`
+  says what it did.
 - The CLI never creates GitHub repositories, pushes commits, or copies secrets.
 
 ## Current limitations

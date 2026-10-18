@@ -528,6 +528,156 @@ def project_files(context: ProjectContext, *, package: bool = True) -> list[Temp
         executable=True,
     )
     add(
+        ".githooks/pre-push",
+        r"""
+        #!/usr/bin/env sh
+        # After each push of a branch, fills in its pull request's description from the diff, in
+        # the background: a push never waits for it or fails because of it. It writes only over a
+        # description that is empty, the untouched PR template, nothing but the branch's commit
+        # messages (what `gh pr create --fill` writes), or its own that nobody has edited since;
+        # any other is someone's and stays. Needs `claude` and `gh`, signed in. PR_DESCRIPTION=0
+        # turns it off; it waits up to PR_DESCRIPTION_WAIT seconds (default 600) for the pull
+        # request to be opened. What it did: .git/pr-description.log
+        set -u
+
+        if [ "${1:-}" != --fill ]; then
+          # Git runs this as `pre-push <remote> <url>`, one line per pushed ref on standard input
+          refs=$(cat)
+          [ "${PR_DESCRIPTION:-1}" != 0 ] || exit 0
+          command -v claude >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 || exit 0
+          common=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+          default=$(git symbolic-ref --quiet --short "refs/remotes/${1:-origin}/HEAD" 2>/dev/null)
+          default=${default#"${1:-origin}"/}
+          hook="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+          log="$common/pr-description.log"
+          printf '%s\n' "$refs" | while read -r _ oid ref _; do
+            case $ref in refs/heads/*) ;; *) continue ;; esac  # a branch, not a tag
+            case $oid in *[!0]*) ;; *) continue ;; esac  # pushed, not deleted
+            branch=${ref#refs/heads/}
+            case $branch in main | master | "$default") continue ;; esac
+            echo "Filling in $branch's pull request description in the background ($log)" >&2
+            nohup sh "$hook" --fill "$branch" "$oid" </dev/null >>"$log" 2>&1 &
+          done
+          exit 0
+        fi
+
+        branch=$2
+        oid=$3
+        say() { echo "$(date '+%Y-%m-%d %H:%M:%S') $branch $(printf %.7s "$oid"): $*"; }
+        # Line endings, trailing spaces and blank lines at either end don't count as an edit
+        normalized() { sed -e 's/[[:space:]]*$//' -e '/./,$!d'; }
+        marker='<!-- Written by .githooks/pre-push; rewritten on each push until edited. hash:'
+        work=$(mktemp -d) || exit 0
+        trap 'rm -rf "$work"' EXIT
+
+        # The pull request this push updates: wait until one is open and shows this commit
+        waited=0
+        while :; do
+          if found=$(gh pr view "$branch" --json number,state,headRefOid \
+            --jq '"\(.number) \(.state) \(.headRefOid)"' 2>"$work/err"); then
+            number=${found%% *}
+            [ "${found#* }" = "OPEN $oid" ] && break
+          elif ! grep -qi 'no pull requests found' "$work/err"; then
+            say "gh couldn't look up the pull request: $(cat "$work/err")"
+            exit 0
+          fi
+          if [ "$waited" -ge "${PR_DESCRIPTION_WAIT:-600}" ]; then
+            say "no open pull request shows this commit after ${waited}s; nothing to fill in"
+            exit 0
+          fi
+          sleep 15
+          waited=$((waited + 15))
+        done
+
+        # Whose description it is
+        gh pr view "$number" --json body --jq .body >"$work/body" 2>"$work/err" || {
+          say "gh couldn't read #$number: $(cat "$work/err")"
+          exit 0
+        }
+        body=$(normalized <"$work/body")
+        template=
+        for path in .github/PULL_REQUEST_TEMPLATE.md .github/pull_request_template.md \
+          PULL_REQUEST_TEMPLATE.md pull_request_template.md \
+          docs/PULL_REQUEST_TEMPLATE.md docs/pull_request_template.md; do
+          template=$(git show "$oid:$path" 2>/dev/null | normalized)
+          [ -z "$template" ] || break
+        done
+        first=$(printf '%s\n' "$body" | sed -n 1p)
+        rest=$(printf '%s\n' "$body" | sed 1d | normalized)
+        why=
+        if [ -z "$body" ]; then
+          why="it was empty"
+        elif [ -n "$template" ] && [ "$body" = "$template" ]; then
+          why="it was the untouched template"
+        elif [ "$first" = "$marker$(printf '%s\n' "$rest" | git hash-object --stdin) -->" ]; then
+          why="it was this hook's, unedited"
+        else
+          gh pr view "$number" --json commits --jq '.commits[] | .messageHeadline, .messageBody' \
+            2>/dev/null | normalized >"$work/messages"
+          if [ -s "$work/messages" ] && ! printf '%s\n' "$body" | sed 's/^[-*] //' |
+            grep -v '^$' | grep -Fxvq -f "$work/messages"; then
+            why="it held only the commit messages"
+          fi
+        fi
+        if [ -z "$why" ]; then
+          say "#$number's description was written by someone; left alone"
+          exit 0
+        fi
+
+        # Write it: claude reads the pull request and the repository, and can change nothing
+        if [ -n "$template" ]; then
+          shape="Fill in this pull request template. Keep its headings and checklists, tick only
+        the boxes the change shows to be true, replace each <!-- --> comment with what it asks
+        for, and leave a box unticked when you can't tell (a check you didn't see pass, a step
+        only a person can do).
+
+        $template"
+        else
+          shape="Use three sections: Summary, How to verify, and Risk and rollback."
+        fi
+        cat >"$work/prompt" <<EOF
+        Write the description of pull request #$number in this repository, as of commit $oid.
+        Read the change with \`gh pr diff $number\`, its title and commits with
+        \`gh pr view $number --json title,baseRefName,commits\`, and its checks with
+        \`gh pr checks $number\`; open any file you need. AGENTS.md and GLOSSARY.md, if present,
+        give the repository's purpose and terms. Keep it short and concrete, and reply with the
+        description alone, in Markdown: no preamble and no code fence around it.
+
+        $shape
+        EOF
+        if ! claude -p --output-format text --tools Read,Grep,Glob,Bash \
+          --allowedTools Read Grep Glob "Bash(gh pr view:*)" "Bash(gh pr diff:*)" \
+          "Bash(gh pr checks:*)" --permission-mode dontAsk --strict-mcp-config \
+          --setting-sources project --no-session-persistence \
+          <"$work/prompt" >"$work/new" 2>"$work/err"; then
+          say "claude couldn't write it: $(tail -n 3 "$work/err")"
+          exit 0
+        fi
+        new=$(normalized <"$work/new")
+        if [ -z "$new" ]; then
+          say "claude wrote nothing; #$number left alone"
+          exit 0
+        fi
+
+        # Unless a later push, a merge or an edit came first
+        latest=$(gh pr view "$number" --json state,headRefOid \
+          --jq '"\(.state) \(.headRefOid)"' 2>/dev/null)
+        gh pr view "$number" --json body --jq .body >"$work/now" 2>/dev/null
+        if [ "$latest" != "OPEN $oid" ] || [ "$(normalized <"$work/now")" != "$body" ]; then
+          say "#$number changed while its description was written; left alone"
+          exit 0
+        fi
+        hash=$(printf '%s\n' "$new" | git hash-object --stdin)
+        printf '%s%s -->\n\n%s\n' "$marker" "$hash" "$new" >"$work/out"
+        if gh pr edit "$number" --body-file "$work/out" >/dev/null 2>"$work/err"; then
+          say "filled in #$number's description ($why)"
+        else
+          say "gh couldn't save #$number's description: $(cat "$work/err")"
+        fi
+        """,
+        executable=True,
+    )
+    add(
         ".ai/receipt-policy.json",
         """
         {

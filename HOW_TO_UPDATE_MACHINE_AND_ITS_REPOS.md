@@ -220,7 +220,8 @@ behind).
 4. Apply: `repo-template update . --pack <name>`, and decide each file that differs (the keys in
    [2.1](#21-update-a-templated-repository)).
    - **Adds:** `AGENTS.md`, `CLAUDE.md`, `GLOSSARY.md`, `docs/adr/`, the CI workflow,
-     Dependabot, the PR template, the pre-commit hook (`core.hooksPath .githooks`), and
+     Dependabot, the PR template, the pre-commit hook and the pre-push hook that fills in pull
+     request descriptions (`core.hooksPath .githooks`), and
      `tests/test_smoke.py`, which expects `__version__` in `src/<package>/__init__.py`, equal to
      the project's version (`uv init --package` doesn't define it: add it, or delete the test).
    - **Merges:** `pyproject.toml` and `.gitignore`, then refreshes `uv.lock`.
@@ -254,6 +255,7 @@ Later runs need no flag: `repo-template update .`
 | a browser tool fails with `Chromium distribution 'chrome' is not found` | install Google Chrome (section 1) |
 | Codex doesn't see a repository's servers | Codex reads `.codex/config.toml` only in a project you trust |
 | the pre-commit hook blocks a commit | it runs the checks: fix what it reports |
+| a pull request's description isn't filled in | read `.git/pr-description.log`: the pre-push hook needs `claude` and `gh` signed in (with a `gh` account that can edit the pull request), and leaves a description someone wrote alone |
 | `globals` reports `changed on this machine; kept` or `configured by hand; kept` | yours wins; set it back to the standard's value to follow the standard again |
 
 ## Appendix A: setting up a machine by hand
