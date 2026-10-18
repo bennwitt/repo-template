@@ -70,6 +70,14 @@
       },
       "discover": "none"
     },
+    "jeffallan/claude-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025",
+      "licenseFiles": {
+        "LICENSE": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d"
+      },
+      "discover": "none"
+    },
     "langchain-ai/langchain-skills": {
       "license": "MIT",
       "copyright": "Copyright (c) LangChain, Inc.",
@@ -232,15 +240,27 @@
     }
   },
   "skills": {
+    "api-designer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "a6acfe7813cdbf078353690e6ab488c8433459ee"
+    },
     "appinsights-instrumentation": {
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
       "tree": "2bb1307f9a0f22a26c6efbd8c795caf353be9d72",
       "license": "MIT",
       "copyright": "Copyright 2025 (c) Microsoft Corporation."
     },
+    "architecture-designer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "d9baa48932919d8db398cfc0953b3ec07b08356e"
+    },
     "ask-matt": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "d6a0d9bf3cdc78cbfcbd6466ac5fd3deffb52877"
+    },
+    "atlassian-mcp": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "e07af9e721f483b41e87666aeb6c73abfa368283"
     },
     "azure-ai": {
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
@@ -294,17 +314,41 @@
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
       "tree": "23c61eed8d0009d712d71904e21e3c4e0df4d6d0"
     },
+    "chaos-engineer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "ac205303ca70da616d06b9429ec729ac49a2e590"
+    },
     "claude-handoff": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "57d198aca08eddccb113632d52c6c13f1f3066ac"
+    },
+    "cli-developer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "d48ca3288f613f09b0efccab6f2b2092b4e58a69"
+    },
+    "code-documenter": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "1d2532889c15d70eb6d6230bd0d99657905a4b4e"
     },
     "code-review": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "fee7bb5fdddc069d58cbea09b2c36b5a859eac05"
     },
+    "code-reviewer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "7a96d8709f89d08fb37686736412be3c1bed6d99"
+    },
     "codebase-design": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
       "tree": "07ba1cd60efc12d0d3a083005c1d9651cf15e39a"
+    },
+    "database-optimizer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "8532892c1dd93f2b8e0354ed7f34473d4e49153a"
+    },
+    "debugging-wizard": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "706817ab0da92e9baa8bf9515db40e35f761b92d"
     },
     "deep-agents-core": {
       "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
@@ -363,9 +407,17 @@
       "tree": "34ece4801c3efb15889c30835d58511da031796f",
       "ref": "0.143.0"
     },
+    "feature-forge": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "cc538fe054308d7f525e50fa6f35d5cf7717f9dd"
+    },
     "find-skills": {
       "commit": "773fb2c7bbf16781670a3520affc4abd0c6151ae",
       "tree": "76a98a285cb0434f3d39e1a873823556330e398b"
+    },
+    "fine-tuning-expert": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "b67203fbdae118dddb6a1dffc098a0cd79727f64"
     },
     "frontend-design": {
       "commit": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
@@ -381,9 +433,17 @@
       "commit": "df566343b3a685e821f8ebe8ea70a2a8eb8b857b",
       "tree": "25d75a622f5f8c034be5b25bf6585850d6f7fcd7"
     },
+    "golang-pro": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "77236ba0ba332d7556e1abb3626f5b4f6acf46fb"
+    },
     "gradio": {
       "commit": "b79748e4801ad9a73c6839a637a68dcad9a366b3",
       "tree": "ddda04ac8f9eab50d03cae92e9d5d83fd4a50b39"
+    },
+    "graphql-architect": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "2f52c2781746ab9061abead213bc18375bd01119"
     },
     "grill-me": {
       "commit": "fcf0071560d32913c9d4f820e0d7ca467c881619",
@@ -473,6 +533,10 @@
       "commit": "514d17f139972d4513c4c01c799881a381567159",
       "tree": "10a80b9bdb2e3065e930a16626d6ea2578935b19"
     },
+    "legacy-modernizer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "34ee23b80703c9624ba327bc63bf3d0e9d949722"
+    },
     "loop-me": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "a0dfdc3562686d920900973b50289b36e2f7eafe"
@@ -480,6 +544,10 @@
     "managed-deep-agents": {
       "commit": "16a992f09ab3ccfb642dd4f08d350d833d1990bf",
       "tree": "b688ea60bf2601fad78a7b24ead62ac78408e8e1"
+    },
+    "mcp-developer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "2f90403ca5464506ea5d0d7e7547696afca17e26"
     },
     "microsoft-foundry": {
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
@@ -489,9 +557,17 @@
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
       "tree": "0aea91a3599a4bf7aeec17e3262d4cbcfcbeec23"
     },
+    "ml-pipeline": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "0f0c3b59918e2939741b1574caf35197ee0f8981"
+    },
     "model-recipes": {
       "commit": "bb1438a93f8873c30176d93267d0647f8e4c7b83",
       "tree": "76900a2f39c39db1d5095ecffe51760124a07c56"
+    },
+    "monitoring-expert": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "d8f39666d35c93fcb2e15a9c533c6edd6f1add70"
     },
     "playwright-best-practices": {
       "commit": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
@@ -502,10 +578,18 @@
       "tree": "6b746b43751be277378e0ee04fe0db69f24da045",
       "ref": "v0.1.22"
     },
+    "playwright-expert": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "bb8e2966cf79803f5c4e7011be2cd76c5cb74236"
+    },
     "playwright-trace": {
       "commit": "606ecd8b34bac100db32561b6278ffd76e5eb3cd",
       "tree": "a1d5f43906b95c995da460dac32ccf1996223388",
       "ref": "v1.64.0"
+    },
+    "postgres-pro": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "cece71e4474f39cb47793c7b84834fdee236a3e6"
     },
     "pr": {
       "commit": "e484a8095543718ced436b9b49a8160ed4554000",
@@ -524,6 +608,18 @@
       "commit": "f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8",
       "tree": "8b926108ed1a63b3f21b0c600718323cce27b99f"
     },
+    "rag-architect": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "1b87e6ab5c3a604dd86f8b2206d2b39e2cf406c6"
+    },
+    "react-expert": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "be511b42f21056772c6437dd6be3c51a54dfd30e"
+    },
+    "react-native-expert": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "64bc758e8ea54df7e52b5333d3450e6fec58dd84"
+    },
     "research": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "0a6796c5667e95ed2301ba7381c123b4acb2ae1a"
@@ -535,6 +631,10 @@
     "ruff": {
       "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",
       "tree": "46e64350889df1af25113df450999101f48fd744"
+    },
+    "secure-code-guardian": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "430bda30376f2e0951e37367550423fdcf9d0056"
     },
     "setup-matt-pocock-skills": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
@@ -555,6 +655,22 @@
         }
       }
     },
+    "spec-miner": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "af6d94d799bd734ed9c7eaee6b972099e2b9dbe9"
+    },
+    "spring-boot-engineer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "82cb0c8d964ac3dc50062383ee325fbb5ea8a893"
+    },
+    "sql-pro": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "fed91bc29fb2bc5bb6bf25eb46df26a4700f9c74"
+    },
+    "sre-engineer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "00c6b037e9f874af8773fff2e15cc225e1054ba3"
+    },
     "supply-chain-risk-auditor": {
       "commit": "123037ec8aed26f0d86327cc39137ee5043e5deb",
       "tree": "954cc68e05e24a2a14447b60d1e8946b53323b1b",
@@ -574,6 +690,10 @@
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "3fd617b610e59acbb99644de1ef37e394ff53cd1"
     },
+    "the-fool": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "90a454523144b2be548744dcb477e0b012679978"
+    },
     "to-questionnaire": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "46dfbeeba12a9e52eef446676f42e7551023d9a9"
@@ -589,6 +709,10 @@
     "triage": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
       "tree": "4cb951d62ecccaed601cdc5f9a1b7b3d8a799635"
+    },
+    "typescript-pro": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "749a0d4d18783570b071285606687f256d8ee17b"
     },
     "uv": {
       "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",

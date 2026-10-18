@@ -1374,6 +1374,68 @@ SOFTWARE.
    limitations under the License.
 ```
 
+## jeffallan/claude-skills
+
+- Source: https://github.com/jeffallan/claude-skills
+- License: MIT
+- Copyright: Copyright (c) 2025
+- Skills:
+  - `api-designer`: [skills/api-designer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/api-designer) at 36f3fe8052da
+  - `architecture-designer`: [skills/architecture-designer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/architecture-designer) at 36f3fe8052da
+  - `atlassian-mcp`: [skills/atlassian-mcp](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/atlassian-mcp) at 36f3fe8052da
+  - `chaos-engineer`: [skills/chaos-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/chaos-engineer) at 36f3fe8052da
+  - `cli-developer`: [skills/cli-developer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/cli-developer) at 36f3fe8052da
+  - `code-documenter`: [skills/code-documenter](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-documenter) at 36f3fe8052da
+  - `code-reviewer`: [skills/code-reviewer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-reviewer) at 36f3fe8052da
+  - `database-optimizer`: [skills/database-optimizer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/database-optimizer) at 36f3fe8052da
+  - `debugging-wizard`: [skills/debugging-wizard](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/debugging-wizard) at 36f3fe8052da
+  - `feature-forge`: [skills/feature-forge](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/feature-forge) at 36f3fe8052da
+  - `fine-tuning-expert`: [skills/fine-tuning-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fine-tuning-expert) at 36f3fe8052da
+  - `golang-pro`: [skills/golang-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/golang-pro) at 36f3fe8052da
+  - `graphql-architect`: [skills/graphql-architect](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/graphql-architect) at 36f3fe8052da
+  - `legacy-modernizer`: [skills/legacy-modernizer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/legacy-modernizer) at 36f3fe8052da
+  - `mcp-developer`: [skills/mcp-developer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/mcp-developer) at 36f3fe8052da
+  - `ml-pipeline`: [skills/ml-pipeline](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/ml-pipeline) at 36f3fe8052da
+  - `monitoring-expert`: [skills/monitoring-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/monitoring-expert) at 36f3fe8052da
+  - `playwright-expert`: [skills/playwright-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/playwright-expert) at 36f3fe8052da
+  - `postgres-pro`: [skills/postgres-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/postgres-pro) at 36f3fe8052da
+  - `rag-architect`: [skills/rag-architect](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/rag-architect) at 36f3fe8052da
+  - `react-expert`: [skills/react-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-expert) at 36f3fe8052da
+  - `react-native-expert`: [skills/react-native-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-native-expert) at 36f3fe8052da
+  - `secure-code-guardian`: [skills/secure-code-guardian](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/secure-code-guardian) at 36f3fe8052da
+  - `spec-miner`: [skills/spec-miner](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spec-miner) at 36f3fe8052da
+  - `spring-boot-engineer`: [skills/spring-boot-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spring-boot-engineer) at 36f3fe8052da
+  - `sql-pro`: [skills/sql-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sql-pro) at 36f3fe8052da
+  - `sre-engineer`: [skills/sre-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sre-engineer) at 36f3fe8052da
+  - `the-fool`: [skills/the-fool](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/the-fool) at 36f3fe8052da
+  - `typescript-pro`: [skills/typescript-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/typescript-pro) at 36f3fe8052da
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) 2025
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## langchain-ai/langchain-skills
 
 - Source: https://github.com/langchain-ai/langchain-skills

@@ -15,6 +15,12 @@
 - The provenance test for a vendored skill without `SKILL.md` deletes the file instead of
   renaming it to `skill.md`, which a Mac's case-insensitive disk still reads as `SKILL.md`; the
   macOS job passes again.
+- Skills added from upstream: `api-designer`, `architecture-designer`, `atlassian-mcp`,
+  `chaos-engineer`, `cli-developer`, `code-documenter`, `code-reviewer`, `database-optimizer`,
+  `debugging-wizard`, `feature-forge`, `fine-tuning-expert`, `golang-pro`, `graphql-architect`,
+  `legacy-modernizer`, `mcp-developer`, `ml-pipeline`, `monitoring-expert`, `playwright-expert`,
+  `postgres-pro`, `rag-architect`, `react-expert`, `react-native-expert`, `secure-code-guardian`,
+  `spec-miner`, `spring-boot-engineer`, `sql-pro`, `sre-engineer`, `the-fool`, `typescript-pro`.
 
 ## 0.5.4 - 2026-10-14
 
