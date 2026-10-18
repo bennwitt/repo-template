@@ -1399,6 +1399,7 @@ SOFTWARE.
   - `monitoring-expert`: [skills/monitoring-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/monitoring-expert) at 36f3fe8052da
   - `playwright-expert`: [skills/playwright-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/playwright-expert) at 36f3fe8052da
   - `postgres-pro`: [skills/postgres-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/postgres-pro) at 36f3fe8052da
+  - `prompt-engineer`: [skills/prompt-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/prompt-engineer) at 36f3fe8052da
   - `rag-architect`: [skills/rag-architect](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/rag-architect) at 36f3fe8052da
   - `react-expert`: [skills/react-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-expert) at 36f3fe8052da
   - `react-native-expert`: [skills/react-native-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-native-expert) at 36f3fe8052da

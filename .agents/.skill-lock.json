@@ -1107,6 +1107,15 @@
       "skillFolderHash": "749a0d4d18783570b071285606687f256d8ee17b",
       "installedAt": "2026-10-18T18:53:22.923Z",
       "updatedAt": "2026-10-18T18:53:22.923Z"
+    },
+    "prompt-engineer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
+      "skillPath": "skills/prompt-engineer/SKILL.md",
+      "skillFolderHash": "faf877cda99a4779b5b93c9de7abeae238130db3",
+      "installedAt": "2026-10-18T18:55:09.318Z",
+      "updatedAt": "2026-10-18T18:55:09.318Z"
     }
   },
   "dismissed": {
