@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- The baseline adds `.githooks/pre-push`, which fills in a pull request's description after
+  each push of its branch. It returns at once and works in the background: once the pushed
+  commit shows in an open pull request, `claude -p`, allowed only to read (`gh pr view`,
+  `gh pr diff`, `gh pr checks` and the repository's files), fills in the PR template, and
+  `gh pr edit` saves it. It writes only over a description that is empty, the untouched
+  template, nothing but the branch's commit messages (what `gh pr create --fill` writes), or
+  its own that nobody has edited since, and rechecks just before saving; a description someone
+  wrote is left alone. It skips the default branch, tags, deletions, and machines without
+  `claude` or `gh`. `PR_DESCRIPTION=0` turns it off, and `.git/pr-description.log` says what it
+  did. A repository gets it on its next `update`.
+- The provenance test for a vendored skill without `SKILL.md` deletes the file instead of
+  renaming it to `skill.md`, which a Mac's case-insensitive disk still reads as `SKILL.md`; the
+  macOS job passes again.
+
 ## 0.5.4 - 2026-10-14
 
 - `setup-machine.sh` sets up a Mac or a Linux machine in one run, and runs again safely.

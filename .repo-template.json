@@ -20,6 +20,10 @@
       "policy": "managed",
       "sha256": "998dd904befc3c331f222f54a049959e76d8648060019011f7cd4d4f9328748e"
     },
+    ".githooks/pre-push": {
+      "policy": "managed",
+      "sha256": "9575adcfef7c8293df123ee542a1ca1a5220bde8e4b6e6de4ed18b746c1bbc31"
+    },
     ".github/PULL_REQUEST_TEMPLATE.md": {
       "policy": "managed",
       "sha256": "25ef25ab581ee40cbba89f51283ea609da71c6ce24fc973d0d8cd392c43fe38d"

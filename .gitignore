@@ -43,6 +43,9 @@ blob-report/
 .DS_Store
 # <<< repo-template managed defaults
 
+# A local copy of another skills repository, kept beside this one's files
+/the-claude-skills/
+
 # This repository versions its portable global standards even though the block above (and a
 # user's global Git ignore) excludes .agents and .claude. Only the portable subsets are
 # re-included; machine-local Claude state stays ignored. Keep these rules below the block:
