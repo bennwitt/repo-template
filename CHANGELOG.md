@@ -11,17 +11,35 @@
   its own that nobody has edited since, and rechecks just before saving; a description someone
   wrote is left alone. It skips the default branch, tags, deletions, and machines without
   `claude` or `gh`. `PR_DESCRIPTION=0` turns it off, and `.git/pr-description.log` says what it
-  did. A repository gets it on its next `update`.
+  did. A repository gets it on its next `update`. Where a workflow of the repository's own
+  already fills in descriptions, keep one of the two: delete the hook and add it to
+  `project_owned`, or drop the workflow.
 - The provenance test for a vendored skill without `SKILL.md` deletes the file instead of
   renaming it to `skill.md`, which a Mac's case-insensitive disk still reads as `SKILL.md`; the
   macOS job passes again.
-- Skills added from upstream: `api-designer`, `architecture-designer`, `atlassian-mcp`,
-  `chaos-engineer`, `cli-developer`, `code-documenter`, `code-reviewer`, `database-optimizer`,
-  `debugging-wizard`, `feature-forge`, `fine-tuning-expert`, `golang-pro`, `graphql-architect`,
-  `legacy-modernizer`, `mcp-developer`, `ml-pipeline`, `monitoring-expert`, `playwright-expert`,
-  `postgres-pro`, `prompt-engineer`, `rag-architect`, `react-expert`, `react-native-expert`,
-  `secure-code-guardian`, `spec-miner`, `spring-boot-engineer`, `sql-pro`, `sre-engineer`,
-  `the-fool`, `typescript-pro`.
+- 34 skills from [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills) (MIT,
+  v0.4.20). A machine gets them on its next `globals`, and a repository a pack's skills with
+  `update --pack <name>`.
+  - Global: `code-documenter`, `legacy-modernizer` and `spec-miner`.
+  - In existing packs: `fastapi-expert` (`fastapi`), `mcp-developer` (`mcp`),
+    `playwright-expert` (`playwright`), `react-expert` and `react-native-expert` (`react`), and
+    `typescript-pro` (`typescript`).
+  - New packs: `api` (`api-designer`, `graphql-architect`), `atlassian` (`atlassian-mcp`; it
+    needs an Atlassian MCP server you sign in to yourself, so the pack ships none), `cli`
+    (`cli-developer`), `databases` (`database-optimizer`, `postgres-pro`, `sql-pro`), `golang`
+    (`golang-pro`), `ml-engineering` (`fine-tuning-expert`, `ml-pipeline`, `prompt-engineer`,
+    `rag-architect`), `security` (`secure-code-guardian`, `security-reviewer`), `spring-boot`
+    (`spring-boot-engineer`) and `sre` (`chaos-engineer`, `monitoring-expert`,
+    `sre-engineer`).
+  - `dev-workflows` holds the ones that overlap global skills: `architecture-designer`,
+    `code-reviewer`, `debugging-wizard`, `feature-forge`, `fullstack-guardian`, `test-master`
+    and `the-fool` (against `codebase-design`, `code-review`, `diagnosing-bugs`, `to-spec`,
+    `tdd` and `grilling`). Add it only where you want them as well.
+  - `python-pro` isn't vendored (it's under `ignored`): it builds with Poetry and checks with
+    black, where this baseline uses uv and ruff.
+  - The scanner's findings in `prompt-engineer` (prompt-injection examples it teaches defenses
+    with) and in `fastapi-expert`, `fullstack-guardian`, `security-reviewer` and `test-master`
+    (placeholder passwords in examples) were reviewed and are recorded under `allowFindings`.
 
 ## 0.5.4 - 2026-10-14
 

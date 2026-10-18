@@ -1116,6 +1116,42 @@
       "skillFolderHash": "faf877cda99a4779b5b93c9de7abeae238130db3",
       "installedAt": "2026-10-18T18:55:09.318Z",
       "updatedAt": "2026-10-18T18:55:09.318Z"
+    },
+    "fastapi-expert": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
+      "skillPath": "skills/fastapi-expert/SKILL.md",
+      "skillFolderHash": "a61d5c47c9abf702f60d33c9d381141e690ea931",
+      "installedAt": "2026-10-18T18:56:44.079Z",
+      "updatedAt": "2026-10-18T18:56:44.079Z"
+    },
+    "fullstack-guardian": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
+      "skillPath": "skills/fullstack-guardian/SKILL.md",
+      "skillFolderHash": "413ff904b7985833924b4ac7480d05f33111e14f",
+      "installedAt": "2026-10-18T18:56:49.774Z",
+      "updatedAt": "2026-10-18T18:56:49.774Z"
+    },
+    "security-reviewer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
+      "skillPath": "skills/security-reviewer/SKILL.md",
+      "skillFolderHash": "617c52edd4ab54c15d388f0960f3f6a76b7c11d6",
+      "installedAt": "2026-10-18T18:56:53.560Z",
+      "updatedAt": "2026-10-18T18:56:53.560Z"
+    },
+    "test-master": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
+      "skillPath": "skills/test-master/SKILL.md",
+      "skillFolderHash": "e03f049226f32b51b1a778a81fe8480f01557ae6",
+      "installedAt": "2026-10-18T18:56:59.098Z",
+      "updatedAt": "2026-10-18T18:56:59.098Z"
     }
   },
   "dismissed": {

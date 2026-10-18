@@ -407,6 +407,16 @@
       "tree": "34ece4801c3efb15889c30835d58511da031796f",
       "ref": "0.143.0"
     },
+    "fastapi-expert": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "a61d5c47c9abf702f60d33c9d381141e690ea931",
+      "allowFindings": {
+        "reason": "The hardcoded-password matches are placeholders in test and config examples ('<test-password>', '<db-password>', '[REDACTED]'), not credentials.",
+        "counts": {
+          "high": 4
+        }
+      }
+    },
     "feature-forge": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "cc538fe054308d7f525e50fa6f35d5cf7717f9dd"
@@ -424,6 +434,16 @@
       "tree": "d79e2a5bb4df4a386c2adcdd9ab8709bba28c3f6",
       "license": "Apache-2.0",
       "copyright": "Not stated upstream (its LICENSE.txt is the Apache License 2.0 text, without a copyright line)"
+    },
+    "fullstack-guardian": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "413ff904b7985833924b4ac7480d05f33111e14f",
+      "allowFindings": {
+        "reason": "The hardcoded-password matches are placeholders in test and config examples ('<test-password>', '<db-password>', '[REDACTED]'), not credentials.",
+        "counts": {
+          "high": 3
+        }
+      }
     },
     "git-guardrails-claude-code": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -646,6 +666,16 @@
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "430bda30376f2e0951e37367550423fdcf9d0056"
     },
+    "security-reviewer": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "617c52edd4ab54c15d388f0960f3f6a76b7c11d6",
+      "allowFindings": {
+        "reason": "The hardcoded-password matches are placeholders in test and config examples ('<test-password>', '<db-password>', '[REDACTED]'), not credentials.",
+        "counts": {
+          "high": 2
+        }
+      }
+    },
     "setup-matt-pocock-skills": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "aafaabf96fa3945d8a4069317a7a6d36b7169670"
@@ -699,6 +729,16 @@
     "teach": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "3fd617b610e59acbb99644de1ef37e394ff53cd1"
+    },
+    "test-master": {
+      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+      "tree": "e03f049226f32b51b1a778a81fe8480f01557ae6",
+      "allowFindings": {
+        "reason": "The hardcoded-password matches are placeholders in test and config examples ('<test-password>', '<db-password>', '[REDACTED]'), not credentials.",
+        "counts": {
+          "high": 7
+        }
+      }
     },
     "the-fool": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
@@ -778,6 +818,9 @@
     "langchain-ai/langchain-skills": {
       "langgraph-decision-models": "routes through LangSmith Gateway or the TypeSafe API; LangSmith is out of scope here",
       "swarm": "runs only inside the Deep Agents runtime (quickjs swarm_task tool)"
+    },
+    "jeffallan/claude-skills": {
+      "python-pro": "builds packages with Poetry and checks with black; this baseline uses uv and ruff (the global uv and ruff skills)"
     }
   }
 }

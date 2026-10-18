@@ -1389,8 +1389,10 @@ SOFTWARE.
   - `code-reviewer`: [skills/code-reviewer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-reviewer) at 36f3fe8052da
   - `database-optimizer`: [skills/database-optimizer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/database-optimizer) at 36f3fe8052da
   - `debugging-wizard`: [skills/debugging-wizard](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/debugging-wizard) at 36f3fe8052da
+  - `fastapi-expert`: [skills/fastapi-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fastapi-expert) at 36f3fe8052da
   - `feature-forge`: [skills/feature-forge](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/feature-forge) at 36f3fe8052da
   - `fine-tuning-expert`: [skills/fine-tuning-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fine-tuning-expert) at 36f3fe8052da
+  - `fullstack-guardian`: [skills/fullstack-guardian](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fullstack-guardian) at 36f3fe8052da
   - `golang-pro`: [skills/golang-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/golang-pro) at 36f3fe8052da
   - `graphql-architect`: [skills/graphql-architect](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/graphql-architect) at 36f3fe8052da
   - `legacy-modernizer`: [skills/legacy-modernizer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/legacy-modernizer) at 36f3fe8052da
@@ -1404,10 +1406,12 @@ SOFTWARE.
   - `react-expert`: [skills/react-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-expert) at 36f3fe8052da
   - `react-native-expert`: [skills/react-native-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-native-expert) at 36f3fe8052da
   - `secure-code-guardian`: [skills/secure-code-guardian](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/secure-code-guardian) at 36f3fe8052da
+  - `security-reviewer`: [skills/security-reviewer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/security-reviewer) at 36f3fe8052da
   - `spec-miner`: [skills/spec-miner](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spec-miner) at 36f3fe8052da
   - `spring-boot-engineer`: [skills/spring-boot-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spring-boot-engineer) at 36f3fe8052da
   - `sql-pro`: [skills/sql-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sql-pro) at 36f3fe8052da
   - `sre-engineer`: [skills/sre-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sre-engineer) at 36f3fe8052da
+  - `test-master`: [skills/test-master](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/test-master) at 36f3fe8052da
   - `the-fool`: [skills/the-fool](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/the-fool) at 36f3fe8052da
   - `typescript-pro`: [skills/typescript-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/typescript-pro) at 36f3fe8052da
 
