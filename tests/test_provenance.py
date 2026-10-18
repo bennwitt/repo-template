@@ -241,7 +241,8 @@ def test_unrecorded_folders_and_folderless_lock_entries_are_reported(tmp_path: P
 def test_a_vendored_folder_without_skill_md_is_reported_as_such(tmp_path: Path) -> None:
     root = _catalog(tmp_path / "c", {"SKILL.md": SKILL})
 
-    (root / ".agents/skills/s/SKILL.md").rename(root / ".agents/skills/s/skill.md")
+    # Deleted, not renamed to skill.md: a Mac's disk ignores case, so it would still be SKILL.md
+    (root / ".agents/skills/s/SKILL.md").unlink()
 
     assert "s: its folder has no SKILL.md" in _errors(root)
 

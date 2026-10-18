@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The provenance test for a vendored skill without `SKILL.md` deletes the file instead of
+  renaming it to `skill.md`, which a Mac's case-insensitive disk still reads as `SKILL.md`; the
+  macOS job passes again.
+
 ## 0.5.4 - 2026-10-14
 
 - `setup-machine.sh` sets up a Mac or a Linux machine in one run, and runs again safely.
