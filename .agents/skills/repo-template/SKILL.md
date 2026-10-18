@@ -91,7 +91,11 @@ Read the profile: `grep -h '"profile"' <repo>/.repo-template.json <repo>/.git/re
    - `packs-only`: commit `.repo-template.json`, and `.mcp.json` when a pack has servers.
 
 Keep the default hook and lockfile steps. `--no-hooks` and `--no-lock` exist for repositories
-where another system owns the Git hooks or the lockfile.
+where another system owns the Git hooks or the lockfile. When the repository already fills in
+pull request descriptions itself (a workflow such as `.github/workflows/pr-template.yml`, or a
+post-commit hook that drafts one), it races the baseline's pre-push hook for a blank
+description: ask the user which to keep. To keep theirs, delete `.githooks/pre-push` and add it
+to `project_owned`.
 
 ## Every repository on this machine
 
@@ -141,7 +145,9 @@ list their pack; `~/.agents/skill-packs.json` defines the packs. Add one when th
 that framework: `repo-template update <repo> --pack <name>` records it under `skill_packs` and
 links its skills into the repository's `.claude/skills/` (Claude Code) and `.agents/skills/`
 (Codex), where Git ignores them. To remove a pack, delete it from `skill_packs` and run
-`update`.
+`update`. Add `dev-workflows` only when the user asks for it: its review, debugging, testing,
+architecture and requirements skills overlap global ones. `atlassian` needs an Atlassian MCP
+server the user connects and signs in to; the pack ships none.
 
 ## New repositories
 
