@@ -444,6 +444,7 @@ flowchart LR
 | Turn a discussion into work | `/to-spec`, `/to-tickets`, `/wayfinder` (work larger than one session) |
 | Build | `/implement`, `/implement-spec`, `tdd`, `prototype` |
 | Simplify an implementation | `/ponytail full` (optional `dev-workflows` pack; explicit session mode) |
+| Audit security with independent verification | `/security-audit` (optional `security` pack; explicit invocation) |
 | Fix a hard bug or regression | `diagnosing-bugs` |
 | Stop and question an approach | `/wait-what` |
 | Improve structure | `/improve-codebase-architecture`, `codebase-design`, `domain-modeling` |
@@ -464,6 +465,22 @@ then invoke `/ponytail full` to favor the smallest complete change. `lite` prese
 option, and `ultra` also challenges unnecessary scope. Say "stop ponytail" to end the mode.
 The template vendors the standalone skill with explicit invocation; its plugin hooks, dashboard
 and review/audit companions are not included.
+
+For Cloudflare's security audit, add `security` with
+`repo-template update <repo> --pack security`, then explicitly invoke `/security-audit` and
+state the paths to audit, a `quick`, `standard` (default), or `deep` profile, and a maximum
+number of agent invocations. For example: `/security-audit Audit ./src using the quick profile,
+with at most 12 agent invocations, and write reports to ~/audits/my-project`. A quick or scoped
+run reports partial coverage. The pack's `security-reviewer` remains available for routine reviews.
+
+Full audits require Node.js and an agent with subagents. They track coverage, independently
+verify findings, and validate JSON records before producing Markdown reports. Reports default
+to `~/security-audit-skill/<repo-name>/run-<N>` outside the target. Running target code additionally
+requires an OS-enforced sandbox with external networking disabled, an empty allowlisted
+environment, read-only source/toolchain, scratch-only writes, and resource/time limits.
+The skill provides instructions and validators, not that sandbox: missing execution or artifact
+promotion controls leave affected findings as `needs_validation`. Source review can still proceed.
+The workflow reviews local source and isolated fixtures; it does not probe deployed services.
 
 `git-guardrails-claude-code` is frozen upstream with two known bypasses (`git -C <dir> push`, and
 no blocking at all without `jq`), so treat it as a reminder, not a guarantee.
@@ -595,7 +612,7 @@ itself.
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
 | `playwright` | Playwright end-to-end tests: best practices and reading traces. | `playwright-best-practices`, `playwright-expert`, `playwright-trace` |
 | `react` | React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs. | `frontend-design`, `react-expert`, `react-native-expert`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
-| `security` | Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. | `secure-code-guardian`, `security-reviewer` |
+| `security` | Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. Cloudflare security-audit adds coverage tracking and independent finding verification; runs only when explicitly invoked. | `secure-code-guardian`, `security-audit`, `security-reviewer` |
 | `spring-boot` | Spring Boot 3 services: REST controllers, Spring Security 6, Spring Data JPA and WebFlux. | `spring-boot-engineer` |
 | `sre` | Reliability: SLOs and error budgets, incident response, monitoring, logging, alerting and tracing, and chaos experiments. | `chaos-engineer`, `monitoring-expert`, `sre-engineer` |
 | `typescript` | TypeScript repositories (deep-module boundaries, shoehorn test data) | `migrate-to-shoehorn`, `setup-ts-deep-modules`, `typescript-pro` |
@@ -712,6 +729,7 @@ itself.
 | `ruff` | global | [astral-sh/claude-code-plugins](https://github.com/astral-sh/claude-code-plugins/tree/f3ce88a7ba830f53afd6d944c1d0278ed318e142/plugins/astral/skills/ruff) | MIT OR Apache-2.0 |  |
 | `sam3` | pack `vision` | this repository | MIT |  |
 | `secure-code-guardian` | pack `security` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/secure-code-guardian) | MIT |  |
+| `security-audit` | pack `security` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill/tree/c1c8a8c1471069fb0e188eeaff69b8e8db6564a8/skills/security-audit) | MIT | description, disable-model-invocation overridden; runs only as `/security-audit` |
 | `security-reviewer` | pack `security` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/security-reviewer) | MIT |  |
 | `setup-matt-pocock-skills` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/setup-matt-pocock-skills) | MIT | runs only as `/setup-matt-pocock-skills` |
 | `setup-ts-deep-modules` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/setup-ts-deep-modules) | MIT | runs only as `/setup-ts-deep-modules` |

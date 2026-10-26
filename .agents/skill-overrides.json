@@ -223,6 +223,18 @@
       "description": "description: 'Use this skill when the user wants to create a new Model Context Protocol (MCP) server in Python. Also use it to expose Python functions, an API, or a database to AI clients as MCP tools. The skill makes a uv project with the MCP Python SDK v2 (MCPServer), typed tools, in-memory tests, and client configuration. Do not use it for an MCP client or for a server in another language.'\n"
     }
   },
+  "security-audit": {
+    "why": "Keep Cloudflare's multi-agent audit explicitly invoked alongside the routine security reviewer, with a concise description.",
+    "frontmatter": {
+      "description": "Security audit: Cloudflare's source-first workflow with coverage tracking, independent finding verification, and validated reports. Invoke explicitly for a scoped or full audit; choose quick, standard, or deep and an agent-invocation budget. Requires Node.js and subagents; target execution requires an enforced sandbox.",
+      "disable-model-invocation": true
+    },
+    "upstream": "92178dad304d3f63e37582a297026a7874e12c62",
+    "base": {
+      "description": "description: Security guidance and vulnerability review for codebases, APIs, services, CLI tools, libraries, and daemons. Use for security questions, focused reviews, vulnerability research, security audits, or pen tests. Run the complete workflow only for explicit codebase audit or pen-test requests, full/comprehensive/end-to-end reviews, or requested report artifacts.\n",
+      "disable-model-invocation": null
+    }
+  },
   "vercel-react-best-practices": {
     "why": "Upstream triggers on any React or performance task, but many rules are Next.js-only and need React 19.2+; its compiled AGENTS.md drops or swaps code in five sections, while the rule files are right.",
     "frontmatter": {

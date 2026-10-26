@@ -233,9 +233,10 @@
     ]
   },
   "security": {
-    "description": "Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation.",
+    "description": "Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. Cloudflare security-audit adds coverage tracking and independent finding verification; runs only when explicitly invoked.",
     "skills": [
       "secure-code-guardian",
+      "security-audit",
       "security-reviewer"
     ]
   },
