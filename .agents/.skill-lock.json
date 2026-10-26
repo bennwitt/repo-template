@@ -636,9 +636,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/fastapi/fastapi.git",
       "skillPath": "fastapi/.agents/skills/fastapi/SKILL.md",
-      "skillFolderHash": "34ece4801c3efb15889c30835d58511da031796f",
+      "skillFolderHash": "d6cbf6ac3f1dd79d57542826d39d6011bb055fa8",
       "installedAt": "2026-10-14T05:55:26.608Z",
-      "updatedAt": "2026-10-14T05:55:26.608Z"
+      "updatedAt": "2026-10-26T17:24:17.301Z"
     },
     "playwright-best-practices": {
       "source": "currents-dev/playwright-best-practices-skill",
@@ -656,7 +656,7 @@
       "skillPath": "packages/playwright-core/src/tools/skills/playwright-trace/SKILL.md",
       "skillFolderHash": "a1d5f43906b95c995da460dac32ccf1996223388",
       "installedAt": "2026-10-14T06:25:01.108Z",
-      "updatedAt": "2026-10-14T06:25:01.108Z"
+      "updatedAt": "2026-10-26T17:28:33.777Z"
     },
     "frontend-design": {
       "source": "anthropics/skills",
@@ -672,9 +672,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/microsoft/azure-skills.git",
       "skillPath": "skills/azure-prepare/SKILL.md",
-      "skillFolderHash": "4003cdc806c09cc3bd422d27505a02a1b57625b8",
+      "skillFolderHash": "f407aaaa1cf4ddf442ef1bb405f3d6f89fbfc951",
       "installedAt": "2026-10-14T06:54:39.457Z",
-      "updatedAt": "2026-10-14T06:54:39.457Z"
+      "updatedAt": "2026-10-26T17:23:56.212Z"
     },
     "azure-validate": {
       "source": "microsoft/azure-skills",
@@ -753,9 +753,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/microsoft/azure-skills.git",
       "skillPath": "skills/microsoft-foundry/SKILL.md",
-      "skillFolderHash": "fee43e7b6a76ea59d4e5831ffbf3b40a1e8caeb3",
+      "skillFolderHash": "2311f81bfa096aaefd50068b61443cb92ba70bfe",
       "installedAt": "2026-10-14T07:02:38.828Z",
-      "updatedAt": "2026-10-14T07:02:38.828Z"
+      "updatedAt": "2026-10-26T17:28:01.629Z"
     },
     "appinsights-instrumentation": {
       "source": "microsoft/azure-skills",
@@ -807,9 +807,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/vllm-project/vllm.git",
       "skillPath": ".agents/skills/model-recipes/SKILL.md",
-      "skillFolderHash": "76900a2f39c39db1d5095ecffe51760124a07c56",
+      "skillFolderHash": "2e3cd1170ca35d4834503bd1f8cc8a718492256b",
       "installedAt": "2026-10-14T08:34:40.951Z",
-      "updatedAt": "2026-10-14T08:34:40.951Z"
+      "updatedAt": "2026-10-26T17:28:27.397Z"
     },
     "vllm-bench-serve": {
       "source": "vllm-project/vllm-skills",
@@ -870,9 +870,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
       "skillPath": "skills/atlassian-mcp/SKILL.md",
-      "skillFolderHash": "e07af9e721f483b41e87666aeb6c73abfa368283",
+      "skillFolderHash": "6da1d907241d4a28c843321070cae168caeae897",
       "installedAt": "2026-10-18T18:51:51.402Z",
-      "updatedAt": "2026-10-18T18:51:51.402Z"
+      "updatedAt": "2026-10-26T17:21:54.606Z"
     },
     "chaos-engineer": {
       "source": "jeffallan/claude-skills",
@@ -951,9 +951,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
       "skillPath": "skills/golang-pro/SKILL.md",
-      "skillFolderHash": "77236ba0ba332d7556e1abb3626f5b4f6acf46fb",
+      "skillFolderHash": "e1abe3bf71a086f6e6807d8ee058e258dea6febb",
       "installedAt": "2026-10-18T18:52:23.063Z",
-      "updatedAt": "2026-10-18T18:52:23.063Z"
+      "updatedAt": "2026-10-26T17:24:35.281Z"
     },
     "graphql-architect": {
       "source": "jeffallan/claude-skills",
@@ -1152,6 +1152,15 @@
       "skillFolderHash": "e03f049226f32b51b1a778a81fe8480f01557ae6",
       "installedAt": "2026-10-18T18:56:59.098Z",
       "updatedAt": "2026-10-18T18:56:59.098Z"
+    },
+    "ponytail": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/DietrichGebert/ponytail.git",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "skillFolderHash": "e8d3fa76e7ff9223a784dbd4bcfc9ff46b3fa55d",
+      "installedAt": "2026-10-26T17:34:46.935Z",
+      "updatedAt": "2026-10-26T17:34:46.935Z"
     }
   },
   "dismissed": {

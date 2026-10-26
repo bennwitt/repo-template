@@ -81,9 +81,9 @@ releases that old too.
 | --- | --- | --- | --- |
 | Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill | `npm install -g --ignore-scripts --before=2026-09-29T00:00:00Z typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
 | Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
-| Azure Developer CLI (`azd`) 1.35.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
+| Azure Developer CLI (`azd`) 1.36.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
 | GitHub token | the `github` plugin | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
-| Codex CLI | Codex | `npm install -g --ignore-scripts --before=2026-10-08T00:00:00Z @openai/codex@0.161.0` | the same |
+| Codex CLI | Codex | `npm install -g --ignore-scripts --before=2026-10-16T00:00:00Z @openai/codex@0.163.0` | the same |
 
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
   `az account set --subscription "<name>"`. On a Mac the script installs `az` with Homebrew
@@ -189,8 +189,11 @@ git log --format='%an' | sort | uniq -c | sort -rn | head
 
 Pick packs from the [pack table](README.md#catalog-every-skill-where-it-applies-and-where-it-comes-from).
 `dev-workflows` overlaps skills every machine already has (code review, debugging, tests,
-architecture, requirements): add it only where you want both. `atlassian` needs an Atlassian
-MCP server you connect and sign in to yourself; the pack brings none.
+architecture, requirements): add it only where you want both. It also includes the standalone
+Ponytail skill: invoke `/ponytail full` for the smallest complete implementation, `lite` to
+present the smaller option, or `ultra` to challenge unnecessary scope. Say "stop ponytail" to
+end the session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an
+Atlassian MCP server you connect and sign in to yourself; the pack brings none.
 
 **Personal** (also other people's repository):
 

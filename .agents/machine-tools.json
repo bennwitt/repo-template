@@ -5,24 +5,24 @@
       "registry": "github",
       "package": "Azure/azure-dev",
       "tag": "azure-dev-cli_{version}",
-      "version": "1.35.0",
-      "publishedAt": "2026-09-30T23:46:10Z",
+      "version": "1.36.0",
+      "publishedAt": "2026-10-15T03:25:44Z",
       "assets": {
         "darwin-amd64": {
           "file": "azd-darwin-amd64.zip",
-          "sha256": "3f8a035c29e4b0c7569bfcd54a9904efeab53168d8cc685b4e2ef90e7c9512d0"
+          "sha256": "6ad3fffbcf40d51a46be2eb7b2c84188344920f6d99cd3a5d493c2455a4b198a"
         },
         "darwin-arm64": {
           "file": "azd-darwin-arm64.zip",
-          "sha256": "e42f663c61e6c4bce5887f7e4edea9fe53a4772c875df2561a25cbc5cef3c681"
+          "sha256": "750d6b70067dc7d5d31f17a41d676f5eb096acdcbb01349413339bbdad5bda38"
         },
         "linux-amd64": {
           "file": "azd-linux-amd64.tar.gz",
-          "sha256": "967c58dea693d42256fbefaee48ac2f812f134528998f7fa9f4f542cbf7feda1"
+          "sha256": "db787bd1a0e12584d3be1e3c73e439f53ec8b850b9c714defb0ae9f0e698e650"
         },
         "linux-arm64": {
           "file": "azd-linux-arm64.tar.gz",
-          "sha256": "583e0a5a8c5902cb82f7c1212757d8bfb8038b760ece7fbe54d2885e5532a128"
+          "sha256": "853d3c5bf1072255619890de117e578f5345fe350b698a85cffed5bc94f729ac"
         }
       },
       "why": "The Azure Developer CLI, for the azure and foundry packs."
@@ -30,8 +30,8 @@
     "codex": {
       "registry": "npm",
       "package": "@openai/codex",
-      "version": "0.161.0",
-      "publishedAt": "2026-10-07T16:04:02Z",
+      "version": "0.163.0",
+      "publishedAt": "2026-10-15T21:37:11.083Z",
       "why": "The Codex CLI."
     },
     "playwright-cli": {
