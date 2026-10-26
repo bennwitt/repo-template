@@ -14,6 +14,14 @@
       },
       "discover": "none"
     },
+    "cloudflare/security-audit-skill": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025-2026 Cloudflare, Inc.",
+      "licenseFiles": {
+        "LICENSE": "6dbc9ecb3a5b9080e95b962869e8c7ab16cfdc20"
+      },
+      "discover": "none"
+    },
     "currents-dev/playwright-best-practices-skill": {
       "license": "MIT",
       "copyright": "Copyright © 2026 Currents Software Inc.",
@@ -677,6 +685,10 @@
     "secure-code-guardian": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "430bda30376f2e0951e37367550423fdcf9d0056"
+    },
+    "security-audit": {
+      "commit": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
+      "tree": "ccbc33ed119b28c3ef7b44a7e2081ab191ad63af"
     },
     "security-reviewer": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",

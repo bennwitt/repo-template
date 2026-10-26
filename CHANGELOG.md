@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add Cloudflare's MIT-licensed `security-audit` to the optional `security` pack, with
+  explicit invocation, pinned provenance and an unchanged upstream body. It adds coverage
+  tracking, independent finding verification, JSON validators and Markdown reports alongside
+  the existing routine reviewer. Document audit scope, profiles, agent budgets, external report
+  locations, and the sandbox required for target execution; the pack does not install a sandbox.
 - Add the standalone `ponytail` skill (DietrichGebert/ponytail, MIT) to the optional
   `dev-workflows` pack. It runs only when explicitly invoked: `/ponytail full` favors the
   smallest complete implementation, `lite` presents the smaller option, and `ultra` challenges

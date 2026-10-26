@@ -195,6 +195,14 @@ present the smaller option, or `ultra` to challenge unnecessary scope. Say "stop
 end the session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an
 Atlassian MCP server you connect and sign in to yourself; the pack brings none.
 
+For Cloudflare's audit workflow, add `security` with `repo-template update <repo> --pack security`
+(repositories already using that pack get it on their next `update`). Invoke `/security-audit`
+explicitly and state the scope, `quick`, `standard`, or `deep` profile, and an agent-invocation
+budget. Full audits require Node.js and subagents; executing target code also requires the
+[sandbox controls described in the README](README.md#engineering-workflow). The skill does not
+install a sandbox. Missing controls leave execution-dependent findings as `needs_validation`.
+Reports default to `~/security-audit-skill/<repo-name>/run-<N>` outside the target repository.
+
 **Personal** (also other people's repository):
 
 1. `git status --short > /tmp/before.txt`

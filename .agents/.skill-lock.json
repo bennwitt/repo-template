@@ -1161,6 +1161,15 @@
       "skillFolderHash": "e8d3fa76e7ff9223a784dbd4bcfc9ff46b3fa55d",
       "installedAt": "2026-10-26T17:34:46.935Z",
       "updatedAt": "2026-10-26T17:34:46.935Z"
+    },
+    "security-audit": {
+      "source": "cloudflare/security-audit-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cloudflare/security-audit-skill.git",
+      "skillPath": "skills/security-audit/SKILL.md",
+      "skillFolderHash": "ccbc33ed119b28c3ef7b44a7e2081ab191ad63af",
+      "installedAt": "2026-10-26T18:34:18.307Z",
+      "updatedAt": "2026-10-26T18:34:18.307Z"
     }
   },
   "dismissed": {

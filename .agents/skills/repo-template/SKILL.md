@@ -152,6 +152,13 @@ Ponytail, invoked explicitly with `/ponytail full` for the smallest complete imp
 session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an Atlassian
 MCP server the user connects and signs in to; the pack ships none.
 
+The `security` pack includes Cloudflare's explicitly invoked `/security-audit` alongside the
+routine `security-reviewer`. For an audit, state scope, profile (`quick`, `standard`, `deep`),
+and an agent-invocation budget. Full audits need Node.js and subagents. Target execution needs
+the skill's OS-enforced sandbox and artifact-promotion controls; the pack does not install them.
+Missing controls leave affected findings as `needs_validation`. Reports default outside the
+target at `~/security-audit-skill/<repo-name>/run-<N>`.
+
 ## New repositories
 
 `repo-template new <name> --parent <dir> --description "<one line>"`, plus `--pack <name>` for
