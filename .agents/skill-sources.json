@@ -22,6 +22,14 @@
       },
       "discover": "none"
     },
+    "DietrichGebert/ponytail": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 DietrichGebert",
+      "licenseFiles": {
+        "LICENSE": "715d483338cea4365f0d91a27799cf61226d6bcf"
+      },
+      "discover": "none"
+    },
     "docker/skills": {
       "license": "Apache-2.0",
       "copyright": "Copyright 2026 Docker, Inc.",
@@ -259,8 +267,8 @@
       "tree": "d6a0d9bf3cdc78cbfcbd6466ac5fd3deffb52877"
     },
     "atlassian-mcp": {
-      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
-      "tree": "e07af9e721f483b41e87666aeb6c73abfa368283"
+      "commit": "63a6720222acfe0311422568ed9e65262107c64d",
+      "tree": "6da1d907241d4a28c843321070cae168caeae897"
     },
     "azure-ai": {
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
@@ -299,8 +307,8 @@
       }
     },
     "azure-prepare": {
-      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
-      "tree": "4003cdc806c09cc3bd422d27505a02a1b57625b8"
+      "commit": "9bbcb2e7188e02dab5cc47d981f34f38a2d0419d",
+      "tree": "f407aaaa1cf4ddf442ef1bb405f3d6f89fbfc951"
     },
     "azure-resource-lookup": {
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
@@ -403,9 +411,9 @@
       "tree": "171e0b69b291d65553bdcb89f59f085e22770e09"
     },
     "fastapi": {
-      "commit": "f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007",
-      "tree": "34ece4801c3efb15889c30835d58511da031796f",
-      "ref": "0.143.0"
+      "commit": "7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4",
+      "tree": "d6cbf6ac3f1dd79d57542826d39d6011bb055fa8",
+      "ref": "0.162.0"
     },
     "fastapi-expert": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
@@ -454,8 +462,8 @@
       "tree": "25d75a622f5f8c034be5b25bf6585850d6f7fcd7"
     },
     "golang-pro": {
-      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
-      "tree": "77236ba0ba332d7556e1abb3626f5b4f6acf46fb"
+      "commit": "63a6720222acfe0311422568ed9e65262107c64d",
+      "tree": "e1abe3bf71a086f6e6807d8ee058e258dea6febb"
     },
     "gradio": {
       "commit": "b79748e4801ad9a73c6839a637a68dcad9a366b3",
@@ -570,8 +578,8 @@
       "tree": "2f90403ca5464506ea5d0d7e7547696afca17e26"
     },
     "microsoft-foundry": {
-      "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
-      "tree": "fee43e7b6a76ea59d4e5831ffbf3b40a1e8caeb3"
+      "commit": "9bbcb2e7188e02dab5cc47d981f34f38a2d0419d",
+      "tree": "2311f81bfa096aaefd50068b61443cb92ba70bfe"
     },
     "migrate-to-shoehorn": {
       "commit": "697d4ce9742da558fd1ba6697c8e9775e2e302dd",
@@ -582,8 +590,8 @@
       "tree": "0f0c3b59918e2939741b1574caf35197ee0f8981"
     },
     "model-recipes": {
-      "commit": "bb1438a93f8873c30176d93267d0647f8e4c7b83",
-      "tree": "76900a2f39c39db1d5095ecffe51760124a07c56"
+      "commit": "eca54bd1d937e778a939c240a2ed966fbcb12f85",
+      "tree": "2e3cd1170ca35d4834503bd1f8cc8a718492256b"
     },
     "monitoring-expert": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
@@ -603,9 +611,13 @@
       "tree": "bb8e2966cf79803f5c4e7011be2cd76c5cb74236"
     },
     "playwright-trace": {
-      "commit": "606ecd8b34bac100db32561b6278ffd76e5eb3cd",
+      "commit": "cfe490d941f992655948eee8fd4fd94e1c4234bf",
       "tree": "a1d5f43906b95c995da460dac32ccf1996223388",
-      "ref": "v1.64.0"
+      "ref": "v1.64.1"
+    },
+    "ponytail": {
+      "commit": "09c434ab73ca43761c5d8b0c5d341926c2fba710",
+      "tree": "e8d3fa76e7ff9223a784dbd4bcfc9ff46b3fa55d"
     },
     "postgres-pro": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",

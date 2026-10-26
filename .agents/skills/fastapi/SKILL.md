@@ -1,7 +1,7 @@
 ---
 name: fastapi
 description: "FastAPI best practices: path operations, Annotated dependencies, response models, routers, streaming and Server-Sent Events, serving frontend apps, OpenTelemetry. Use when writing or reviewing FastAPI code. Check the installed version first: SSE needs 0.135+, frontend() 0.138+, native OpenTelemetry 0.142+."
-# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/fastapi/fastapi/tree/f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007/fastapi/.agents/skills/fastapi (MIT).
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/fastapi/fastapi/tree/7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4/fastapi/.agents/skills/fastapi (MIT).
 ---
 
 # FastAPI

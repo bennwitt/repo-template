@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add the standalone `ponytail` skill (DietrichGebert/ponytail, MIT) to the optional
+  `dev-workflows` pack. It runs only when explicitly invoked: `/ponytail full` favors the
+  smallest complete implementation, `lite` presents the smaller option, and `ultra` challenges
+  unnecessary scope. Say "stop ponytail" to end its session mode. The template preserves its
+  upstream body and records its source, license and invocation override; plugin hooks,
+  dashboard and overlapping review/audit skills are not included.
+- Machine tool pins move to azd 1.36.0 (with all four release asset SHA-256 checksums) and
+  Codex CLI 0.163.0; the manual installation commands follow those pins. Newer releases still
+  inside the seven-day cooldown remain deferred.
+- The local shadcn skill's CLI commands move to 4.22.1 alongside its MCP server. Azure MCP
+  3.0.0 has passed its cooldown, so its temporary pin exception is removed.
 - The baseline adds `.githooks/pre-push`, which fills in a pull request's description after
   each push of its branch. It returns at once and works in the background: once the pushed
   commit shows in an open pull request, `claude -p`, allowed only to read (`gh pr view`,
@@ -40,6 +51,9 @@
   - The scanner's findings in `prompt-engineer` (prompt-injection examples it teaches defenses
     with) and in `fastapi-expert`, `fullstack-guardian`, `security-reviewer` and `test-master`
     (placeholder passwords in examples) were reviewed and are recorded under `allowFindings`.
+- Skills refreshed from upstream: `atlassian-mcp`, `azure-prepare`, `fastapi`, `golang-pro`,
+  `microsoft-foundry`, `model-recipes`, `playwright-trace`.
+- MCP servers re-pinned to their newest release at least 7 days old: `shadcn`.
 
 ## 0.5.4 - 2026-10-14
 

@@ -1,6 +1,6 @@
 # Base vs Radix
 
-API differences between `base` and `radix`. Check the `base` field from `npx shadcn@4.21.3 info`.
+API differences between `base` and `radix`. Check the `base` field from `npx shadcn@4.22.1 info`.
 
 ## Contents
 

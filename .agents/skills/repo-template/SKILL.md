@@ -146,8 +146,11 @@ that framework: `repo-template update <repo> --pack <name>` records it under `sk
 links its skills into the repository's `.claude/skills/` (Claude Code) and `.agents/skills/`
 (Codex), where Git ignores them. To remove a pack, delete it from `skill_packs` and run
 `update`. Add `dev-workflows` only when the user asks for it: its review, debugging, testing,
-architecture and requirements skills overlap global ones. `atlassian` needs an Atlassian MCP
-server the user connects and signs in to; the pack ships none.
+architecture and requirements skills overlap global ones. The pack also includes standalone
+Ponytail, invoked explicitly with `/ponytail full` for the smallest complete implementation
+(`lite` presents the smaller option; `ultra` challenges scope). Say "stop ponytail" to end its
+session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an Atlassian
+MCP server the user connects and signs in to; the pack ships none.
 
 ## New repositories
 

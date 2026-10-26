@@ -10,7 +10,7 @@ A registry has two forms:
 - **Source registry**: an authored `registry.json` in a project or repository.
   It may use `include` and file paths that point at source files.
 - **Built registry**: generated JSON files served to CLI consumers, usually
-  from `public/r`. Use `npx shadcn@4.21.3 build` to create this form.
+  from `public/r`. Use `npx shadcn@4.22.1 build` to create this form.
 
 The CLI installer consumes registry item payloads. A source registry is a way to
 author those payloads from real files.
@@ -241,28 +241,28 @@ commit SHA first.
 Use the CLI to build source registries:
 
 ```bash
-npx shadcn@4.21.3 build
-npx shadcn@4.21.3 build registry.json --output public/r
+npx shadcn@4.22.1 build
+npx shadcn@4.22.1 build registry.json --output public/r
 ```
 
 Use CLI commands to inspect the result:
 
 ```bash
-npx shadcn@4.21.3 list @acme
-npx shadcn@4.21.3 search @acme -q "login"
-npx shadcn@4.21.3 view @acme/login-form
-npx shadcn@4.21.3 add @acme/login-form --dry-run
-npx shadcn@4.21.3 registry validate ./registry.json
+npx shadcn@4.22.1 list @acme
+npx shadcn@4.22.1 search @acme -q "login"
+npx shadcn@4.22.1 view @acme/login-form
+npx shadcn@4.22.1 add @acme/login-form --dry-run
+npx shadcn@4.22.1 registry validate ./registry.json
 ```
 
 Use GitHub addresses directly for public GitHub registries:
 
 ```bash
-npx shadcn@4.21.3 list owner/repo
-npx shadcn@4.21.3 search owner/repo -q "login"
-npx shadcn@4.21.3 view owner/repo/item
-npx shadcn@4.21.3 add owner/repo/item --dry-run
-npx shadcn@4.21.3 registry validate owner/repo
+npx shadcn@4.22.1 list owner/repo
+npx shadcn@4.22.1 search owner/repo -q "login"
+npx shadcn@4.22.1 view owner/repo/item
+npx shadcn@4.22.1 add owner/repo/item --dry-run
+npx shadcn@4.22.1 registry validate owner/repo
 ```
 
 When working on registry implementation in the shadcn/ui codebase:

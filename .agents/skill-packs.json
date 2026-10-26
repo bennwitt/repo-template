@@ -75,13 +75,14 @@
     ]
   },
   "dev-workflows": {
-    "description": "Alternative workflows from jeffallan/claude-skills for code review, debugging, tests, architecture and ADRs, requirements, devil's advocate and secure full-stack features. They overlap the global code-review, diagnosing-bugs, tdd, codebase-design, to-spec and grilling, so add the pack only where you want them.",
+    "description": "Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features and simpler implementations. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked.",
     "skills": [
       "architecture-designer",
       "code-reviewer",
       "debugging-wizard",
       "feature-forge",
       "fullstack-guardian",
+      "ponytail",
       "test-master",
       "the-fool"
     ]

@@ -4,8 +4,8 @@ description: "Prepare an Azure Developer CLI (azd) project: azure.yaml, Bicep or
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.3.6"
-# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-prepare (MIT).
+  version: "1.3.7"
+# Changed by repo-template (https://github.com/bennwitt/repo-template): description. Original: https://github.com/microsoft/azure-skills/tree/9bbcb2e7188e02dab5cc47d981f34f38a2d0419d/skills/azure-prepare (MIT).
 ---
 
 # Azure Prepare

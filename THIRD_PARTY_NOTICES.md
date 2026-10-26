@@ -4,6 +4,40 @@ repo-template vendors agent skills from the projects below, under their licenses
 
 Each vendored skill is the upstream folder recorded at the commit shown; `repo-template globals --check` verifies the folder against the lock. Where `.agents/skill-overrides.json` changes a skill's frontmatter, that is a modification of the original work, marked in the SKILL.md itself; the rest of the folder is unmodified. A skill's entry in `.agents/skill-overrides.json`, and the SKILL.md it produces, are under that skill's license.
 
+## DietrichGebert/ponytail
+
+- Source: https://github.com/DietrichGebert/ponytail
+- License: MIT
+- Copyright: Copyright (c) 2026 DietrichGebert
+- Skills:
+  - `ponytail`: [skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/09c434ab73ca43761c5d8b0c5d341926c2fba710/skills/ponytail) at 09c434ab73ca, description, disable-model-invocation modified
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) 2026 DietrichGebert
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## anthropics/skills
 
 - Source: https://github.com/anthropics/skills
@@ -678,7 +712,7 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 - License: MIT
 - Copyright: Copyright (c) 2018 Sebastián Ramírez
 - Skills:
-  - `fastapi`: [fastapi/.agents/skills/fastapi](https://github.com/fastapi/fastapi/tree/f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007/fastapi/.agents/skills/fastapi) at f5c6e9b4f9ca, description modified
+  - `fastapi`: [fastapi/.agents/skills/fastapi](https://github.com/fastapi/fastapi/tree/7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4/fastapi/.agents/skills/fastapi) at 7a0a3f0b286c, description modified
 
 ### LICENSE
 
@@ -1382,7 +1416,7 @@ SOFTWARE.
 - Skills:
   - `api-designer`: [skills/api-designer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/api-designer) at 36f3fe8052da
   - `architecture-designer`: [skills/architecture-designer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/architecture-designer) at 36f3fe8052da
-  - `atlassian-mcp`: [skills/atlassian-mcp](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/atlassian-mcp) at 36f3fe8052da
+  - `atlassian-mcp`: [skills/atlassian-mcp](https://github.com/jeffallan/claude-skills/tree/63a6720222acfe0311422568ed9e65262107c64d/skills/atlassian-mcp) at 63a6720222ac
   - `chaos-engineer`: [skills/chaos-engineer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/chaos-engineer) at 36f3fe8052da
   - `cli-developer`: [skills/cli-developer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/cli-developer) at 36f3fe8052da
   - `code-documenter`: [skills/code-documenter](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-documenter) at 36f3fe8052da
@@ -1393,7 +1427,7 @@ SOFTWARE.
   - `feature-forge`: [skills/feature-forge](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/feature-forge) at 36f3fe8052da
   - `fine-tuning-expert`: [skills/fine-tuning-expert](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fine-tuning-expert) at 36f3fe8052da
   - `fullstack-guardian`: [skills/fullstack-guardian](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fullstack-guardian) at 36f3fe8052da
-  - `golang-pro`: [skills/golang-pro](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/golang-pro) at 36f3fe8052da
+  - `golang-pro`: [skills/golang-pro](https://github.com/jeffallan/claude-skills/tree/63a6720222acfe0311422568ed9e65262107c64d/skills/golang-pro) at 63a6720222ac
   - `graphql-architect`: [skills/graphql-architect](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/graphql-architect) at 36f3fe8052da
   - `legacy-modernizer`: [skills/legacy-modernizer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/legacy-modernizer) at 36f3fe8052da
   - `mcp-developer`: [skills/mcp-developer](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/mcp-developer) at 36f3fe8052da
@@ -1572,12 +1606,12 @@ SOFTWARE.
   - `azure-ai`: [skills/azure-ai](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-ai) at 5aa6e0481963
   - `azure-deploy`: [skills/azure-deploy](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-deploy) at 5aa6e0481963, description modified
   - `azure-diagnostics`: [skills/azure-diagnostics](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-diagnostics) at 5aa6e0481963, description modified
-  - `azure-prepare`: [skills/azure-prepare](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-prepare) at 5aa6e0481963, description modified
+  - `azure-prepare`: [skills/azure-prepare](https://github.com/microsoft/azure-skills/tree/9bbcb2e7188e02dab5cc47d981f34f38a2d0419d/skills/azure-prepare) at 9bbcb2e7188e, description modified
   - `azure-resource-lookup`: [skills/azure-resource-lookup](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-resource-lookup) at 5aa6e0481963, description modified
   - `azure-storage`: [skills/azure-storage](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-storage) at 5aa6e0481963, description modified
   - `azure-validate`: [skills/azure-validate](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-validate) at 5aa6e0481963, description modified
   - `entra-app-registration`: [skills/entra-app-registration](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/entra-app-registration) at 5aa6e0481963, description modified
-  - `microsoft-foundry`: [skills/microsoft-foundry](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/microsoft-foundry) at 5aa6e0481963, description, disable-model-invocation modified
+  - `microsoft-foundry`: [skills/microsoft-foundry](https://github.com/microsoft/azure-skills/tree/9bbcb2e7188e02dab5cc47d981f34f38a2d0419d/skills/microsoft-foundry) at 9bbcb2e7188e, description, disable-model-invocation modified
 
 ### LICENSE
 
@@ -1637,7 +1671,7 @@ SOFTWARE
 - License: Apache-2.0
 - Copyright: Portions Copyright (c) Microsoft Corporation.
 - Skills:
-  - `playwright-trace`: [packages/playwright-core/src/tools/skills/playwright-trace](https://github.com/microsoft/playwright/tree/606ecd8b34bac100db32561b6278ffd76e5eb3cd/packages/playwright-core/src/tools/skills/playwright-trace) at 606ecd8b34ba
+  - `playwright-trace`: [packages/playwright-core/src/tools/skills/playwright-trace](https://github.com/microsoft/playwright/tree/cfe490d941f992655948eee8fd4fd94e1c4234bf/packages/playwright-core/src/tools/skills/playwright-trace) at cfe490d941f9
 
 ### LICENSE
 
@@ -2841,7 +2875,7 @@ SOFTWARE.
 - License: Apache-2.0
 - Copyright: Not stated upstream (its LICENSE has no copyright line)
 - Skills:
-  - `model-recipes`: [.agents/skills/model-recipes](https://github.com/vllm-project/vllm/tree/bb1438a93f8873c30176d93267d0647f8e4c7b83/.agents/skills/model-recipes) at bb1438a93f88
+  - `model-recipes`: [.agents/skills/model-recipes](https://github.com/vllm-project/vllm/tree/eca54bd1d937e778a939c240a2ed966fbcb12f85/.agents/skills/model-recipes) at eca54bd1d937
 
 ### LICENSE
 

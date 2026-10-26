@@ -24,7 +24,7 @@
     "frontmatter": {
       "description": "Prepare an Azure Developer CLI (azd) project: azure.yaml, Bicep or Terraform infrastructure, Dockerfiles and .azure/deployment-plan.md. Use when the user wants azd, the project has an azure.yaml, or asks to create and deploy a new app to Azure (azure-validate and azure-deploy follow). Not for deploys without azd."
     },
-    "upstream": "8128dff4fbb21f774271640fb46882a4496c438e",
+    "upstream": "1df460faf6a6564a2e9b0b2847d3e2a4fa9acb4e",
     "base": {
       "description": "description: \"Prepare azd-based Azure projects for deployment: generates azure.yaml, infrastructure (Bicep/Terraform), and Dockerfiles for the Azure Developer CLI (azd) workflow. USE ONLY when the user explicitly wants to use azd as the deployment tool, or the project already has an azure.yaml file. DO NOT USE FOR: non-azd deployments, Python App Service code-only deploys (use python-appservice-deploy), or cross-cloud migration (use azure-cloud-migrate). WHEN: prepare app for azd, create azure.yaml, set up azd infrastructure, modernize app for Azure with azd, deploy with azd, function app, timer trigger, service bus trigger, event-driven function, managed identity, generate Bicep, generate Terraform, create and deploy to Azure.\"\n"
     }
@@ -175,9 +175,9 @@
       "description": "Microsoft Foundry end to end: prompt and hosted agents (azd ai agent), invoking and evaluating them, agent insights and monitoring, prompt optimization, model deployment and fine-tuning, Foundry projects, RBAC and quota. Use for any Foundry agent or model task; general Azure deploys go to azure-prepare and azure-deploy.",
       "disable-model-invocation": true
     },
-    "upstream": "12ca5ad6f6296e04163cbfed55c9ea37dd6d4009",
+    "upstream": "14fd2bc585abbdd62bbb3231bfd62e7eec115c6b",
     "base": {
-      "description": "description: \"Build, deploy, evaluate, optimize, fine-tune, and manage Microsoft Foundry agents, models, and resources end to end. USE FOR: foundry, azd ai agent, azd provision/deploy, hosted agent scaffold/develop/run/deploy/troubleshoot, prompt agent create, create agent, update agent, add tool to agent, invoke agent, agent.yaml, agent insights, pull agent insights, evaluate agent, batch eval, continuous eval, continuous monitoring, agent CI/CD, optimize prompt, improve prompt, prompt optimizer, optimize agent instructions, Agent Optimizer scaffold, dataset curation from traces, deploy model, model fine-tuning (SFT/DPO/RFT), Foundry project, RBAC, role assignment, permissions, quota, capacity, region, deployment failure, AI Services, create Foundry resource, knowledge index, customize deployment, onboard, availability, training-data, grader, distillation, large file upload. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare).\"\n",
+      "description": "description: \"Build, deploy, evaluate, optimize, fine-tune, and manage Microsoft Foundry agents, models, and resources end to end. USE FOR: foundry, azd ai agent, azd provision/deploy, hosted agent scaffold/develop/run/deploy/troubleshoot, prompt agent, managed harness agent, Copilot harness, voice agent, create/update/invoke/evaluate agent, add tool to agent, agent insights, batch/continuous eval, continuous monitoring, agent CI/CD, optimize/improve prompt, optimize agent instructions, Agent Optimizer, dataset curation from traces, deploy model, model fine-tuning (SFT/DPO/RFT), Foundry project, RBAC, role assignment, permissions, quota, capacity, region, deployment failure, AI Services, create Foundry resource, knowledge index, customize deployment, onboard, availability, training-data, grader, distillation, large file upload. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare).\"\n",
       "disable-model-invocation": null
     }
   },
@@ -189,6 +189,18 @@
     "upstream": "0da736253c343081ab8c0cb9802729a707c23196",
     "base": {
       "description": "description: Use when writing Playwright tests, fixing flaky tests, debugging failures, implementing Page Object Model, configuring CI/CD, optimizing performance, mocking APIs, handling authentication or OAuth, testing accessibility (axe-core), file uploads/downloads, date/time mocking, WebSockets, geolocation, permissions, multi-tab/popup flows, mobile/responsive layouts, touch gestures, GraphQL, error handling, offline mode, multi-user collaboration, third-party services (payments, email verification), console error monitoring, global setup/teardown, test annotations (skip, fixme, slow), test tags (@smoke, @fast, @critical, filtering with --grep), project dependencies, security testing (XSS, CSRF, auth), performance budgets (Web Vitals, Lighthouse), iframes, component testing, canvas/WebGL, service workers/PWA, test coverage, i18n/localization, Electron apps, or browser extension testing. Covers E2E, component, API, visual, accessibility, security, Electron, and extension testing.\n"
+    }
+  },
+  "ponytail": {
+    "why": "Upstream triggers on any coding task and stays active for the session. Keep this alternative workflow explicitly invoked, with a concise description.",
+    "frontmatter": {
+      "description": "Ponytail: solve a coding task with the smallest complete change, reusing existing code and platform features while preserving validation and tests. Explicit session mode: lite, full (default), or ultra; say \"stop ponytail\" to end it.",
+      "disable-model-invocation": true
+    },
+    "upstream": "d64edd32265ba21cbf5270158f04e97d96925f27",
+    "base": {
+      "description": "description: >\n  Lazy senior dev mode: the smallest change that fully solves the task, and a\n  reply a busy human understands in one read. Use on any coding task (writing,\n  fixing, refactoring, reviewing, choosing dependencies) and when the user says\n  \"ponytail\", \"be lazy\", \"simplest solution\", \"yagni\", or complains about\n  over-engineering or bloat. Levels: lite, full (default), ultra.\n",
+      "disable-model-invocation": null
     }
   },
   "property-based-testing": {

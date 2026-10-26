@@ -443,6 +443,7 @@ flowchart LR
 | Stress-test a plan | `grilling`, `/grill-me`, `/grill-with-docs` (also writes ADRs and glossary terms) |
 | Turn a discussion into work | `/to-spec`, `/to-tickets`, `/wayfinder` (work larger than one session) |
 | Build | `/implement`, `/implement-spec`, `tdd`, `prototype` |
+| Simplify an implementation | `/ponytail full` (optional `dev-workflows` pack; explicit session mode) |
 | Fix a hard bug or regression | `diagnosing-bugs` |
 | Stop and question an approach | `/wait-what` |
 | Improve structure | `/improve-codebase-architecture`, `codebase-design`, `domain-modeling` |
@@ -457,6 +458,12 @@ flowchart LR
 Run `/setup-matt-pocock-skills` once in each repository. It records where issues are tracked,
 the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `to-spec`,
 `to-tickets` and `triage` read.
+
+For Ponytail, add `dev-workflows` with `repo-template update <repo> --pack dev-workflows`,
+then invoke `/ponytail full` to favor the smallest complete change. `lite` presents the smaller
+option, and `ultra` also challenges unnecessary scope. Say "stop ponytail" to end the mode.
+The template vendors the standalone skill with explicit invocation; its plugin hooks, dashboard
+and review/audit companions are not included.
 
 `git-guardrails-claude-code` is frozen upstream with two known bypasses (`git -C <dir> push`, and
 no blocking at all without `jq`), so treat it as a reminder, not a guarantee.
@@ -575,7 +582,7 @@ itself.
 | `azure` | Azure: prepare, validate and deploy with azd, diagnostics, resource lookup, Storage, App Insights, Entra app registration and azure-identity. | `appinsights-instrumentation`, `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`, `azure-resource-lookup`, `azure-storage`, `azure-validate`, `entra-app-registration` |
 | `cli` | Command-line tools: subcommands and flags, interactive prompts, progress output and shell completion. | `cli-developer` |
 | `databases` | PostgreSQL and SQL: writing and reviewing queries, schema and index design, execution plans and tuning. | `database-optimizer`, `postgres-pro`, `sql-pro` |
-| `dev-workflows` | Alternative workflows from jeffallan/claude-skills for code review, debugging, tests, architecture and ADRs, requirements, devil's advocate and secure full-stack features. They overlap the global code-review, diagnosing-bugs, tdd, codebase-design, to-spec and grilling, so add the pack only where you want them. | `architecture-designer`, `code-reviewer`, `debugging-wizard`, `feature-forge`, `fullstack-guardian`, `test-master`, `the-fool` |
+| `dev-workflows` | Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features and simpler implementations. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked. | `architecture-designer`, `code-reviewer`, `debugging-wizard`, `feature-forge`, `fullstack-guardian`, `ponytail`, `test-master`, `the-fool` |
 | `fastapi` | FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph. | `fastapi-expert`, `fastapi-services` |
 | `foundry` | Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools. | `azure-ai`, `azure-ai-projects-ts`, `foundry-langchain`, `microsoft-foundry` |
 | `golang` | Go services: goroutines and channels, interfaces and generics, gRPC or REST, testing and pprof. | `golang-pro` |
@@ -600,14 +607,14 @@ itself.
 | `appinsights-instrumentation` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/appinsights-instrumentation) | MIT |  |
 | `architecture-designer` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/architecture-designer) | MIT |  |
 | `ask-matt` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/ask-matt) | MIT | runs only as `/ask-matt` |
-| `atlassian-mcp` | pack `atlassian` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/atlassian-mcp) | MIT |  |
+| `atlassian-mcp` | pack `atlassian` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/63a6720222acfe0311422568ed9e65262107c64d/skills/atlassian-mcp) | MIT |  |
 | `azure-ai` | pack `foundry` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-ai) | MIT |  |
 | `azure-ai-projects-ts` | pack `foundry` | [microsoft/skills](https://github.com/microsoft/skills/tree/fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb/.github/plugins/azure-sdk-typescript/skills/azure-ai-projects-ts) | MIT |  |
 | `azure-deploy` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-deploy) | MIT | description overridden |
 | `azure-diagnostics` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-diagnostics) | MIT | description overridden |
 | `azure-identity-py` | pack `azure` | [microsoft/skills](https://github.com/microsoft/skills/tree/fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb/.github/plugins/azure-sdk-python/skills/azure-identity-py) | MIT |  |
 | `azure-identity-ts` | pack `azure` | [microsoft/skills](https://github.com/microsoft/skills/tree/fc164ba1d7a0c10377dbcc1c9ac07253b9329fdb/.github/plugins/azure-sdk-typescript/skills/azure-identity-ts) | MIT |  |
-| `azure-prepare` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-prepare) | MIT | description overridden |
+| `azure-prepare` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/9bbcb2e7188e02dab5cc47d981f34f38a2d0419d/skills/azure-prepare) | MIT | description overridden |
 | `azure-resource-lookup` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-resource-lookup) | MIT | description overridden |
 | `azure-storage` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-storage) | MIT | description overridden |
 | `azure-validate` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-validate) | MIT | description overridden |
@@ -634,7 +641,7 @@ itself.
 | `ecosystem-primer` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/9feb8147562f0f186b081b343e5ccaf53e9e7a18/config/skills/ecosystem-primer) | MIT |  |
 | `entra-app-registration` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/entra-app-registration) | MIT | description overridden |
 | `eval-engineering` | pack `agent-evals` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7/config/skills/eval-engineering) | MIT |  |
-| `fastapi` | global | [fastapi/fastapi](https://github.com/fastapi/fastapi/tree/f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007/fastapi/.agents/skills/fastapi) | MIT | description overridden |
+| `fastapi` | global | [fastapi/fastapi](https://github.com/fastapi/fastapi/tree/7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4/fastapi/.agents/skills/fastapi) | MIT | description overridden |
 | `fastapi-expert` | pack `fastapi` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fastapi-expert) | MIT |  |
 | `fastapi-services` | pack `fastapi` | this repository | MIT |  |
 | `feature-forge` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/feature-forge) | MIT |  |
@@ -645,7 +652,7 @@ itself.
 | `fullstack-guardian` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fullstack-guardian) | MIT |  |
 | `git-guardrails-claude-code` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) | MIT |  |
 | `github-actions-hardening` | global | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/df566343b3a685e821f8ebe8ea70a2a8eb8b857b/skills/github-actions-hardening) | MIT | description overridden |
-| `golang-pro` | pack `golang` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/golang-pro) | MIT |  |
+| `golang-pro` | pack `golang` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/63a6720222acfe0311422568ed9e65262107c64d/skills/golang-pro) | MIT |  |
 | `gradio` | pack `gradio` | [gradio-app/gradio](https://github.com/gradio-app/gradio/tree/b79748e4801ad9a73c6839a637a68dcad9a366b3/.agents/skills/gradio) | Apache-2.0 |  |
 | `graphql-architect` | pack `api` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/graphql-architect) | MIT |  |
 | `grill-me` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/fcf0071560d32913c9d4f820e0d7ca467c881619/skills/productivity/grill-me) | MIT | runs only as `/grill-me` |
@@ -677,10 +684,10 @@ itself.
 | `managed-deep-agents` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/16a992f09ab3ccfb642dd4f08d350d833d1990bf/config/skills/managed-deep-agents) | MIT |  |
 | `mcp-developer` | pack `mcp` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/mcp-developer) | MIT |  |
 | `mcp-servers` | pack `mcp` | this repository | MIT |  |
-| `microsoft-foundry` | pack `foundry` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/microsoft-foundry) | MIT | description, disable-model-invocation overridden; runs only as `/microsoft-foundry` |
+| `microsoft-foundry` | pack `foundry` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/9bbcb2e7188e02dab5cc47d981f34f38a2d0419d/skills/microsoft-foundry) | MIT | description, disable-model-invocation overridden; runs only as `/microsoft-foundry` |
 | `migrate-to-shoehorn` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/misc/migrate-to-shoehorn) | MIT |  |
 | `ml-pipeline` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/ml-pipeline) | MIT |  |
-| `model-recipes` | pack `local-inference` | [vllm-project/vllm](https://github.com/vllm-project/vllm/tree/bb1438a93f8873c30176d93267d0647f8e4c7b83/.agents/skills/model-recipes) | Apache-2.0 |  |
+| `model-recipes` | pack `local-inference` | [vllm-project/vllm](https://github.com/vllm-project/vllm/tree/eca54bd1d937e778a939c240a2ed966fbcb12f85/.agents/skills/model-recipes) | Apache-2.0 |  |
 | `monitoring-expert` | pack `sre` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/monitoring-expert) | MIT |  |
 | `muse-glimmer` | pack `local-inference` | this repository | MIT |  |
 | `opencv-python` | pack `vision` | this repository | MIT |  |
@@ -688,7 +695,8 @@ itself.
 | `playwright-best-practices` | pack `playwright` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices) | MIT | description overridden |
 | `playwright-cli` | global | [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli/tree/b85c7a736bb473bf55b584e54a09ffa698d6d871/skills/playwright-cli) | Apache-2.0 |  |
 | `playwright-expert` | pack `playwright` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/playwright-expert) | MIT |  |
-| `playwright-trace` | pack `playwright` | [microsoft/playwright](https://github.com/microsoft/playwright/tree/606ecd8b34bac100db32561b6278ffd76e5eb3cd/packages/playwright-core/src/tools/skills/playwright-trace) | Apache-2.0 |  |
+| `playwright-trace` | pack `playwright` | [microsoft/playwright](https://github.com/microsoft/playwright/tree/cfe490d941f992655948eee8fd4fd94e1c4234bf/packages/playwright-core/src/tools/skills/playwright-trace) | Apache-2.0 |  |
+| `ponytail` | pack `dev-workflows` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail/tree/09c434ab73ca43761c5d8b0c5d341926c2fba710/skills/ponytail) | MIT | description, disable-model-invocation overridden; runs only as `/ponytail` |
 | `postgres-pro` | pack `databases` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/postgres-pro) | MIT |  |
 | `pr` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/pr) | MIT |  |
 | `prompt-engineer` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/prompt-engineer) | MIT |  |
@@ -746,7 +754,7 @@ itself.
 | `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |
 | `playwright` | global | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. |
 | `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
-| `shadcn` | pack `react` | claude, codex | `npx shadcn@4.21.3` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
+| `shadcn` | pack `react` | claude, codex | `npx shadcn@4.22.1` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
 <!-- <<< repo-template catalog -->
 
 Claude Code plugins (skill-creator, GitHub, hookify, and others) are enabled through the
