@@ -1,5 +1,7 @@
 # How to update a machine and its repositories
 
+Already set up? The [quick cheat sheet](CHEAT_SHEET.md) has the everyday commands.
+
 1. [Set up or update the machine](#1-set-up-or-update-the-machine): one script, on macOS or Linux.
 2. [Update or adopt a repository](#2-update-or-adopt-a-repository): one question decides what
    to run.

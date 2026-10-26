@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a quick command cheat sheet for machine and repository updates, adoption profiles,
+  skill packs, project checks, upstream maintenance and common troubleshooting.
+
 - Add Cloudflare's MIT-licensed `security-audit` to the optional `security` pack, with
   explicit invocation, pinned provenance and an unchanged upstream body. It adds coverage
   tracking, independent finding verification, JSON validators and Markdown reports alongside

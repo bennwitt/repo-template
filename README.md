@@ -15,6 +15,9 @@ agents (Claude Code, Codex) find what they need and do their best work.**
    implementation, code review, LangChain/LangGraph, evals and more. One command links them
    into Claude Code and Codex on any machine.
 
+For everyday commands, use the [quick cheat sheet](CHEAT_SHEET.md). For first-time setup and
+detailed update steps, see [the machine and repository guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md).
+
 ## Why this exists
 
 AI agents are only as good as the repository they land in and the workflows they're given.
