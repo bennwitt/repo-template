@@ -131,6 +131,31 @@ def test_new_project_uses_a_glossary_and_keeps_scope_in_agents_md(tmp_path: Path
     assert "## Boundaries" in agents
 
 
+def test_workflow_guidance_is_seeded_and_project_edits_are_preserved(tmp_path: Path) -> None:
+    root = tmp_path / "sample"
+    new_project(root, name="sample", description="Sample.", python_version="3.12")
+    guide = root / "docs/agents/workflow.md"
+    agents = root / "AGENTS.md"
+    assert guide.is_file()
+    assert "[docs/agents/workflow.md](docs/agents/workflow.md)" in agents.read_text()
+    assert (root / "CLAUDE.md").read_text() == "@AGENTS.md\n"
+
+    guide.write_text("# Our workflow\n\nUse our existing issue tracker.\n")
+    agents.write_text("# Our guide\n\nKeep the team's conventions.\n")
+    assert not update_project(root).needs_attention
+    assert guide.read_text() == "# Our workflow\n\nUse our existing issue tracker.\n"
+    assert agents.read_text() == "# Our guide\n\nKeep the team's conventions.\n"
+
+    guide.unlink()
+    preview = update_project(root, check=True)
+    assert "docs/agents/workflow.md" in preview.created
+    assert not guide.exists()
+    update_project(root)
+    assert guide.is_file()
+    assert agents.read_text() == "# Our guide\n\nKeep the team's conventions.\n"
+    assert not update_project(root, check=True).needs_attention
+
+
 def test_update_asks_for_a_manual_rename_of_context_md(tmp_path: Path) -> None:
     root = tmp_path / "older"
     new_project(root, name="older", description="Older.", python_version="3.12")

@@ -34,6 +34,9 @@ set up and changes nothing.
 
 ## Commands
 
+For skill selection, review scope and repository workflow setup, read
+[docs/agents/workflow.md](docs/agents/workflow.md).
+
 - Install: `uv sync --dev`
 - Test: `uv run pytest`
 - Lint: `uv run ruff check .`

@@ -1,5 +1,7 @@
 # How to update a machine and its repositories
 
+Already set up? The [quick cheat sheet](CHEAT_SHEET.md) has the everyday commands.
+
 1. [Set up or update the machine](#1-set-up-or-update-the-machine): one script, on macOS or Linux.
 2. [Update or adopt a repository](#2-update-or-adopt-a-repository): one question decides what
    to run.
@@ -194,6 +196,26 @@ Ponytail skill: invoke `/ponytail full` for the smallest complete implementation
 present the smaller option, or `ultra` to challenge unnecessary scope. Say "stop ponytail" to
 end the session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an
 Atlassian MCP server you connect and sign in to yourself; the pack brings none.
+
+The [evaluated workflow selection](docs/skill-evaluation.md) adds eight portable Addy-derived
+skills. Choose `delivery` for quality constraints, version-verified implementation and release
+readiness; `performance` for measured optimization and web audits; `api` for compatibility and
+idempotency; `sre` for feature instrumentation; and `dev-workflows` for simplification and
+migration. For example: `repo-template update <repo> --pack delivery --pack performance`.
+Existing pack users receive additions on their next `update`. These install skills by name,
+not Addy's nine slash-command aliases, plugin hooks or personas.
+
+Full-baseline `new` and `update` create `docs/agents/workflow.md` when missing and preserve it
+after editing. New AGENTS files point to it; existing AGENTS files remain project-owned seeds,
+so add that pointer yourself if wanted. Packs-only and personal adoption leave project docs
+alone. `setup-matt-pocock-skills` configures tracker/triage/domain choices only when needed;
+it does not install skills, require a remote for local work, or replace the CLAUDE import stub.
+`code-review` includes uncommitted and relevant untracked work when requested.
+
+`globals --upstream` checks both vendored skills and derived inputs. A changed derived input
+requires manual comparison and merge; `--upgrade` never overwrites local adaptations. Deferred
+skills and reasons are recorded in `.agents/skill-sources.json`; revisit them deliberately when
+requirements change. No machine setup or deployment is implied by a readiness review.
 
 For Cloudflare's audit workflow, add `security` with `repo-template update <repo> --pack security`
 (repositories already using that pack get it on their next `update`). Invoke `/security-audit`

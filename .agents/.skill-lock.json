@@ -19,16 +19,6 @@
       "installedAt": "2026-09-16T00:35:37.615Z",
       "updatedAt": "2026-10-14T05:47:37.291Z"
     },
-    "code-review": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/mattpocock/skills.git",
-      "skillPath": "skills/engineering/code-review/SKILL.md",
-      "skillFolderHash": "fee7bb5fdddc069d58cbea09b2c36b5a859eac05",
-      "pluginName": "mattpocock-skills",
-      "installedAt": "2026-09-16T00:35:37.616Z",
-      "updatedAt": "2026-10-14T05:47:40.300Z"
-    },
     "codebase-design": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -134,15 +124,6 @@
       "pluginName": "mattpocock-skills",
       "installedAt": "2026-09-16T00:35:37.629Z",
       "updatedAt": "2026-09-16T00:35:37.629Z"
-    },
-    "setup-matt-pocock-skills": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/mattpocock/skills.git",
-      "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
-      "skillFolderHash": "aafaabf96fa3945d8a4069317a7a6d36b7169670",
-      "installedAt": "2026-09-16T00:35:37.631Z",
-      "updatedAt": "2026-10-14T05:47:58.526Z"
     },
     "tdd": {
       "source": "mattpocock/skills",
@@ -990,15 +971,6 @@
       "skillFolderHash": "0f0c3b59918e2939741b1574caf35197ee0f8981",
       "installedAt": "2026-10-18T18:52:37.299Z",
       "updatedAt": "2026-10-18T18:52:37.299Z"
-    },
-    "monitoring-expert": {
-      "source": "jeffallan/claude-skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
-      "skillPath": "skills/monitoring-expert/SKILL.md",
-      "skillFolderHash": "d8f39666d35c93fcb2e15a9c533c6edd6f1add70",
-      "installedAt": "2026-10-18T18:52:41.902Z",
-      "updatedAt": "2026-10-18T18:52:41.902Z"
     },
     "playwright-expert": {
       "source": "jeffallan/claude-skills",

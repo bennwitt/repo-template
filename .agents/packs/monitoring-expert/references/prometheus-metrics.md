@@ -43,23 +43,20 @@ const responseSummary = new Summary({
 ## HTTP Middleware
 
 ```typescript
-app.use((req, res, next) => {
-  const end = httpDuration.startTimer({
-    method: req.method,
-    path: req.route?.path || req.path,
-  });
-
-  res.on('finish', () => {
-    httpRequests.inc({
-      method: req.method,
-      path: req.route?.path || req.path,
-      status: res.statusCode,
+// Set path from the configured route template. Mounted routers must include their
+// configured prefix, not raw req.baseUrl. Unmatched requests use a fixed label.
+function instrumentRoute(path) {
+  return (req, res, next) => {
+    const end = httpDuration.startTimer({ method: req.method });
+    res.on('finish', () => {
+      httpRequests.inc({ method: req.method, path, status: res.statusCode });
+      end({ path });
     });
-    end();
-  });
-
-  next();
-});
+    next();
+  };
+}
+app.get('/orders/:id', instrumentRoute('/orders/:id'), handleOrder);
+// If measuring 404s, use instrumentRoute('unmatched') in the final fallback handler.
 
 // Metrics endpoint
 app.get('/metrics', async (req, res) => {
@@ -134,3 +131,5 @@ def metrics():
 | Unit suffix | `_seconds`, `_bytes`, `_total` |
 | Base unit | Use seconds, bytes (not ms, KB) |
 | Prefix | App/service name |
+
+Locally adapted: HTTP metric dimensions use configured route templates, never raw URLs.

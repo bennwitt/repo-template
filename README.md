@@ -15,6 +15,9 @@ agents (Claude Code, Codex) find what they need and do their best work.**
    implementation, code review, LangChain/LangGraph, evals and more. One command links them
    into Claude Code and Codex on any machine.
 
+For everyday commands, use the [quick cheat sheet](CHEAT_SHEET.md). For first-time setup and
+detailed update steps, see [the machine and repository guide](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md).
+
 ## Why this exists
 
 AI agents are only as good as the repository they land in and the workflows they're given.
@@ -456,15 +459,45 @@ flowchart LR
 | Research, learn, reflect | `research`, `/teach`, `/loop-me`, `/retro` |
 | Steps only a human can do | `wizard` |
 
-Run `/setup-matt-pocock-skills` once in each repository. It records where issues are tracked,
-the triage label names, and the domain-doc layout in `docs/agents/*.md`, which `to-spec`,
-`to-tickets` and `triage` read.
+`setup-matt-pocock-skills` configures already installed workflows: tracker, triage labels and
+domain-doc locations in `docs/agents/*.md`. Run it when tracker-dependent work needs missing
+configuration; ordinary tests, debugging and review of a supplied spec do not need it. The local
+adaptation preserves `AGENTS.md` as the authority and the `CLAUDE.md` import stub, supports local
+Markdown without a remote, and keeps remote label creation separate from local configuration.
+The adapted `code-review` covers the requested committed, staged, unstaged and untracked scope.
+
+The [workflow guide](docs/agents/workflow.md) selects one core process per task and adds focused
+domain checks. New full-baseline repositories receive this guide and an AGENTS pointer. Existing
+full-baseline repositories get the guide when missing; their edited guide and existing AGENTS
+remain untouched. Add a pointer to `docs/agents/workflow.md` to an existing AGENTS if desired.
+Packs-only and personal adoption create neither document.
 
 For Ponytail, add `dev-workflows` with `repo-template update <repo> --pack dev-workflows`,
 then invoke `/ponytail full` to favor the smallest complete change. `lite` presents the smaller
 option, and `ultra` also challenges unnecessary scope. Say "stop ponytail" to end the mode.
 The template vendors the standalone skill with explicit invocation; its plugin hooks, dashboard
 and review/audit companions are not included.
+
+The [full Pocock/Addy evaluation](docs/skill-evaluation.md) retains Pocock's core workflow and
+selects eight Addy-derived skills, adapted for portability and this baseline's boundaries:
+
+| Pack | Added capability |
+| --- | --- |
+| `delivery` | `constraint-driven-development`, `source-driven-development`, `shipping-and-launch`: measurable checks, version-sensitive implementation evidence and release readiness |
+| `performance` | `performance-optimization`: matched measurements, profiling and source-only web audits that do not invent runtime scores |
+| `api` | `api-and-interface-design`: compatibility and atomic idempotency/retry contracts |
+| `sre` | `observability-and-instrumentation`: feature telemetry, bounded labels and end-to-end verification |
+| `dev-workflows` | `code-simplification`, `deprecation-and-migration`: behavior-preserving refactoring and phased retirement/recovery |
+
+Add packs with `repo-template update <repo> --pack delivery --pack performance` as needed.
+Existing `api`, `sre` and `dev-workflows` users receive additions on their next `update`.
+These are self-contained MIT-derived skills with pinned provenance; upstream commands, hooks
+and persona installations are not required. The nine Addy command goals map to our selected
+skills in the evaluation; `/spec`, `/build`, `/webperf` and `/ship` are not installed aliases.
+Release readiness reports evidence and a rollout/recovery plan; it does not deploy.
+The SRE pack's `monitoring-expert` also corrects raw-path metric labels and alert aggregation
+found during comparison. Experimental Pocock skills retain their existing explicit invocation;
+the workflow guide identifies them so availability is not mistaken for a default recommendation.
 
 For Cloudflare's security audit, add `security` with
 `repo-template update <repo> --pack security`, then explicitly invoke `/security-audit` and
@@ -594,12 +627,13 @@ itself.
 | Pack | What it's for | Skills |
 | --- | --- | --- |
 | `agent-evals` | Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration) | `eval-engineering` |
-| `api` | API design: REST resources and OpenAPI contracts, versioning, pagination and errors, and GraphQL schemas, resolvers and federation. | `api-designer`, `graphql-architect` |
+| `api` | API contracts, compatibility and retry/idempotency semantics, REST/OpenAPI resources, and GraphQL schemas, resolvers and federation. | `api-and-interface-design`, `api-designer`, `graphql-architect` |
 | `atlassian` | Jira and Confluence through an Atlassian MCP server. It needs a sign-in, so connect one yourself (such as the Atlassian plugin); the pack ships none. | `atlassian-mcp` |
 | `azure` | Azure: prepare, validate and deploy with azd, diagnostics, resource lookup, Storage, App Insights, Entra app registration and azure-identity. | `appinsights-instrumentation`, `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`, `azure-resource-lookup`, `azure-storage`, `azure-validate`, `entra-app-registration` |
 | `cli` | Command-line tools: subcommands and flags, interactive prompts, progress output and shell completion. | `cli-developer` |
 | `databases` | PostgreSQL and SQL: writing and reviewing queries, schema and index design, execution plans and tuning. | `database-optimizer`, `postgres-pro`, `sql-pro` |
-| `dev-workflows` | Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features and simpler implementations. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked. | `architecture-designer`, `code-reviewer`, `debugging-wizard`, `feature-forge`, `fullstack-guardian`, `ponytail`, `test-master`, `the-fool` |
+| `delivery` | Quality constraints, version-verified implementation and release readiness. Complements the core spec, plan, implementation, testing and review workflows; readiness does not deploy. | `constraint-driven-development`, `shipping-and-launch`, `source-driven-development` |
+| `dev-workflows` | Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features, behavior-preserving simplification, and deprecation or schema migration. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked. | `architecture-designer`, `code-reviewer`, `code-simplification`, `debugging-wizard`, `deprecation-and-migration`, `feature-forge`, `fullstack-guardian`, `ponytail`, `test-master`, `the-fool` |
 | `fastapi` | FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph. | `fastapi-expert`, `fastapi-services` |
 | `foundry` | Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools. | `azure-ai`, `azure-ai-projects-ts`, `foundry-langchain`, `microsoft-foundry` |
 | `golang` | Go services: goroutines and channels, interfaces and generics, gRPC or REST, testing and pprof. | `golang-pro` |
@@ -610,16 +644,18 @@ itself.
 | `mcp` | Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations. | `mcp-developer`, `mcp-servers`, `python-mcp-server-generator` |
 | `ml-engineering` | Machine-learning engineering: training pipelines and experiment tracking, fine-tuning with LoRA or QLoRA, RAG systems, and prompt design and evaluation. | `fine-tuning-expert`, `ml-pipeline`, `prompt-engineer`, `rag-architect` |
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
+| `performance` | Measured browser, service, database and memory performance: matched baselines, profiling, experiment records and honest source-only audits. Uses available tools; ships no MCP server. | `performance-optimization` |
 | `playwright` | Playwright end-to-end tests: best practices and reading traces. | `playwright-best-practices`, `playwright-expert`, `playwright-trace` |
 | `react` | React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs. | `frontend-design`, `react-expert`, `react-native-expert`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
 | `security` | Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. Cloudflare security-audit adds coverage tracking and independent finding verification; runs only when explicitly invoked. | `secure-code-guardian`, `security-audit`, `security-reviewer` |
 | `spring-boot` | Spring Boot 3 services: REST controllers, Spring Security 6, Spring Data JPA and WebFlux. | `spring-boot-engineer` |
-| `sre` | Reliability: SLOs and error budgets, incident response, monitoring, logging, alerting and tracing, and chaos experiments. | `chaos-engineer`, `monitoring-expert`, `sre-engineer` |
+| `sre` | Reliability: SLOs, incidents, feature instrumentation, bounded metrics, logs, tracing, alert/runbook verification, and chaos experiments. | `chaos-engineer`, `monitoring-expert`, `observability-and-instrumentation`, `sre-engineer` |
 | `typescript` | TypeScript repositories (deep-module boundaries, shoehorn test data) | `migrate-to-shoehorn`, `setup-ts-deep-modules`, `typescript-pro` |
 | `vision` | Computer vision in Python: OpenCV, and Meta SAM 3 segmentation. | `opencv-python`, `sam3` |
 
 | Skill | Where | Source | License | Notes |
 | --- | --- | --- | --- | --- |
+| `api-and-interface-design` | pack `api` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/api-and-interface-design) |
 | `api-designer` | pack `api` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/api-designer) | MIT |  |
 | `appinsights-instrumentation` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/appinsights-instrumentation) | MIT |  |
 | `architecture-designer` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/architecture-designer) | MIT |  |
@@ -639,10 +675,12 @@ itself.
 | `claude-handoff` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/in-progress/claude-handoff) | MIT | runs only as `/claude-handoff` |
 | `cli-developer` | pack `cli` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/cli-developer) | MIT |  |
 | `code-documenter` | global | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-documenter) | MIT |  |
-| `code-review` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/code-review) | MIT |  |
+| `code-review` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/59db609eb1e18aaf59b63284d0e52255aff0c63c/skills/engineering/code-review) |
 | `code-reviewer` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-reviewer) | MIT |  |
+| `code-simplification` | pack `dev-workflows` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/code-simplification) |
 | `codebase-design` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/codebase-design) | MIT |  |
 | `compose-gpu-serving` | global | this repository | MIT |  |
+| `constraint-driven-development` | pack `delivery` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/constraint-driven-development) |
 | `database-optimizer` | pack `databases` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/database-optimizer) | MIT |  |
 | `debugging-wizard` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/debugging-wizard) | MIT |  |
 | `deep-agents-core` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/deep-agents-core) | MIT |  |
@@ -650,6 +688,7 @@ itself.
 | `deep-agents-orchestration` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/deep-agents-orchestration) | MIT |  |
 | `deepagents-python-quickstart` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/deepagents-python-quickstart) | MIT |  |
 | `deepagents-typescript-quickstart` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/514d17f139972d4513c4c01c799881a381567159/config/skills/deepagents-typescript-quickstart) | MIT |  |
+| `deprecation-and-migration` | pack `dev-workflows` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/deprecation-and-migration) |
 | `diagnosing-bugs` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/diagnosing-bugs) | MIT |  |
 | `docker-build-strategies` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-build-strategies) | Apache-2.0 | description overridden |
 | `docker-compose-patterns` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-compose-patterns) | Apache-2.0 | description overridden |
@@ -705,10 +744,12 @@ itself.
 | `migrate-to-shoehorn` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/misc/migrate-to-shoehorn) | MIT |  |
 | `ml-pipeline` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/ml-pipeline) | MIT |  |
 | `model-recipes` | pack `local-inference` | [vllm-project/vllm](https://github.com/vllm-project/vllm/tree/eca54bd1d937e778a939c240a2ed966fbcb12f85/.agents/skills/model-recipes) | Apache-2.0 |  |
-| `monitoring-expert` | pack `sre` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/monitoring-expert) | MIT |  |
+| `monitoring-expert` | pack `sre` | this repository | MIT | derived from [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/monitoring-expert) |
 | `muse-glimmer` | pack `local-inference` | this repository | MIT |  |
+| `observability-and-instrumentation` | pack `sre` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/observability-and-instrumentation) |
 | `opencv-python` | pack `vision` | this repository | MIT |  |
 | `openwebui` | pack `openwebui` | this repository | MIT |  |
+| `performance-optimization` | pack `performance` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/performance-optimization) |
 | `playwright-best-practices` | pack `playwright` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices) | MIT | description overridden |
 | `playwright-cli` | global | [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli/tree/b85c7a736bb473bf55b584e54a09ffa698d6d871/skills/playwright-cli) | Apache-2.0 |  |
 | `playwright-expert` | pack `playwright` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/playwright-expert) | MIT |  |
@@ -731,10 +772,12 @@ itself.
 | `secure-code-guardian` | pack `security` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/secure-code-guardian) | MIT |  |
 | `security-audit` | pack `security` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill/tree/c1c8a8c1471069fb0e188eeaff69b8e8db6564a8/skills/security-audit) | MIT | description, disable-model-invocation overridden; runs only as `/security-audit` |
 | `security-reviewer` | pack `security` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/security-reviewer) | MIT |  |
-| `setup-matt-pocock-skills` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/setup-matt-pocock-skills) | MIT | runs only as `/setup-matt-pocock-skills` |
+| `setup-matt-pocock-skills` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/59db609eb1e18aaf59b63284d0e52255aff0c63c/skills/engineering/setup-matt-pocock-skills); runs only as `/setup-matt-pocock-skills` |
 | `setup-ts-deep-modules` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/setup-ts-deep-modules) | MIT | runs only as `/setup-ts-deep-modules` |
 | `shadcn` | pack `react` | this repository | MIT | derived from [shadcn-ui/ui](https://github.com/shadcn-ui/ui/tree/d51870f66fd13cc975d82ecbb9eace3cff066878/skills/shadcn) |
+| `shipping-and-launch` | pack `delivery` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/shipping-and-launch) |
 | `skill-scanner` | global | [getsentry/skills](https://github.com/getsentry/skills/tree/d18b7aa8ba878354e5c348310230e652f7690f9c/skills/skill-scanner) | Apache-2.0 |  |
+| `source-driven-development` | pack `delivery` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/source-driven-development) |
 | `spec-miner` | global | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spec-miner) | MIT |  |
 | `spring-boot-engineer` | pack `spring-boot` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spring-boot-engineer) | MIT |  |
 | `sql-pro` | pack `databases` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sql-pro) | MIT |  |
@@ -815,7 +858,8 @@ Every skill in `.agents/skills/` and `.agents/packs/` is recorded in one of two 
   isn't its repository's) records it under `skills` as well.
 - **local** skills (written here, or derived from someone else's work) under `local` in
   `.agents/skill-sources.json`, with their license; a derived one also records the source, path,
-  commit and license it came from (`derivedFrom`).
+  commit and license it came from (`derivedFrom`). A derived skill may list `additionalPaths`
+  for reviewed source checklists, commands or personas beyond its primary `path`.
 
 `.agents/skill-sources.json` also holds each source repository's license (an SPDX id), its
 copyright line as stated upstream, and its license files, copied into `.agents/licenses/` and
@@ -890,6 +934,11 @@ changed a field an override replaces, and, for a skill pinned to a tag (not a br
 newer release is out, with the command that re-pins it. A repository that is itself one skill
 (`SKILL.md` at its root) can't be vendored yet.
 
+For local derivations, it compares `derivedFrom.path`, `additionalPaths` and license inputs at
+the recorded commit with current upstream. Changed inputs are review items (exit 2), requiring
+a manual comparison and merge that preserves local corrections. Adopted source paths are not
+reported as new skills, and `--upgrade` does not overwrite local adaptations.
+
 It also checks each MCP server's pin (`.agents/mcp-servers.json`) against npm or PyPI. A newer
 final release at least 7 days old is reported as a change; a younger one is a note with the day
 its cooldown ends. Pre-releases, and releases yanked or deprecated, are never offered. A pin
@@ -961,8 +1010,9 @@ and follow `writing-for-agents`.
 
 ## Current limitations
 
-- New repositories don't yet include the `docs/agents/*.md` files the engineering skills expect;
-  run `/setup-matt-pocock-skills` after `new`.
+- New full-baseline repositories include the workflow guide, but tracker, triage and domain
+  configuration still depends on project choices. Run `setup-matt-pocock-skills` when those
+  conventions are needed and missing; ordinary local work is available immediately.
 - Python/uv is the only full project profile; any other repository can take packs only
   (`update --packs-only`).
 

@@ -1194,6 +1194,85 @@ def test_the_report_classifies_every_case(tmp_path: Path) -> None:
     assert any("its LICENSE is gone upstream" in line for line in later.review)
 
 
+@pytest.mark.parametrize("renamed", [False, True])
+def test_derived_skills_are_not_rediscovered_and_track_shared_inputs(
+    tmp_path: Path, renamed: bool
+) -> None:
+    github = FakeGitHub()
+    upstream = {
+        **V1,
+        "skills/quality/SKILL.md": _skill("quality"),
+        "references/checklist.md": b"Check runtime behavior.\n",
+    }
+    root = _catalog(tmp_path, github, upstream)
+    sources_path = root / ".agents/skill-sources.json"
+    sources = json.loads(sources_path.read_text())
+    commit = github.commits[("o/r", "HEAD")][0]
+    name = "local-quality" if renamed else "quality"
+    sources["local"] = {
+        name: {
+            "license": "MIT",
+            "derivedFrom": {
+                "source": "o/r",
+                "path": "skills/quality",
+                "additionalPaths": ["references/checklist.md"],
+                "commit": commit,
+                "licenseFiles": {"LICENSE": blob_sha(LICENSE.encode())},
+            },
+        }
+    }
+    sources_path.write_text(json.dumps(sources))
+    before = sources_path.read_bytes()
+
+    current = upstream_report(root, github)
+    assert current.new == []
+    assert f"{name} (derived)" in current.current
+
+    _publish(github, {**upstream, "references/checklist.md": b"Also check rollback.\n"})
+    changed = upstream_report(root, github)
+    assert changed.exit_code == 2
+    assert changed.new == []
+    assert any("references/checklist.md" in line and "manually" in line for line in changed.review)
+    assert sources_path.read_bytes() == before
+
+
+@pytest.mark.parametrize("change", ["file", "removed", "license", "missing-commit"])
+def test_derived_file_sources_report_review_without_automatic_upgrades(
+    tmp_path: Path, change: str
+) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    original = {"guide.md": b"Original\n", "LICENSE": LICENSE.encode()}
+    commit = github.publish("other/source", original)
+    path = root / ".agents/skill-sources.json"
+    sources = json.loads(path.read_text())
+    sources["local"] = {
+        "guide": {
+            "license": "MIT",
+            "derivedFrom": {
+                "source": "other/source",
+                "path": "guide.md",
+                "commit": commit if change != "missing-commit" else "e" * 40,
+                "licenseFiles": {"LICENSE": blob_sha(LICENSE.encode())},
+            },
+        }
+    }
+    path.write_text(json.dumps(sources))
+    updated = dict(original)
+    if change == "removed":
+        del updated["guide.md"]
+    elif change in {"file", "license"}:
+        updated["guide.md" if change == "file" else "LICENSE"] = b"Changed\n"
+    github.publish("other/source", updated)
+
+    report = upstream_report(root, github)
+
+    assert report.exit_code == 2
+    assert report.changed == []
+    assert report.new == []
+    assert any("guide:" in line for line in report.review)
+
+
 def test_the_report_compares_a_wrong_recorded_commit_and_a_newer_release(tmp_path: Path) -> None:
     github = FakeGitHub()
     root = _catalog(tmp_path, github, V1)

@@ -23,8 +23,15 @@ DOCS = [
     "GLOSSARY.md",
     "CHANGELOG.md",
     ".agents/skills/repo-template/SKILL.md",
+    "CHEAT_SHEET.md",
+    "docs/agents/workflow.md",
+    "docs/skill-evaluation.md",
+    "docs/evaluations/addy.md",
+    "docs/evaluations/pocock.md",
+    "docs/evaluations/behavior.md",
 ]
-CURRENT = [doc for doc in DOCS if doc != "CHANGELOG.md"]  # the changelog keeps old flags
+# Historical evaluations and the changelog retain the versions/commands they inspected.
+CURRENT = [doc for doc in DOCS if doc != "CHANGELOG.md" and not doc.startswith("docs/evaluations/")]
 SCRIPT = ROOT / "setup-machine.sh"
 FLAG = re.compile(r"(?<![\w-])--[a-z][a-z-]*")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
