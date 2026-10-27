@@ -381,7 +381,7 @@ class Report:
 
 
 def upstream_report(root: Path, github: GitHub) -> Report:
-    """Compare every vendored skill and license text with upstream. Writes nothing."""
+    """Compare vendored and derived skills and license texts with upstream. Writes nothing."""
     lock = _json(root, LOCK_NAME).get("skills", {})
     sources = _json(root, SOURCES_NAME)
     overrides = _json(root, OVERRIDES_NAME) if (root / OVERRIDES_NAME).is_file() else {}
@@ -392,8 +392,22 @@ def upstream_report(root: Path, github: GitHub) -> Report:
             _report_skill(report, name, lock[name], sources, overrides, github, snapshot)
         except NotFound as exc:
             report.review.append(f"{name}: not upstream any more (deleted or renamed?): {exc}")
+    derived = {
+        name: record["derivedFrom"]
+        for name, record in sources.get("local", {}).items()
+        if isinstance(record, dict) and isinstance(record.get("derivedFrom"), dict)
+    }
+    for name, record in sorted(derived.items()):
+        try:
+            _report_derived(report, name, record, snapshot)
+        except NotFound as exc:
+            report.review.append(f"{name}: derived source unavailable: {exc}")
     in_use = {(lock[name]["source"], _ref(sources, name)) for name in lock}
     vendored = {(entry["source"], _folder(entry)) for entry in lock.values()}
+    vendored.update(
+        (record.get("source"), str(record.get("path", "")).removesuffix("/SKILL.md"))
+        for record in derived.values()
+    )
     for source, record in sorted(sources.get("sources", {}).items()):
         refs = sorted(ref for used, ref in in_use if used == source) or ["HEAD"]
         try:
@@ -416,6 +430,44 @@ def upstream_report(root: Path, github: GitHub) -> Report:
                 shown = ", ".join(paths)
                 report.new.append(f"{name}: new in {source} ({shown}); add {source}@{name}")
     return report
+
+
+def _report_derived(report: Report, name: str, record: dict[str, Any], snapshot: Snapshots) -> None:
+    """Local adaptations need a human merge; never offer to replace them with upstream."""
+    source, commit, path = (record.get(key) for key in ("source", "commit", "path"))
+    extra = record.get("additionalPaths", [])
+    if not (
+        isinstance(source, str)
+        and SOURCE.fullmatch(source)
+        and isinstance(commit, str)
+        and SHA.fullmatch(commit)
+        and isinstance(path, str)
+        and path
+        and isinstance(extra, list)
+        and all(isinstance(item, str) and item for item in extra)
+    ):
+        report.review.append(f"{name}: invalid derivedFrom source, commit or paths")
+        return
+    before, after = snapshot(source, commit), snapshot(source, "HEAD")
+    changes = []
+    for tracked in sorted({path, *extra, *record.get("licenseFiles", {})}):
+        old, new = before.entry(tracked), after.entry(tracked)
+        if tracked == ".":
+            changed = before.root != after.root
+        elif old is None:
+            changes.append(f"{tracked} missing at recorded commit")
+            continue
+        else:
+            changed = new is None or (old.mode, old.sha) != (new.mode, new.sha)
+        if changed:
+            changes.append(tracked)
+    if changes:
+        report.review.append(
+            f"{name}: derived inputs changed in {source}@{after.commit[:12]} "
+            f"({', '.join(changes)}); review and merge manually, preserving local adaptations"
+        )
+    else:
+        report.current.append(f"{name} (derived)")
 
 
 def _report_skill(

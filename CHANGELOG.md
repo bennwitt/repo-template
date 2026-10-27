@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Evaluate all 38 Pocock and 25 Addy skills, Addy's nine commands and supporting personas,
+  references and hooks. Record the complete decisions and targeted behavioral exercises in
+  `docs/skill-evaluation.md` and its supporting reports.
+- Add eight portable MIT-derived Addy skills: quality constraints, source-driven implementation
+  and release readiness in the new `delivery` pack; measured optimization in the new
+  `performance` pack; API retry/compatibility contracts in `api`; feature instrumentation in
+  `sre`; simplification and deprecation/migration in `dev-workflows`. Existing pack users get
+  additions on their next `update`. Upstream plugin commands and hooks are not installed.
+- Retain 35 Pocock skills, with local adaptations for `code-review` (requested committed,
+  staged, unstaged and untracked scope; local specs need no tracker) and
+  `setup-matt-pocock-skills` (configuration rather than installation, AGENTS authority,
+  preserved CLAUDE import stub, local tracking without a remote). Correct monitoring examples
+  to use bounded route labels, aggregate error ratios across status and import tracing status.
+- Full-baseline repositories receive `docs/agents/workflow.md` as a project-owned seed;
+  new AGENTS files point to it. Existing guides and AGENTS remain untouched. Packs-only and
+  personal adoption continue to leave project documentation alone.
+- `globals --upstream` now checks local derivations and their optional `additionalPaths`,
+  suppresses rediscovery of adopted source paths, and reports changed inputs/licenses for a
+  manual merge. `--upgrade` continues to preserve local adaptations.
+
 - Add a quick command cheat sheet for machine and repository updates, adoption profiles,
   skill packs, project checks, upstream maintenance and common troubleshooting.
 

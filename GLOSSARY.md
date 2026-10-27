@@ -147,6 +147,16 @@ A frontmatter edit to a vendored skill, kept in `.agents/skill-overrides.json` w
 text of each field it replaces and the upstream SKILL.md's blob SHA, marked in the SKILL.md, and
 re-applied by `globals` after the skill is vendored again.
 
+**Derived skill**:
+A locally maintained adaptation of an upstream skill, with its source, reviewed revision and
+license recorded. Its body can differ from upstream; source changes require a reviewed merge.
+_Avoid_: vendored skill, override
+
+**Workflow guide**:
+A project's choices about which skills to use, what their review scope includes and when
+repository-specific configuration is needed. It belongs to the project after creation.
+_Avoid_: universal router, installer
+
 **Skill mirror**:
 `.claude/skills/` in the standards repository: one relative link per global skill (pack skills
 aren't mirrored).

@@ -152,6 +152,17 @@ Ponytail, invoked explicitly with `/ponytail full` for the smallest complete imp
 session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an Atlassian
 MCP server the user connects and signs in to; the pack ships none.
 
+Eight Addy-derived skills complement the core Pocock workflow. Choose `delivery` for quality
+constraints, version-verified implementation and release readiness; `performance` for measured
+optimization and source-only web audits; `api` for compatibility and retry/idempotency contracts;
+`sre` for feature instrumentation; `dev-workflows` for simplification and deprecation/migration.
+Add only relevant packs. They install skills by name, not Addy's plugin commands or hooks.
+Release readiness assesses evidence and recovery; it does not authorize deployment.
+
+`globals --upstream` checks derived source paths, companion inputs and licenses. Changed derived
+inputs require a manual merge preserving local corrections; `--upgrade` does not replace them.
+Use `docs/skill-evaluation.md` in the standards repository for the complete selection rationale.
+
 The `security` pack includes Cloudflare's explicitly invoked `/security-audit` alongside the
 routine `security-reviewer`. For an audit, state scope, profile (`quick`, `standard`, `deep`),
 and an agent-invocation budget. Full audits need Node.js and subagents. Target execution needs
@@ -164,6 +175,13 @@ target at `~/security-audit-skill/<repo-name>/run-<N>`.
 `repo-template new <name> --parent <dir> --description "<one line>"`, plus `--pack <name>` for
 each pack the project needs. It refuses a non-empty directory. Then fill in the Purpose and
 Boundaries sections of the new `AGENTS.md`, and run `uv run pytest` to confirm the baseline works.
+
+Full-baseline repositories receive `docs/agents/workflow.md` as a seed. New AGENTS files point
+to it; existing AGENTS and edited guides stay untouched. Offer the pointer for an existing guide
+only when relevant. Packs-only/personal adoption writes no project guidance. The setup skill
+configures missing tracker/triage/domain choices for installed workflows, not the skills themselves.
+Use `setup-matt-pocock-skills` only when those conventions are needed; local specs, ordinary tests
+and debugging need no tracker setup. Keep CLAUDE import stubs and shared AGENTS authority intact.
 
 ## The manifest
 

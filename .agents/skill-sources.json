@@ -1,5 +1,13 @@
 {
   "sources": {
+    "addyosmani/agent-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 Addy Osmani",
+      "licenseFiles": {
+        "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+      },
+      "discover": "all"
+    },
     "anthropics/skills": {
       "license": "See each skill",
       "copyright": "Anthropic, PBC (each skill's own license file)",
@@ -185,8 +193,73 @@
     }
   },
   "local": {
+    "api-and-interface-design": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/api-and-interface-design",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
+      }
+    },
+    "code-review": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/code-review",
+        "commit": "59db609eb1e18aaf59b63284d0e52255aff0c63c"
+      }
+    },
+    "code-simplification": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/code-simplification",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
+      }
+    },
     "compose-gpu-serving": {
       "license": "MIT"
+    },
+    "constraint-driven-development": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/constraint-driven-development",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
+      }
+    },
+    "deprecation-and-migration": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/deprecation-and-migration",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
+      }
     },
     "fastapi-services": {
       "license": "MIT"
@@ -213,8 +286,37 @@
     "mcp-servers": {
       "license": "MIT"
     },
+    "monitoring-expert": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025",
+        "licenseFiles": {
+          "LICENSE": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d"
+        },
+        "source": "jeffallan/claude-skills",
+        "path": "skills/monitoring-expert",
+        "commit": "36f3fe8052da7c57083783268c6ea3265d075265"
+      }
+    },
     "muse-glimmer": {
       "license": "MIT"
+    },
+    "observability-and-instrumentation": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/observability-and-instrumentation",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d",
+        "additionalPaths": [
+          "references/observability-checklist.md"
+        ]
+      }
     },
     "opencv-python": {
       "license": "MIT"
@@ -222,11 +324,42 @@
     "openwebui": {
       "license": "MIT"
     },
+    "performance-optimization": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/performance-optimization",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d",
+        "additionalPaths": [
+          "references/performance-checklist.md",
+          "agents/web-performance-auditor.md",
+          ".claude/commands/webperf.md"
+        ]
+      }
+    },
     "repo-template": {
       "license": "MIT"
     },
     "sam3": {
       "license": "MIT"
+    },
+    "setup-matt-pocock-skills": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/setup-matt-pocock-skills",
+        "commit": "59db609eb1e18aaf59b63284d0e52255aff0c63c"
+      }
     },
     "shadcn": {
       "license": "MIT",
@@ -239,6 +372,39 @@
           "LICENSE.md": "fad4d887a681dd49233e5ed01ee2c7a1513089a0"
         },
         "commit": "d51870f66fd13cc975d82ecbb9eace3cff066878"
+      }
+    },
+    "shipping-and-launch": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/shipping-and-launch",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d",
+        "additionalPaths": [
+          ".claude/commands/ship.md",
+          "references/definition-of-done.md",
+          "agents/code-reviewer.md",
+          "agents/security-auditor.md",
+          "agents/test-engineer.md"
+        ]
+      }
+    },
+    "source-driven-development": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
+        "licenseFiles": {
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
+        },
+        "source": "addyosmani/agent-skills",
+        "path": "skills/source-driven-development",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
       }
     },
     "web-interface-guidelines": {
@@ -345,10 +511,6 @@
     "code-documenter": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "1d2532889c15d70eb6d6230bd0d99657905a4b4e"
-    },
-    "code-review": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "fee7bb5fdddc069d58cbea09b2c36b5a859eac05"
     },
     "code-reviewer": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
@@ -601,10 +763,6 @@
       "commit": "eca54bd1d937e778a939c240a2ed966fbcb12f85",
       "tree": "2e3cd1170ca35d4834503bd1f8cc8a718492256b"
     },
-    "monitoring-expert": {
-      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
-      "tree": "d8f39666d35c93fcb2e15a9c533c6edd6f1add70"
-    },
     "playwright-best-practices": {
       "commit": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
       "tree": "b4620eb2cfc6b58173cda800b7c7578190dfd632"
@@ -699,10 +857,6 @@
           "high": 2
         }
       }
-    },
-    "setup-matt-pocock-skills": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "aafaabf96fa3945d8a4069317a7a6d36b7169670"
     },
     "setup-ts-deep-modules": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
@@ -835,7 +989,7 @@
   },
   "ignored": {
     "mattpocock/skills": {
-      "chief-of-staff": "in-progress beta, not yet listed upstream; revisit when it is",
+      "chief-of-staff": "reviewed: unlisted beta with broad subagent/environment mandates and insufficient task boundaries; retain explicit scoped workflows",
       "scaffold-exercises": "specific to Matt Pocock's course repositories",
       "setup-pre-commit": "Husky/npm hooks; conflicts with this baseline's pre-commit hook"
     },
@@ -845,6 +999,25 @@
     },
     "jeffallan/claude-skills": {
       "python-pro": "builds packages with Poetry and checks with black; this baseline uses uv and ruff (the global uv and ruff skills)"
+    },
+    "addyosmani/agent-skills": {
+      "browser-testing-with-devtools": "requires Chrome DevTools MCP; existing browser workflows use playwright-cli and the playwright pack",
+      "ci-cd-and-automation": "reviewed: raw workflow input interpolation, mutable actions and committed .env.test examples conflict with the baseline; retain github-actions-hardening and generated CI",
+      "code-review-and-quality": "overlaps code-review and code-reviewer; also references shared checklists outside its skill folder",
+      "context-engineering": "overlaps writing-for-agents and the repository baseline",
+      "debugging-and-error-recovery": "overlaps diagnosing-bugs and debugging-wizard",
+      "documentation-and-adrs": "overlaps code-documenter and domain-modeling",
+      "doubt-driven-development": "reviewed: overlapping adversarial reviews and repeated per-cycle cross-model approval; use grilling/the-fool or scoped release review",
+      "frontend-ui-engineering": "overlaps frontend-design and the react pack; references a shared accessibility checklist outside its skill folder",
+      "git-workflow-and-versioning": "reviewed: destructive reset and secret-printing examples; retain project Git rules and pr",
+      "idea-refine": "overlaps grilling, to-spec and feature-forge",
+      "incremental-implementation": "overlaps implement and implement-spec; references a shared definition of done outside its skill folder",
+      "interview-me": "reviewed: rejects ordinary assent and requires repeated explicit gates; retain grilling with prior decisions honored",
+      "planning-and-task-breakdown": "overlaps to-tickets; references a shared definition of done outside its skill folder",
+      "security-and-hardening": "overlaps the security pack and supply-chain-risk-auditor; references a shared checklist outside its skill folder",
+      "spec-driven-development": "overlaps to-spec and feature-forge; directs execution to other upstream skills",
+      "test-driven-development": "overlaps tdd; references shared testing patterns outside its skill folder",
+      "using-agent-skills": "reviewed: second universal router and plugin assumptions would compete with the selected per-task workflow; use the template workflow guide"
     }
   }
 }

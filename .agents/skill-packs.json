@@ -6,8 +6,9 @@
     ]
   },
   "api": {
-    "description": "API design: REST resources and OpenAPI contracts, versioning, pagination and errors, and GraphQL schemas, resolvers and federation.",
+    "description": "API contracts, compatibility and retry/idempotency semantics, REST/OpenAPI resources, and GraphQL schemas, resolvers and federation.",
     "skills": [
+      "api-and-interface-design",
       "api-designer",
       "graphql-architect"
     ]
@@ -74,12 +75,22 @@
       "sql-pro"
     ]
   },
+  "delivery": {
+    "description": "Quality constraints, version-verified implementation and release readiness. Complements the core spec, plan, implementation, testing and review workflows; readiness does not deploy.",
+    "skills": [
+      "constraint-driven-development",
+      "shipping-and-launch",
+      "source-driven-development"
+    ]
+  },
   "dev-workflows": {
-    "description": "Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features and simpler implementations. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked.",
+    "description": "Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features, behavior-preserving simplification, and deprecation or schema migration. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked.",
     "skills": [
       "architecture-designer",
       "code-reviewer",
+      "code-simplification",
       "debugging-wizard",
+      "deprecation-and-migration",
       "feature-forge",
       "fullstack-guardian",
       "ponytail",
@@ -209,6 +220,12 @@
       "openwebui"
     ]
   },
+  "performance": {
+    "description": "Measured browser, service, database and memory performance: matched baselines, profiling, experiment records and honest source-only audits. Uses available tools; ships no MCP server.",
+    "skills": [
+      "performance-optimization"
+    ]
+  },
   "playwright": {
     "description": "Playwright end-to-end tests: best practices and reading traces.",
     "skills": [
@@ -247,10 +264,11 @@
     ]
   },
   "sre": {
-    "description": "Reliability: SLOs and error budgets, incident response, monitoring, logging, alerting and tracing, and chaos experiments.",
+    "description": "Reliability: SLOs, incidents, feature instrumentation, bounded metrics, logs, tracing, alert/runbook verification, and chaos experiments.",
     "skills": [
       "chaos-engineer",
       "monitoring-expert",
+      "observability-and-instrumentation",
       "sre-engineer"
     ]
   },

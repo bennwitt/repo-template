@@ -1,6 +1,6 @@
 ---
 name: monitoring-expert
-description: Configures monitoring systems, implements structured logging pipelines, creates Prometheus/Grafana dashboards, defines alerting rules, and instruments distributed tracing. Implements Prometheus/Grafana stacks, conducts load testing, performs application profiling, and plans infrastructure capacity. Use when setting up application monitoring, adding observability to services, debugging production issues with logs/metrics/traces, running load tests with k6 or Artillery, profiling CPU/memory bottlenecks, or forecasting capacity needs.
+description: Configure monitoring infrastructure, Prometheus/Grafana dashboards, alert rules and tracing backends. Use for telemetry collection, visualization, alert delivery and capacity planning; use observability-and-instrumentation for feature signal design.
 license: MIT
 metadata:
   author: https://github.com/Jeffallan
@@ -58,15 +58,18 @@ const httpDuration = new Histogram({
   buckets: [0.05, 0.1, 0.3, 0.5, 1, 2, 5],
 });
 
-// Instrument a route
-app.use((req, res, next) => {
-  const end = httpDuration.startTimer({ method: req.method, route: req.path });
-  res.on('finish', () => {
-    httpRequests.inc({ method: req.method, route: req.path, status: res.statusCode });
-    end();
-  });
-  next();
-});
+// Pass a configured route template, never a request-derived URL or ID.
+function instrumentRoute(route) {
+  return (req, res, next) => {
+    const end = httpDuration.startTimer({ method: req.method });
+    res.on('finish', () => {
+      httpRequests.inc({ method: req.method, route, status: res.statusCode });
+      end({ route });
+    });
+    next();
+  };
+}
+app.get('/orders/:id', instrumentRoute('/orders/:id'), handleOrder);
 
 // Expose scrape endpoint
 app.get('/metrics', async (req, res) => {
@@ -79,7 +82,7 @@ app.get('/metrics', async (req, res) => {
 ```js
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { trace } from '@opentelemetry/api';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
 
 const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter({ url: 'http://jaeger:4318/v1/traces' }),
@@ -112,8 +115,8 @@ groups:
     rules:
       - alert: HighErrorRate
         expr: |
-          rate(http_requests_total{status=~"5.."}[5m])
-          / rate(http_requests_total[5m]) > 0.05
+          sum by (job, route) (rate(http_requests_total{status=~"5.."}[5m]))
+          / sum by (job, route) (rate(http_requests_total[5m])) > 0.05
         for: 2m
         labels:
           severity: critical
@@ -179,3 +182,9 @@ Load detailed guidance based on context:
 Maintained by [@jeffallan](https://github.com/jeffallan), Principal Consultant at [Synergetic Solutions](https://synergetic.solutions)
 
 [Documentation](https://jeffallan.github.io/claude-skills/skills/devops/monitoring-expert/)
+
+Adapted locally from jeffallan/claude-skills (MIT): bounded configured route labels,
+status-aggregated error ratios and the missing tracing status import are corrected. Thresholds
+are examples, not defaults for every service. Verify rules with representative zero-error,
+error, no-traffic and missing-scrape series using the project's Prometheus tooling. For signals
+and cardinality decisions, use `observability-and-instrumentation` from this pack.

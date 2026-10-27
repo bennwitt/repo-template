@@ -84,6 +84,21 @@ repo-template check .
 To remove a pack, delete its name from `skill_packs` in `.repo-template.json`
 (personal: `.git/repo-template.json`), then run `repo-template update .`.
 
+For the [evaluated engineering workflows](docs/skill-evaluation.md):
+
+```bash
+repo-template update . --pack delivery    # quality constraints, source checks, release readiness
+repo-template update . --pack performance # measured optimization and web-performance audits
+repo-template update . --pack api --pack sre # retry contracts and feature instrumentation
+```
+
+`dev-workflows` also supplies simplification and deprecation/migration. Invoke installed skills
+by their names; Addy's nine command aliases are not installed. Read the
+[workflow guide](docs/agents/workflow.md) for the preferred route. `setup-matt-pocock-skills`
+configures missing tracker/triage/domain choices; it does not install the skills or gate ordinary
+testing and local-spec reviews. Full-baseline updates seed the guide without overwriting edits.
+Changed derived inputs in `globals --upstream` need a manual merge, not `globals --upgrade`.
+
 ## Create a Python/uv repository
 
 ```bash
