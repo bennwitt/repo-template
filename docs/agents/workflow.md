@@ -2,7 +2,12 @@
 
 This file belongs to the project. Adapt it to the team's workflow; baseline updates create it
 when missing and preserve edits. Skills are available after machine setup; domain skills require
-their pack. Invoke skills by name using the host's supported syntax.
+a selected pack or individual selection. Invoke skills by name using the host's supported syntax.
+
+Browse with `repo-template globals --list`, or `--list --repo .` for recorded selections.
+Use `repo-template update . --select` for the terminal picker, or preview with
+`repo-template check . --pack delivery --skill code-simplification` before the matching update.
+Individual selections bring their supporting files but not sibling skills or pack MCP servers.
 
 ## Choose the work, then the workflow
 

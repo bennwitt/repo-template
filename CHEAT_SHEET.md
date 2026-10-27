@@ -71,6 +71,19 @@ it does not support linked worktrees or repositories already adopted for the tea
 
 ## Add or remove skill packs
 
+```bash
+repo-template globals --list packs       # pack descriptions, members and MCP servers
+repo-template globals --list skills      # individual skills and descriptions
+repo-template globals --list --repo .    # show this repository's selections
+repo-template globals --list --json      # JSON for scripts
+repo-template update . --select          # interactive picker → preview → confirm
+```
+
+In the picker: toggle numbers or `pack:NAME` / `skill:NAME`; `packs`, `skills`, `all` or
+`/search` changes the view; `done` previews; `q` cancels. Add `--packs-only` or `--personal`
+for first adoption where appropriate. Existing profiles are remembered. A full-baseline
+update also previews and applies baseline changes. Global skills are installed by `globals`.
+
 Available packs: [catalog](README.md#catalog-every-skill-where-it-applies-and-where-it-comes-from).
 In an adopted repository:
 
@@ -81,8 +94,16 @@ repo-template update . --pack typescript --pack react # add several
 repo-template check .
 ```
 
-To remove a pack, delete its name from `skill_packs` in `.repo-template.json`
-(personal: `.git/repo-template.json`), then run `repo-template update .`.
+```bash
+repo-template check . --skill code-simplification
+repo-template update . --skill code-simplification    # one skill, no sibling skills or pack MCP
+repo-template update . --remove-skill code-simplification
+repo-template update . --remove-pack security
+```
+
+Individual choices are recorded under `individual_skills` alongside `skill_packs`. Removing
+one choice keeps skills still supplied by another. Selection works with all adoption profiles;
+`new` also accepts `--skill`.
 
 For the [evaluated engineering workflows](docs/skill-evaluation.md):
 
