@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add read-only `globals --list [packs|skills|all]`, JSON output and repository selection
+  markers. Add `update --select`, a searchable terminal picker with a full-update preview,
+  explicit apply confirmation and cancellation without writes.
+- Support individual repository skills with `--skill` on new/update/check, and removal with
+  `--remove-pack` / `--remove-skill` on update/check. All adoption profiles record individual
+  choices separately from packs; shared skills survive removal of another selection. Individual
+  choices bring their resources but not sibling skills or pack MCP servers.
+- Advance the CLI to 0.6.0 so older installations refuse new manifests instead of silently
+  discarding individual selections. Existing manifests retain their profile and selections.
+
 - Evaluate all 38 Pocock and 25 Addy skills, Addy's nine commands and supporting personas,
   references and hooks. Record the complete decisions and targeted behavioral exercises in
   `docs/skill-evaluation.md` and its supporting reports.

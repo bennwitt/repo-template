@@ -6,13 +6,14 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from repo_template import __version__
+from repo_template import __version__, catalog_view
 from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
 from repo_template.pins import HttpRegistry, check_pins
-from repo_template.repository import SUBPROCESS, create_repository, update_repository
-from repo_template.resolve import TerminalPrompt, resolve_conflicts
-from repo_template.scaffold import manifest_version, normalize_project_name
+from repo_template.repository import AGENTS_DIR, SUBPROCESS, create_repository, update_repository
+from repo_template.resolve import TerminalPrompt, resolve_conflicts, visible
+from repo_template.scaffold import manifest_version, normalize_project_name, read_manifest
+from repo_template.selection import Selection
 from repo_template.standards import find_standards_root, installed_root, sync_globals
 from repo_template.tools import check_machine_tools, load_machine_tools
 from repo_template.upstream import (
@@ -146,6 +147,35 @@ def _parser() -> argparse.ArgumentParser:
         help="plan a personal adoption (as update --personal would)",
     )
 
+    for command in (create, update, check):
+        command.add_argument(
+            "--skill",
+            action="append",
+            default=[],
+            metavar="NAME",
+            help="add an individual catalog skill without its whole pack or pack MCP servers",
+        )
+    for command in (update, check):
+        command.add_argument(
+            "--remove-pack",
+            action="append",
+            default=[],
+            metavar="NAME",
+            help="remove an explicitly selected pack",
+        )
+        command.add_argument(
+            "--remove-skill",
+            action="append",
+            default=[],
+            metavar="NAME",
+            help="remove an individual selection; selected packs still supply it",
+        )
+    update.add_argument(
+        "--select",
+        action="store_true",
+        help="interactively select packs/skills, preview changes, then confirm",
+    )
+
     globals_parser = subparsers.add_parser(
         "globals", help="connect global Codex and Claude configuration to this standards repo"
     )
@@ -156,6 +186,17 @@ def _parser() -> argparse.ArgumentParser:
         "is installed from)",
     )
     mode = globals_parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--list",
+        nargs="?",
+        const="all",
+        choices=("all", "packs", "skills"),
+        help="list the local catalog without changing the machine",
+    )
+    globals_parser.add_argument("--json", action="store_true", help="with --list: emit JSON")
+    globals_parser.add_argument(
+        "--repo", type=Path, help="with --list: show selections recorded for this repository"
+    )
     mode.add_argument("--check", action="store_true", help="report changes without applying them")
     mode.add_argument(
         "--upstream",
@@ -234,6 +275,7 @@ def _new(args: argparse.Namespace) -> int:
         git=not args.no_git,
         lock=not args.no_lock,
         packs=args.pack,
+        skills=args.skill,
     )
     _print_result(result)
     print(f"\nRepository: {target}")
@@ -244,13 +286,63 @@ def _interactive(args: argparse.Namespace) -> bool:
     return not args.no_input and sys.stdin.isatty() and sys.stdout.isatty()
 
 
+def _pick(args: argparse.Namespace) -> bool:
+    if not _interactive(args):
+        raise ValueError(
+            "--select needs a terminal and cannot use --no-input; use --pack/--skill instead"
+        )
+    if not args.path.is_dir():
+        raise ValueError(f"repository directory does not exist: {args.path}")
+    before = Selection.from_manifest(read_manifest(args.path.resolve()))
+    initial = before.change(args.pack, args.skill, args.remove_pack, args.remove_skill)
+    try:
+        chosen = catalog_view.choose(AGENTS_DIR, initial)
+        if chosen is None:
+            print("Selection cancelled; nothing changed.")
+            return False
+        args.pack = sorted(set(chosen.packs) - set(before.packs))
+        args.skill = sorted(set(chosen.skills) - set(before.skills))
+        args.remove_pack = sorted(set(before.packs) - set(chosen.packs))
+        args.remove_skill = sorted(set(before.skills) - set(chosen.skills))
+        print(visible("Packs: " + (", ".join(chosen.packs) or "none")))
+        print(visible("Individual skills: " + (", ".join(chosen.skills) or "none")))
+        preview = update_repository(
+            args.path,
+            check=True,
+            hooks=not args.no_hooks,
+            lock=not args.no_lock,
+            packs=args.pack,
+            skills=args.skill,
+            remove_packs=args.remove_pack,
+            remove_skills=args.remove_skill,
+            packs_only=args.packs_only,
+            personal=args.personal,
+        )
+        _print_result(preview, check=True)
+        if preview.errors:
+            raise ValueError("fix the preview errors before applying this selection")
+        if input(
+            "Apply this update, including the baseline changes shown above? [y/N] "
+        ).strip().lower() in ("y", "yes"):
+            return True
+    except (EOFError, KeyboardInterrupt):
+        print()
+    print("Selection cancelled; nothing changed.")
+    return False
+
+
 def _update(args: argparse.Namespace) -> int:
+    if args.select and not _pick(args):
+        return 0
     hooks, lock = not args.no_hooks, not args.no_lock
     result = update_repository(
         args.path,
         hooks=hooks,
         lock=lock,
         packs=args.pack,
+        skills=args.skill,
+        remove_packs=args.remove_pack,
+        remove_skills=args.remove_skill,
         packs_only=args.packs_only,
         personal=args.personal,
     )
@@ -295,6 +387,9 @@ def _check(args: argparse.Namespace) -> int:
             hooks=not args.no_hooks,
             lock=not args.no_lock,
             packs=args.pack,
+            skills=args.skill,
+            remove_packs=args.remove_pack,
+            remove_skills=args.remove_skill,
             packs_only=args.packs_only,
             personal=args.personal,
         )
@@ -309,6 +404,9 @@ def _check(args: argparse.Namespace) -> int:
                 hooks=not args.no_hooks,
                 lock=not args.no_lock,
                 packs=args.pack,
+                skills=args.skill,
+                remove_packs=args.remove_pack,
+                remove_skills=args.remove_skill,
                 packs_only=args.packs_only,
                 personal=args.personal,
             )
@@ -415,6 +513,14 @@ def _upgrade(root: Path, args: argparse.Namespace) -> int:
 
 def _globals(args: argparse.Namespace) -> int:
     root = find_standards_root(args.standards_root)
+    if args.list:
+        selection = Selection()
+        if args.repo is not None:
+            if not args.repo.is_dir():
+                raise ValueError(f"repository directory does not exist: {args.repo}")
+            selection = Selection.from_manifest(read_manifest(args.repo.resolve()))
+        catalog_view.show_catalog(root / ".agents", args.list, selection, json_output=args.json)
+        return 0
     if args.upstream:
         return _upstream(root)
     if args.upgrade:
@@ -443,6 +549,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     if upgrade_only and not args.upgrade:
         parser.error("SKILL, --no-input and --allow-findings work only with --upgrade")
+    if args.command == "globals" and (args.json or args.repo is not None) and not args.list:
+        parser.error("--json and --repo work only with --list")
     try:
         if args.command == "new":
             return _new(args)

@@ -50,10 +50,10 @@ from repo_template.scaffold import (
     PERSONAL,
     new_project,
     preflight,
-    skill_packs,
     update_packs_only,
     update_project,
 )
+from repo_template.selection import Selection, require_skills
 from repo_template.standards import load_skill_packs, sync_project_packs, unknown_packs
 
 AGENTS_DIR = Path.home() / ".agents"
@@ -190,11 +190,13 @@ def create_repository(
     git: bool = True,
     lock: bool = True,
     packs: Sequence[str] = (),
+    skills: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
     agents_dir: Path = AGENTS_DIR,
 ) -> Result:
     """Render the baseline into an empty directory, then initialize Git and the lockfile."""
     _require_known_packs(packs, agents_dir)
+    require_skills(skills, agents_dir)
     mcp = _mcp(target.resolve(), list(packs), agents_dir, {})
     plan = _plan_claude(target.resolve(), mcp, {})
     result = new_project(
@@ -203,6 +205,7 @@ def create_repository(
         description=description,
         python_version=python_version,
         packs=packs,
+        skills=skills,
         mcp=plan.manifest if plan else None,
     )
     if plan:
@@ -210,7 +213,9 @@ def create_repository(
     _sync_codex(result.root, mcp, result, check=False)
     if mcp:
         result.errors.extend(mcp.errors)
-    sync_project_packs(result.root, packs, result, check=False, agents_dir=agents_dir)
+    sync_project_packs(
+        result.root, packs, result, check=False, agents_dir=agents_dir, skills=skills
+    )
     if git:
         if not runner.which("git"):
             result.errors.append("git is not installed; repository files were still created")
@@ -326,8 +331,12 @@ def _links_under_tracked_folders(root: Path, index: Index, agents_dir: Path) -> 
 def _update_personal(
     root: Path,
     manifest: dict[str, Any],
-    packs: Sequence[str],
+    selection: Selection,
     *,
+    packs: Sequence[str],
+    skills: Sequence[str],
+    remove_packs: Sequence[str],
+    remove_skills: Sequence[str],
     check: bool,
     agents_dir: Path,
     claude: ClaudeMcp | None,
@@ -342,7 +351,7 @@ def _update_personal(
             f"the Codex file stands, so personal adoption isn't supported here (`git "
             f"sparse-checkout disable` first)"
         )
-    wanted = sorted({*skill_packs(root), *packs})
+    wanted = selection.packs
     mcp = _mcp(root, wanted, agents_dir, manifest, always=True)
     assert mcp is not None
     tracked = tracked_paths(root)
@@ -356,6 +365,7 @@ def _update_personal(
         ignored=lambda paths: set(paths),
         tracked=tracked,
         owned_paths=links,
+        skills=selection.skills,
     )
     codex = root / CODEX_FILE
     mode, why = codex_choice(root, tracked)
@@ -369,7 +379,15 @@ def _update_personal(
     ignored = predicted_ignores(root, set() if exclude.damaged else listed_paths(patterns))
     codex_ignored = mode == "remove" or codex in ignored([codex])
 
-    result = update_packs_only(root, check=check, add_packs=packs, profile=PERSONAL)
+    result = update_packs_only(
+        root,
+        check=check,
+        add_packs=packs,
+        add_skills=skills,
+        remove_packs=remove_packs,
+        remove_skills=remove_skills,
+        profile=PERSONAL,
+    )
     result.errors.extend(mcp.errors + probe.errors)
     stale = _links_under_tracked_folders(root, tracked, agents_dir)
     for link in stale:  # the repository's own version belongs there
@@ -390,6 +408,7 @@ def _update_personal(
         ignored=ignored,
         tracked=tracked,
         recheck=True,
+        skills=selection.skills,
     )
     _sync_claude_local(root, mcp, result, check=check, claude=claude, home=home, fresh=not manifest)
     return result
@@ -402,6 +421,9 @@ def update_repository(
     hooks: bool = True,
     lock: bool = True,
     packs: Sequence[str] = (),
+    skills: Sequence[str] = (),
+    remove_packs: Sequence[str] = (),
+    remove_skills: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
     agents_dir: Path = AGENTS_DIR,
     packs_only: bool = False,
@@ -418,33 +440,51 @@ def update_repository(
     `claude` and `home` are where its Claude Code servers go, this machine's by default.
     """
     _require_known_packs(packs, agents_dir)
+    require_skills(skills, agents_dir)
     # every refusal before the first write (.mcp.json is written ahead of the manifest)
-    manifest = preflight(root, packs_only=packs_only, personal=personal, add_packs=packs)
+    manifest = preflight(
+        root, packs_only=packs_only, personal=personal, add_packs=packs, add_skills=skills
+    )
+    selection = Selection.from_manifest(manifest).change(packs, skills, remove_packs, remove_skills)
     if personal or manifest.get("profile") == PERSONAL:
         home = (home or Path.home()).expanduser().resolve()
         return _update_personal(
             root.resolve(),
             manifest,
-            packs,
+            selection,
+            packs=packs,
+            skills=skills,
+            remove_packs=remove_packs,
+            remove_skills=remove_skills,
             check=check,
             agents_dir=agents_dir,
             claude=claude,
             home=home,
         )
     packs_only = packs_only or manifest.get("profile") == PACKS_ONLY
-    wanted = sorted({*skill_packs(root.resolve()), *packs})
+    wanted = selection.packs
     mcp = _mcp(root.resolve(), wanted, agents_dir, manifest)
     plan = _plan_claude(root.resolve(), mcp, manifest)
     first = Result(root.resolve())
     if plan:  # .mcp.json first: the manifest written next records only what was written
         apply_project_mcp(root.resolve(), plan, first, check=check)
     update = update_packs_only if packs_only else update_project
-    result = update(root, check=check, add_packs=packs, mcp=plan.manifest if plan else None)
+    result = update(
+        root,
+        check=check,
+        add_packs=packs,
+        add_skills=skills,
+        remove_packs=remove_packs,
+        remove_skills=remove_skills,
+        mcp=plan.manifest if plan else None,
+    )
     _merge(first, result)
     if mcp:
         result.errors.extend(mcp.errors)
     _sync_codex(result.root, mcp, result, check=check)
-    sync_project_packs(result.root, wanted, result, check=check, agents_dir=agents_dir)
+    sync_project_packs(
+        result.root, wanted, result, check=check, agents_dir=agents_dir, skills=selection.skills
+    )
     if packs_only:
         return result
     if hooks:

@@ -32,14 +32,14 @@ _Avoid_: patched file
 
 **Manifest**:
 `.repo-template.json` in a repository repo-template manages: its profile, template version, skill
-packs and pack MCP records; for the Python/uv profile also the project variables and the hash of
+packs, individual skill selections and pack MCP records; for the Python/uv profile also the project variables and the hash of
 each file as generated. A personal repository's is `.git/repo-template.json`, with no MCP
 records (those are in `~/.repo-template/globals-state.json`).
 _Avoid_: lock, state file
 
 **Profile**:
 What a manifest says repo-template manages: `python-uv` (the full project baseline),
-`packs-only` (skill packs and their MCP servers) or `personal` (the same, for one person). It is
+`packs-only` (selected packs, individual skills and pack MCP servers) or `personal` (the same, for one person). It is
 recorded on adoption, and later runs follow it.
 
 **Adoption**:
@@ -83,18 +83,24 @@ _Avoid_: local config
 
 **Skill catalog**:
 The skills in `.agents/skills/` (global, linked into every machine by `globals`) and
-`.agents/packs/` (pack skills, linked only into repositories that list their pack).
+`.agents/packs/` (pack skills, linked into repositories selecting the skill or its pack).
 _Avoid_: skill library
 
 **Skill pack**:
 A named group of catalog skills, defined in `.agents/skill-packs.json` and kept in
-`.agents/packs/`, that are linked only into repositories whose manifest lists the pack (into
-`.claude/skills/` for Claude Code and `.agents/skills/` for Codex), not into every machine.
+`.agents/packs/`. Selecting a pack supplies all its members in the repository
+(`.claude/skills/` for Claude Code and `.agents/skills/` for Codex); members can also be
+selected individually. Pack skills are not installed globally.
 _Avoid_: skill bundle, plugin
+
+**Individual selection**:
+A repository skill chosen with `--skill`, recorded in the manifest's `individual_skills`.
+It supplies that skill and its supporting files, without sibling skills or pack MCP servers.
+Effective repository skills are the union of individual selections and selected pack members.
 
 **Packs-only repository**:
 A repository adopted with `update --packs-only`: its manifest's profile is `packs-only`, and
-repo-template manages only its skill packs and their MCP servers, never baseline files.
+repo-template manages only selected packs, individual skills and pack MCP servers, never baseline files.
 _Avoid_: partial adoption
 
 **Personal repository**:

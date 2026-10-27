@@ -173,7 +173,8 @@ git status --short | diff /tmp/before.txt - && echo "nothing the team sees chang
 ```
 
 There is nothing to commit. To add a pack: `repo-template update . --pack <name>`. To drop one,
-edit `skill_packs` in `.git/repo-template.json`, then run `update`.
+use `repo-template update . --remove-pack <name>`. Individual selections use `--skill`
+and `--remove-skill`.
 
 ### 2.3 Adopt a repository
 
@@ -217,6 +218,44 @@ requires manual comparison and merge; `--upgrade` never overwrites local adaptat
 skills and reasons are recorded in `.agents/skill-sources.json`; revisit them deliberately when
 requirements change. No machine setup or deployment is implied by a readiness review.
 
+### Browse and select packs or individual skills
+
+```bash
+repo-template globals --list packs                 # descriptions, members and pack MCP servers
+repo-template globals --list skills                # descriptions; global vs repository skills
+repo-template globals --list --repo .              # mark this repository's explicit selections
+repo-template globals --list --json                # machine-readable catalog
+repo-template update . --select                    # terminal picker, preview, then confirm
+```
+
+Listing reads the local standards catalog and changes nothing. Update the machine with
+`globals` first so repository selections use that catalog through `~/.agents`.
+The picker starts with existing choices. Toggle numbers or `pack:NAME` / `skill:NAME`, use
+`packs`, `skills`, `all` or `/search` to browse, then `done` to preview the complete update.
+`q`, EOF or Ctrl-C cancels before any writes; the final confirmation defaults to no.
+Global skills are shown in listings but managed by `globals`, not the repository picker.
+
+Scripted selection uses repeatable flags; `check` accepts the same additions and removals:
+
+```bash
+repo-template check . --pack delivery --skill code-simplification
+repo-template update . --pack delivery --skill code-simplification
+repo-template update . --remove-pack delivery --remove-skill code-simplification
+```
+
+`--skill` also works with `new`. Individual selections are recorded in `individual_skills`
+beside `skill_packs` in the manifest. They link the complete skill directory, including its
+references and scripts, but do not select sibling skills or a pack's MCP servers. Select the
+pack when you need its servers or companion skills. The effective skills are the union of both
+lists: removing a pack keeps individual selections, and removing an individual selection keeps
+skills still supplied by a selected pack. Project-owned files and links are preserved.
+
+For first adoption, add `--packs-only` or `--personal` to the picker or scripted update as
+appropriate. Later runs remember the profile. The picker previews baseline changes too for a
+full-baseline repository; it is not a skills-only update mode. `--select` needs a terminal and
+cannot be combined with `--no-input`. New manifests use version 0.6.0; older CLIs refuse them
+so they cannot silently discard individual selections.
+
 For Cloudflare's audit workflow, add `security` with `repo-template update <repo> --pack security`
 (repositories already using that pack get it on their next `update`). Invoke `/security-audit`
 explicitly and state the scope, `quick`, `standard`, or `deep` profile, and an agent-invocation
@@ -234,7 +273,7 @@ Reports default to `~/security-audit-skill/<repo-name>/run-<N>` outside the targ
    shows the packs' servers.
 
 It refuses a subfolder (run it at the top of the checkout), a linked worktree, a sparse checkout,
-and a repository that has a `.repo-template.json` of its own. To undo it: set `skill_packs` to
+and a repository that has a `.repo-template.json` of its own. To undo it: set both `skill_packs` and `individual_skills` to
 `[]` in `.git/repo-template.json`, run `repo-template update .`, then delete
 `.git/repo-template.json` (deleting it first leaves the links, the ignore block and the servers
 behind).

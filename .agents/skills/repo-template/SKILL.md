@@ -134,18 +134,32 @@ Keep every change on this machine: nothing is committed, and teammates never see
 If it refuses: in a subfolder, rerun at the top of the checkout; in a linked worktree, run it in
 the main checkout; in a sparse checkout, tell the user personal adoption isn't supported there;
 when the repository has its own `.repo-template.json`, it is adopted for everyone: follow
-**Bring a repository to standard**. To drop a pack, edit `skill_packs` in
-`.git/repo-template.json` and rerun `update`; to undo it, set the list to `[]`, rerun `update`,
+**Bring a repository to standard**. To drop a pack, use `update --remove-pack <name>`; to undo it, set both
+`skill_packs` and `individual_skills` to `[]` in `.git/repo-template.json`, rerun `update`,
 then delete that file.
 
 ## Skill packs
 
-Domain skills (LangChain, Gradio, knowledge graphs, TypeScript) load only in repositories that
-list their pack; `~/.agents/skill-packs.json` defines the packs. Add one when the repository uses
+Browse with `repo-template globals --list packs` or `--list skills`; add `--repo <repo>`
+to mark explicit selections, or `--json` for scripts. Listing is read-only. In a terminal,
+`repo-template update <repo> --select` starts with existing choices: toggle numbers or
+`pack:NAME` / `skill:NAME`, filter with `/search`, and use `done` to preview before confirming.
+Cancel with `q`, EOF or Ctrl-C. A full-profile preview includes baseline changes as well.
+For agents and scripts, use `check` then `update --no-input` with repeatable `--pack`, `--skill`,
+`--remove-pack` and `--remove-skill`; the picker requires a terminal. First adoption still
+needs the appropriate profile flag. Global skills are handled by `globals`.
+
+Individual selections live in `individual_skills` alongside `skill_packs`. They bring a
+skill's resources, but not siblings or pack MCP servers; choose the pack if those are needed.
+Removing one selection preserves skills still supplied by another selection. Version 0.6.0
+protects these manifests from older CLIs. New repositories also accept `--skill`.
+
+Domain skills (LangChain, Gradio, knowledge graphs, TypeScript) load in repositories selecting
+the skill or its pack; `~/.agents/skill-packs.json` defines the packs. Add one when the repository uses
 that framework: `repo-template update <repo> --pack <name>` records it under `skill_packs` and
 links its skills into the repository's `.claude/skills/` (Claude Code) and `.agents/skills/`
-(Codex), where Git ignores them. To remove a pack, delete it from `skill_packs` and run
-`update`. Add `dev-workflows` only when the user asks for it: its review, debugging, testing,
+(Codex), where Git ignores them. To remove a pack, run `update --remove-pack <name>`. Add `dev-workflows` only when the user asks for it: its review,
+debugging, testing,
 architecture and requirements skills overlap global ones. The pack also includes standalone
 Ponytail, invoked explicitly with `/ponytail full` for the smallest complete implementation
 (`lite` presents the smaller option; `ultra` challenges scope). Say "stop ponytail" to end its
@@ -186,7 +200,7 @@ and debugging need no tracker setup. Keep CLAUDE import stubs and shared AGENTS 
 ## The manifest
 
 `.repo-template.json` records the template version, the project variables, each managed file's
-hash as generated, and the lists that belong to the project. Edit only `skill_packs`,
+hash as generated, and the lists that belong to the project. Edit only `skill_packs`, `individual_skills`,
 `project_owned`, and names in `mcp_kept` (delete one to have repo-template manage that MCP
 entry again); `update` maintains the rest.
 

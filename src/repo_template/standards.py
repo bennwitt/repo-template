@@ -316,6 +316,7 @@ def _sync_links(
     tracked: Callable[[Path], bool] | None = None,
     owned_paths: set[Path] | None = None,
     recheck: bool = False,
+    skills: Sequence[str] = (),
 ) -> None:
     """Make directory/<name> a symlink to targets[name] for every name. Real files and folders,
     and links this tool didn't make, are kept and reported; so is a new link that `ignored`
@@ -459,6 +460,7 @@ def sync_project_packs(
     tracked: Callable[[Path], bool] | None = None,
     owned_paths: set[Path] | None = None,
     recheck: bool = False,
+    skills: Sequence[str] = (),
 ) -> None:
     """Link each skill of the repository's packs into <root>/.claude/skills, for Claude Code, and
     <root>/.agents/skills, for Codex. A new link is made only where Git would ignore it
@@ -492,6 +494,17 @@ def sync_project_packs(
                 wanted[name] = skills_dir / name
             else:
                 result.errors.append(f"skill pack {pack!r} lists {name!r}, which isn't installed")
+    for name in skills:
+        # Validate names before joining paths, including hand-edited manifests.
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
+            raise ValueError(f"invalid individual skill name: {name!r}")
+        if (packs_dir / name / "SKILL.md").is_file():
+            wanted[name] = packs_dir / name
+        else:
+            undefined.append(name)  # preserve existing links when a catalog is incomplete
+            result.errors.append(
+                f"individual skill {name!r} isn't installed; links were left in place"
+            )
     owned = _points_into_any(packs_dir, skills_dir)
     real_root, catalog = root.resolve(), agents_dir.resolve()
     seen: set[Path] = set()

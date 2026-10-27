@@ -11,6 +11,7 @@ from typing import Any
 from repo_template import __version__
 from repo_template.model import Conflict, ProjectContext, Result, TemplateFile
 from repo_template.policies import POLICIES, Outcome, PolicyName, digest
+from repo_template.selection import Selection
 from repo_template.templates import project_files
 
 MANIFEST_NAME = ".repo-template.json"
@@ -306,6 +307,7 @@ def _build_manifest(
     owned: Sequence[str] = (),
     previous: dict[str, Any] | None = None,
     mcp: Mapping[str, Mapping[str, str]] | None = None,
+    skills: Sequence[str] = (),
 ) -> dict[str, Any]:
     records: dict[str, dict[str, Any]] = {}
     for spec in specs:
@@ -336,6 +338,8 @@ def _build_manifest(
     }
     if packs:
         manifest["skill_packs"] = sorted(set(packs))
+    if skills:
+        manifest["individual_skills"] = sorted(set(skills))
     if owned:
         manifest["project_owned"] = sorted(set(owned))
     for key in MCP_KEYS:
@@ -400,6 +404,7 @@ def new_project(
     description: str,
     python_version: str,
     packs: Sequence[str] = (),
+    skills: Sequence[str] = (),
     mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> Result:
     target = target.resolve()
@@ -412,7 +417,7 @@ def new_project(
     result = Result(target)
     for spec in specs:
         _apply_file(target, spec, {}, result, check=False, baseline={})
-    _write_manifest(target, _build_manifest(target, context, specs, packs, mcp=mcp))
+    _write_manifest(target, _build_manifest(target, context, specs, packs, mcp=mcp, skills=skills))
     result.created.append(MANIFEST_NAME)
     return result
 
@@ -458,7 +463,12 @@ PROFILES = ("python-uv", PACKS_ONLY, PERSONAL)
 
 
 def preflight(
-    root: Path, *, packs_only: bool, add_packs: Sequence[str], personal: bool = False
+    root: Path,
+    *,
+    packs_only: bool,
+    add_packs: Sequence[str],
+    personal: bool = False,
+    add_skills: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Every reason `update` (or `check`) can't run, checked before anything is written; the
     manifest, read once. A packs-only or personal manifest makes the run one too."""
@@ -481,7 +491,8 @@ def preflight(
     if shared.exists() and private is not None and private.is_file():
         raise ValueError(
             f"{shared} adopts this repository for everyone, so your personal adoption has to go: "
-            f"move {MANIFEST_NAME} aside, set skill_packs to [] in {private} and run "
+            f"move {MANIFEST_NAME} aside, set skill_packs and individual_skills to [] in {private} "
+            "and run "
             f"`repo-template update {root}` (it removes the links, the exclude block, the Codex "
             f"block and your local-scope servers), then delete {private} and put "
             f"{MANIFEST_NAME} back"
@@ -515,10 +526,13 @@ def preflight(
         raise ValueError(f"{shared} has the Python/uv baseline; update it without --packs-only")
     if packs_only and profile == PERSONAL:
         raise ValueError(f"{found} adopts this repository for you alone; drop --packs-only")
-    if (packs_only or personal) and not manifest and not add_packs:
+    if (packs_only or personal) and not manifest and not add_packs and not add_skills:
         flag = "--personal" if personal else "--packs-only"
-        raise ValueError(f"{flag} adopts a repository for its skill packs; name one with --pack")
+        raise ValueError(
+            f"{flag} adopts a repository for its skill packs; name one with --pack or --skill"
+        )
     _refuse_downgrade(root, manifest)
+    Selection.from_manifest(manifest)
     return manifest
 
 
@@ -527,6 +541,9 @@ def update_packs_only(
     *,
     check: bool = False,
     add_packs: Sequence[str] = (),
+    add_skills: Sequence[str] = (),
+    remove_packs: Sequence[str] = (),
+    remove_skills: Sequence[str] = (),
     mcp: Mapping[str, Mapping[str, str]] | None = None,
     profile: str = PACKS_ONLY,
 ) -> Result:
@@ -539,15 +556,20 @@ def update_packs_only(
         packs_only=profile == PACKS_ONLY,
         personal=profile == PERSONAL,
         add_packs=add_packs,
+        add_skills=add_skills,
     )
     proposed: dict[str, Any] = {
         "schema": 1,
         "template_version": __version__,
         "profile": profile,
     }
-    packs = sorted({*skill_packs(root), *add_packs})
-    if packs:
-        proposed["skill_packs"] = packs
+    selection = Selection.from_manifest(manifest).change(
+        add_packs, add_skills, remove_packs, remove_skills
+    )
+    if selection.packs:
+        proposed["skill_packs"] = list(selection.packs)
+    if selection.skills:
+        proposed["individual_skills"] = list(selection.skills)
     owned = sorted(_project_owned(manifest))
     if owned:
         proposed["project_owned"] = owned
@@ -563,26 +585,38 @@ def update_project(
     *,
     check: bool = False,
     add_packs: Sequence[str] = (),
+    add_skills: Sequence[str] = (),
+    remove_packs: Sequence[str] = (),
+    remove_skills: Sequence[str] = (),
     mcp: Mapping[str, Mapping[str, str]] | None = None,
 ) -> Result:
     """`mcp` holds the pack MCP records to keep (mcp_servers, mcp_kept); None carries the
     manifest's forward."""
     root = root.resolve()
-    manifest = preflight(root, packs_only=False, add_packs=add_packs)
+    manifest = preflight(root, packs_only=False, add_packs=add_packs, add_skills=add_skills)
     if manifest.get("profile") in (PACKS_ONLY, PERSONAL):
         raise ValueError(
             f"{manifest_file(root)} takes only skill packs; to take the Python/uv baseline, "
             f"delete it and run update"
         )
+    selection = Selection.from_manifest(manifest).change(
+        add_packs, add_skills, remove_packs, remove_skills
+    )
     context = _context_from_manifest(root, manifest)
     specs = project_files(context, package=_uses_package_layout(root, context))
     baseline = {spec.relative_path: spec for spec in specs}
     result = Result(root)
     for spec in specs:
         _apply_file(root, spec, manifest, result, check=check, baseline=baseline)
-    packs = [*skill_packs(root), *add_packs]
     owned = sorted(_project_owned(manifest))
     proposed = _build_manifest(
-        root, context, specs, packs, owned, manifest, _carried(manifest, mcp)
+        root,
+        context,
+        specs,
+        selection.packs,
+        owned,
+        manifest,
+        _carried(manifest, mcp),
+        skills=selection.skills,
     )
     return _finish_manifest(root, manifest, proposed, result, check=check)

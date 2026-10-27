@@ -43,7 +43,8 @@ For skill selection, review scope and repository workflow setup, read
 - Format: `uv run ruff format .` (CI and the pre-commit hook run `ruff format --check .`)
 - Type-check: `uv run mypy src`
 - Self-check: `uv run repo-template check .` prints "Standards are current."
-- Catalog, read-only: `uv run repo-template globals --check --standards-root .`
+- Catalog listing, read-only: `uv run repo-template globals --list --standards-root .`
+- Catalog validation, read-only: `uv run repo-template globals --check --standards-root .`
 
 ## Design rules
 
