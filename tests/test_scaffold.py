@@ -138,6 +138,14 @@ def test_workflow_guidance_is_seeded_and_project_edits_are_preserved(tmp_path: P
     agents = root / "AGENTS.md"
     assert guide.is_file()
     assert "[docs/agents/workflow.md](docs/agents/workflow.md)" in agents.read_text()
+    assert "Use the `repo-template` skill and CLI" in agents.read_text()
+    assert "Before substantial implementation" in agents.read_text()
+    guidance = guide.read_text()
+    assert "repo-template globals --list --repo ." in guidance
+    assert "repo-template check . --pack delivery --skill code-simplification" in guidance
+    assert (
+        "repo-template update . --pack delivery --skill code-simplification --no-input" in guidance
+    )
     assert (root / "CLAUDE.md").read_text() == "@AGENTS.md\n"
 
     guide.write_text("# Our workflow\n\nUse our existing issue tracker.\n")
@@ -151,7 +159,7 @@ def test_workflow_guidance_is_seeded_and_project_edits_are_preserved(tmp_path: P
     assert "docs/agents/workflow.md" in preview.created
     assert not guide.exists()
     update_project(root)
-    assert guide.is_file()
+    assert guide.read_text() == guidance
     assert agents.read_text() == "# Our guide\n\nKeep the team's conventions.\n"
     assert not update_project(root, check=True).needs_attention
 

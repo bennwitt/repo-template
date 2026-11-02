@@ -1,6 +1,6 @@
 ---
 name: repo-template
-description: "Apply and maintain the repo-template baseline: choose full, packs-only or personal, plan with `repo-template check`, apply with `update`, resolve preserved files (exit 2), add skill packs, or start one with `new`. Use when bringing a repository up to standard, updating every repository on a machine, adopting a team's repository, or adding a pack."
+description: "Create, adopt and update repositories with repo-template: full, packs-only or personal profiles; check, update and preserved-file resolution. Use when bringing one or all repositories to standard, adopting a team repository, or adding relevant packs and individual skills for project work."
 ---
 
 # repo-template
@@ -139,6 +139,20 @@ when the repository has its own `.repo-template.json`, it is adopted for everyon
 then delete that file.
 
 ## Skill packs
+
+Before substantial implementation, or when the stack or task needs a missing capability,
+review the project's dependencies and existing selections with `globals --list --repo <repo>`.
+Reuse installed skills and add only useful missing packs or individuals within the user's
+authorized scope. Preserve existing selections and the recorded profile. Inspect the full
+`check` preview, apply matching flags with `update --no-input`, then verify with `check` and
+review the Git diff (personal adoption must leave status unchanged). Read the selected
+`SKILL.md` files before use; a fresh agent session may be needed for skill discovery.
+
+Generated AGENTS files direct agents to `docs/agents/workflow.md` for this workflow. Existing
+AGENTS and workflow seeds keep their contents, including older generated text. When updating
+a project's guidance, merge the discovery instruction and the guide's **Equip the project with
+relevant skills** section while preserving its conventions. Packs-only and personal adoption
+leave project documentation alone.
 
 Browse with `repo-template globals --list packs` or `--list skills`; add `--repo <repo>`
 to mark explicit selections, or `--json` for scripts. Listing is read-only. In a terminal,
