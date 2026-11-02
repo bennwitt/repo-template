@@ -505,11 +505,27 @@ adaptation preserves `AGENTS.md` as the authority and the `CLAUDE.md` import stu
 Markdown without a remote, and keeps remote label creation separate from local configuration.
 The adapted `code-review` covers the requested committed, staged, unstaged and untracked scope.
 
-The [workflow guide](docs/agents/workflow.md) selects one core process per task and adds focused
-domain checks. New full-baseline repositories receive this guide and an AGENTS pointer. Existing
-full-baseline repositories get the guide when missing; their edited guide and existing AGENTS
-remain untouched. Add a pointer to `docs/agents/workflow.md` to an existing AGENTS if desired.
-Packs-only and personal adoption create neither document.
+New full-baseline `AGENTS.md` files direct agents to use the `repo-template` skill and CLI
+before substantial implementation or when the stack or task needs a missing capability. The
+[workflow guide](docs/agents/workflow.md#equip-the-project-with-relevant-skills) explains how to
+discover packs and individual skills, inspect current selections, choose useful additions,
+preview with `check`, apply with `update --no-input`, and verify. Agents retain the repository's
+profile and existing choices; `update --select` is for a human at a terminal. A full-profile
+update also reconciles baseline files. The guide then selects one core process per task and
+adds focused domain checks.
+
+Existing full-baseline repositories get the guide when missing. Existing AGENTS and workflow
+files are preserved, including older generated copies: updating the CLI does not refresh these
+seeds. Merge the guide's **Equip the project with relevant skills** section into the project's
+guide and add this instruction to its AGENTS:
+
+> Use the `repo-template` skill and CLI to equip this project with relevant packs and individual
+> skills. Before substantial implementation, or when the stack or task needs a missing
+> capability, read [docs/agents/workflow.md](docs/agents/workflow.md) for discovery, preview,
+> application and verification within the user's authorized scope.
+
+Packs-only and personal adoption create neither document; keep team instructions intact and
+use the global `repo-template` skill for personal selection.
 
 For Ponytail, add `dev-workflows` with `repo-template update <repo> --pack dev-workflows`,
 then invoke `/ponytail full` to favor the smallest complete change. `lite` presents the smaller

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Generated AGENTS guidance now directs agents to use `repo-template` to discover and add
+  relevant packs and individual skills before substantial implementation or when capabilities
+  are missing. The workflow guide documents scripted discovery, preview, apply and verification;
+  the terminal picker remains a human workflow. Existing seed files require a manual merge.
 - Add read-only `globals --list [packs|skills|all]`, JSON output and repository selection
   markers. Add `update --select`, a searchable terminal picker with a full-update preview,
   explicit apply confirmation and cancellation without writes.

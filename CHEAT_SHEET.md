@@ -84,6 +84,12 @@ In the picker: toggle numbers or `pack:NAME` / `skill:NAME`; `packs`, `skills`, 
 for first adoption where appropriate. Existing profiles are remembered. A full-baseline
 update also previews and applies baseline changes. Global skills are installed by `globals`.
 
+Agents: review relevant skills before substantial implementation or when capabilities are
+missing. Use explicit selections with `check`, then the matching `update --no-input`, then
+`check .`; see the [agent workflow](docs/agents/workflow.md#equip-the-project-with-relevant-skills).
+For older repositories, merge the [AGENTS instruction](README.md#engineering-workflow) and guide
+section manually; existing seed files are preserved.
+
 Available packs: [catalog](README.md#catalog-every-skill-where-it-applies-and-where-it-comes-from).
 In an adopted repository:
 

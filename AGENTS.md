@@ -34,9 +34,6 @@ set up and changes nothing.
 
 ## Commands
 
-For skill selection, review scope and repository workflow setup, read
-[docs/agents/workflow.md](docs/agents/workflow.md).
-
 - Install: `uv sync --dev`
 - Test: `uv run pytest`
 - Lint: `uv run ruff check .`
@@ -45,6 +42,14 @@ For skill selection, review scope and repository workflow setup, read
 - Self-check: `uv run repo-template check .` prints "Standards are current."
 - Catalog listing, read-only: `uv run repo-template globals --list --standards-root .`
 - Catalog validation, read-only: `uv run repo-template globals --check --standards-root .`
+
+## Agent workflows
+
+Use the `repo-template` skill and CLI to equip this project with relevant packs and individual
+skills. Before substantial implementation, or when the stack or task needs a missing capability,
+read [docs/agents/workflow.md](docs/agents/workflow.md) for discovery, preview, application and
+verification within the user's authorized scope, review scope and workflow setup. Follow this
+repository's temporary-folder and machine-change rules below when exercising the CLI itself.
 
 ## Design rules
 

@@ -4,10 +4,47 @@ This file belongs to the project. Adapt it to the team's workflow; baseline upda
 when missing and preserve edits. Skills are available after machine setup; domain skills require
 a selected pack or individual selection. Invoke skills by name using the host's supported syntax.
 
-Browse with `repo-template globals --list`, or `--list --repo .` for recorded selections.
-Use `repo-template update . --select` for the terminal picker, or preview with
-`repo-template check . --pack delivery --skill code-simplification` before the matching update.
-Individual selections bring their supporting files but not sibling skills or pack MCP servers.
+## Equip the project with relevant skills
+
+Before substantial implementation, or when the stack or task needs a missing capability, use
+the `repo-template` skill and CLI to review available packs and individual skills. Match choices
+to the project's dependencies, architecture and requested work; reuse installed skills first.
+
+1. **Discover.** Run these read-only commands from the repository root:
+
+   ```bash
+   repo-template globals --list packs
+   repo-template globals --list skills
+   repo-template globals --list --repo .
+   repo-template globals --list --json
+   ```
+
+2. **Choose.** Add only useful missing selections. A pack brings related skills and its MCP
+   servers; an individual skill brings its supporting files without siblings or pack MCP servers.
+   Preserve existing selections and the recorded adoption profile. For first adoption, follow
+   the `repo-template` skill: personal for one person's use in a team repository, packs-only for
+   another stack, or the full Python/uv baseline where appropriate.
+3. **Preview and apply.** Use explicit flags for agents; for example, when delivery guidance
+   and code simplification are relevant to the task:
+
+   ```bash
+   repo-template check . --pack delivery --skill code-simplification
+   repo-template update . --pack delivery --skill code-simplification --no-input
+   repo-template check .
+   ```
+
+   Inspect the preview before applying within the user's authorized scope. A full-profile
+   update also reconciles baseline files. `check` can exit 1 for planned changes; inspect errors
+   as well. Resolve reported errors or preserved conflicts using the `repo-template` skill.
+   Completion means the final check prints "Standards are current." and the Git diff contains
+   only intended changes; personal adoption must leave Git status unchanged.
+4. **Use.** Read the selected skills' `SKILL.md` instructions before applying them. If the host
+   has not refreshed its skill list, start a fresh agent session to discover the new skills.
+
+`repo-template update . --select` is the interactive picker for a human at a terminal.
+If the CLI or machine catalog is unavailable, report the setup needed and continue with available
+skills where possible. Machine setup and upstream catalog upgrades are separate from project
+selection; follow the user's authorization for them.
 
 ## Choose the work, then the workflow
 

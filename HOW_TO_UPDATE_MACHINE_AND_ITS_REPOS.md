@@ -206,10 +206,15 @@ migration. For example: `repo-template update <repo> --pack delivery --pack perf
 Existing pack users receive additions on their next `update`. These install skills by name,
 not Addy's nine slash-command aliases, plugin hooks or personas.
 
-Full-baseline `new` and `update` create `docs/agents/workflow.md` when missing and preserve it
-after editing. New AGENTS files point to it; existing AGENTS files remain project-owned seeds,
-so add that pointer yourself if wanted. Packs-only and personal adoption leave project docs
-alone. `setup-matt-pocock-skills` configures tracker/triage/domain choices only when needed;
+Full-baseline `new` and `update` create `docs/agents/workflow.md` when missing. New AGENTS files
+direct agents to use the `repo-template` skill and CLI before substantial implementation or when
+a capability is missing. The guide covers catalog discovery, current selections, relevant
+additions, `check`, `update --no-input` and verification. The terminal picker is for humans.
+Existing AGENTS and workflow files are preserved even if they still contain older generated
+text. To equip an established repository, manually merge the guide's **Equip the project with
+relevant skills** section and the [AGENTS instruction in the README](README.md#engineering-workflow).
+Retain project conventions and the recorded adoption profile. Packs-only and personal adoption
+leave project docs alone; use the global `repo-template` skill for personal selection. `setup-matt-pocock-skills` configures tracker/triage/domain choices only when needed;
 it does not install skills, require a remote for local work, or replace the CLAUDE import stub.
 `code-review` includes uncommitted and relevant untracked work when requested.
 
