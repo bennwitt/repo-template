@@ -1,6 +1,6 @@
 # Porting MCP server code to mcp 2.x
 
-Checked against fastmcp 4.0.11 and mcp 2.3.0. The full guides, with every edge case:
+Checked against fastmcp 4.1.4 and mcp 2.3.0. The full guides, with every edge case:
 FastMCP's <https://gofastmcp.com/getting-started/upgrading/from-mcp-sdk-v1.md> and
 <https://gofastmcp.com/getting-started/upgrading/from-fastmcp-3.md>, and the SDK's
 <https://py.sdk.modelcontextprotocol.io/v2/migration/>.
@@ -19,7 +19,7 @@ the official SDK alone. Run the tests from `testing.md` on both eras after eithe
 
 ## A: FastMCP 1.0 to FastMCP 4
 
-`uv add "fastmcp==4.0.11"` (or the newest release at least 7 days old). It brings `mcp>=2,<3`.
+`uv add "fastmcp==4.1.4"` (or the newest release at least 7 days old). It brings `mcp>=2,<3`.
 
 | v1 | FastMCP 4 |
 |---|---|

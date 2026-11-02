@@ -469,6 +469,25 @@ full-baseline repository; it is not a skills-only update mode. `--select` needs 
 cannot be combined with `--no-input`. New manifests use version 0.6.0; older CLIs refuse them
 so they cannot silently discard individual selections.
 
+### MCP development baseline
+
+The `mcp` pack covers Python and TypeScript servers and clients. Use `mcp-developer` to select
+an SDK and protocol path; `mcp-servers` for Python compatibility/integration; `fastmcp-server`
+for upstream FastMCP authoring; `python-mcp-server-generator` for an official-SDK Python server;
+and `mcp-typescript-sdk-upgrade-to-v2` only for a requested TypeScript migration.
+
+The [development baseline](.agents/mcp-development.json) records protocol 2026-07-28 and exact
+reviewed package pins. [Locked executable fixtures](examples/mcp/README.md) verify modern and
+legacy clients, real transports, schemas, auth/ownership boundaries and cancellation. The
+[evaluation](docs/evaluations/mcp.md) records sources, security review and validation limits.
+`globals --upstream` also checks these development pins under the seven-day policy; it reports
+new releases for review, without upgrading applications. Revise pins and fixture locks together.
+
+Existing `mcp` pack users receive the added skills on update. Individual selections retain their
+scope. Updating machine skills does not change application SDK dependencies or enable new
+protocol entry points. Existing AGENTS/workflow seeds still need manual reconciliation.
+Format only project-owned files: recursive formatters must not follow installed skill symlinks.
+
 ### Engineering workflow
 
 A typical feature moves through these skills:
@@ -697,7 +716,7 @@ itself.
 | `knowledge-graph` | Extracting knowledge graphs from text | `knowledge-graph-extraction` |
 | `langchain` | LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills) | `deep-agents-core`, `deep-agents-memory`, `deep-agents-orchestration`, `deepagents-python-quickstart`, `deepagents-typescript-quickstart`, `ecosystem-primer`, `langchain-dependencies`, `langchain-fundamentals`, `langchain-middleware`, `langchain-python-quickstart`, `langchain-rag`, `langchain-typescript-quickstart`, `langgraph-cli`, `langgraph-fundamentals`, `langgraph-human-in-the-loop`, `langgraph-persistence`, `langgraph-python-quickstart`, `langgraph-typescript-quickstart`, `managed-deep-agents` |
 | `local-inference` | Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer. | `hf-mem`, `huggingface-local-models`, `local-model-serving`, `model-recipes`, `muse-glimmer`, `vllm-bench-serve` |
-| `mcp` | Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations. | `mcp-developer`, `mcp-servers`, `python-mcp-server-generator` |
+| `mcp` | Develop Python and TypeScript MCP servers and clients: current protocol, FastMCP, official SDKs, migration, auth, real transports and compatibility tests. | `fastmcp-server`, `mcp-developer`, `mcp-servers`, `mcp-typescript-sdk-upgrade-to-v2`, `python-mcp-server-generator` |
 | `ml-engineering` | Machine-learning engineering: training pipelines and experiment tracking, fine-tuning with LoRA or QLoRA, RAG systems, and prompt design and evaluation. | `fine-tuning-expert`, `ml-pipeline`, `prompt-engineer`, `rag-architect` |
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
 | `performance` | Measured browser, service, database and memory performance: matched baselines, profiling, experiment records and honest source-only audits. Uses available tools; ships no MCP server. | `performance-optimization` |
@@ -756,6 +775,7 @@ itself.
 | `fastapi` | global | [fastapi/fastapi](https://github.com/fastapi/fastapi/tree/7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4/fastapi/.agents/skills/fastapi) | MIT | description overridden |
 | `fastapi-expert` | pack `fastapi` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fastapi-expert) | MIT |  |
 | `fastapi-services` | pack `fastapi` | this repository | MIT |  |
+| `fastmcp-server` | pack `mcp` | [PrefectHQ/fastmcp](https://github.com/PrefectHQ/fastmcp/tree/901575873111515457755df6872d7b0ccdf9407b/skills/fastmcp-server) | Apache-2.0 |  |
 | `feature-forge` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/feature-forge) | MIT |  |
 | `find-skills` | global | [vercel-labs/skills](https://github.com/vercel-labs/skills/tree/773fb2c7bbf16781670a3520affc4abd0c6151ae/skills/find-skills) | MIT | description overridden |
 | `fine-tuning-expert` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fine-tuning-expert) | MIT |  |
@@ -794,8 +814,9 @@ itself.
 | `local-model-serving` | pack `local-inference` | this repository | MIT |  |
 | `loop-me` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/loop-me) | MIT | runs only as `/loop-me` |
 | `managed-deep-agents` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/16a992f09ab3ccfb642dd4f08d350d833d1990bf/config/skills/managed-deep-agents) | MIT |  |
-| `mcp-developer` | pack `mcp` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/mcp-developer) | MIT |  |
+| `mcp-developer` | pack `mcp` | this repository | MIT | derived from [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/mcp-developer) |
 | `mcp-servers` | pack `mcp` | this repository | MIT |  |
+| `mcp-typescript-sdk-upgrade-to-v2` | pack `mcp` | this repository | CC-BY-4.0 | derived from [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk/tree/1e608caeb5130b2ad0fa067c84b26a038c1c6e36/skills/mcp-typescript-sdk-upgrade-to-v2) |
 | `microsoft-foundry` | pack `foundry` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/9bbcb2e7188e02dab5cc47d981f34f38a2d0419d/skills/microsoft-foundry) | MIT | description, disable-model-invocation overridden; runs only as `/microsoft-foundry` |
 | `migrate-to-shoehorn` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/misc/migrate-to-shoehorn) | MIT |  |
 | `ml-pipeline` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/ml-pipeline) | MIT |  |
@@ -816,7 +837,7 @@ itself.
 | `prompt-engineer` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/prompt-engineer) | MIT |  |
 | `property-based-testing` | global | [trailofbits/skills](https://github.com/trailofbits/skills/tree/123037ec8aed26f0d86327cc39137ee5043e5deb/plugins/property-based-testing/skills/property-based-testing) | CC-BY-SA-4.0 | description overridden |
 | `prototype` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/prototype) | MIT |  |
-| `python-mcp-server-generator` | pack `mcp` | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8/skills/python-mcp-server-generator) | MIT | description overridden |
+| `python-mcp-server-generator` | pack `mcp` | this repository | MIT | derived from [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8/skills/python-mcp-server-generator) |
 | `rag-architect` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/rag-architect) | MIT |  |
 | `react-expert` | pack `react` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-expert) | MIT |  |
 | `react-native-expert` | pack `react` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-native-expert) | MIT |  |

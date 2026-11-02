@@ -819,15 +819,6 @@
       "installedAt": "2026-10-14T08:34:49.629Z",
       "updatedAt": "2026-10-14T08:34:49.629Z"
     },
-    "python-mcp-server-generator": {
-      "source": "github/awesome-copilot",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/github/awesome-copilot.git",
-      "skillPath": "skills/python-mcp-server-generator/SKILL.md",
-      "skillFolderHash": "8b926108ed1a63b3f21b0c600718323cce27b99f",
-      "installedAt": "2026-10-14T09:07:45.456Z",
-      "updatedAt": "2026-10-14T09:07:45.456Z"
-    },
     "api-designer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
@@ -953,15 +944,6 @@
       "skillFolderHash": "34ee23b80703c9624ba327bc63bf3d0e9d949722",
       "installedAt": "2026-10-18T18:52:30.207Z",
       "updatedAt": "2026-10-18T18:52:30.207Z"
-    },
-    "mcp-developer": {
-      "source": "jeffallan/claude-skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/jeffallan/claude-skills.git",
-      "skillPath": "skills/mcp-developer/SKILL.md",
-      "skillFolderHash": "2f90403ca5464506ea5d0d7e7547696afca17e26",
-      "installedAt": "2026-10-18T18:52:33.648Z",
-      "updatedAt": "2026-10-18T18:52:33.648Z"
     },
     "ml-pipeline": {
       "source": "jeffallan/claude-skills",
@@ -1142,6 +1124,15 @@
       "skillFolderHash": "ccbc33ed119b28c3ef7b44a7e2081ab191ad63af",
       "installedAt": "2026-10-26T18:34:18.307Z",
       "updatedAt": "2026-10-26T18:34:18.307Z"
+    },
+    "fastmcp-server": {
+      "source": "PrefectHQ/fastmcp",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/PrefectHQ/fastmcp.git",
+      "skillPath": "skills/fastmcp-server/SKILL.md",
+      "skillFolderHash": "37fa5210e2055784b68cacd05d3509fd3cb1e2e2",
+      "installedAt": "2026-11-02T21:48:43.954606+00:00",
+      "updatedAt": "2026-11-02T21:48:43.954606+00:00"
     }
   },
   "dismissed": {

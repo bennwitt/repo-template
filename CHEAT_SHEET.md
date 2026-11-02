@@ -193,3 +193,17 @@ claude mcp list                            # inspect connected servers
 | `globals` says a local setting was kept | Review the reported setting; your machine's choice was preserved. |
 
 More fixes: [troubleshooting](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#troubleshooting).
+
+## MCP development
+
+```bash
+repo-template globals --list skills --repo .
+repo-template check . --pack mcp
+repo-template update . --pack mcp --no-input
+repo-template check .
+repo-template globals --upstream
+```
+
+The [baseline](.agents/mcp-development.json) and [executable fixtures](examples/mcp/README.md)
+define reviewed versions and test commands. The update installs skills and configured docs MCP;
+it does not upgrade application dependencies. Keep formatting scoped to project-owned files.

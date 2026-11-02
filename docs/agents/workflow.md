@@ -46,6 +46,12 @@ If the CLI or machine catalog is unavailable, report the setup needed and contin
 skills where possible. Machine setup and upstream catalog upgrades are separate from project
 selection; follow the user's authorization for them.
 
+For MCP development, start with `mcp-developer` in the `mcp` pack: it routes Python,
+TypeScript, compatibility and security work to the specialist skills. Read the project's locked
+SDK versions first; skill installation does not authorize an application migration. Use the
+standards repository's development baseline and executable MCP fixtures when changing examples.
+Format only project-owned files, never recursively through installed skill symlinks.
+
 ## Choose the work, then the workflow
 
 | Work | Preferred skills | Availability |

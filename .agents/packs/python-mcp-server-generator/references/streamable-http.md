@@ -42,5 +42,7 @@ Clients connect to `http://HOST:PORT/mcp`. For VS Code, write `.vscode/mcp.json`
 - `stateless_http=True` changes only how the server serves clients of earlier revisions.
 - `json_response=True` sends one JSON body for each request. In this mode, the server cannot send progress notifications during the request.
 - If you do not set `transport_security`, the SDK checks the `Host` and `Origin` headers only when the host is `127.0.0.1`, `localhost`, or `::1`. For all other hosts, for example `0.0.0.0` or a public host name, the server does no check. For these hosts, give `transport_security=TransportSecuritySettings(allowed_hosts=[...], allowed_origins=[...])` (from `mcp.server.transport_security`) to `run()` or `streamable_http_app()`.
-- For browser clients, add CORS to the host app. Allow the `Mcp-*` request headers. Expose the `Mcp-Session-Id` response header.
+- For browser clients, add CORS to the host app. Allow the exact MCP request-header names required by the selected SDK; CORS does not expand `Mcp-*` as a wildcard. Expose the `Mcp-Session-Id` response header.
 - For more than one worker, set `request_state_security=RequestStateSecurity(keys=[...])` (from `mcp.server.mcpserver`) on `MCPServer`. Use the same keys and the same server name on all workers.
+
+For protected services follow the MCP authorization specification; test tokens, scopes, audience and resource ownership. Never treat CORS or tool annotations as authorization.

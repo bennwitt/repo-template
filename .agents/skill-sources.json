@@ -190,6 +190,22 @@
         "LICENSE": "5e6620780bdc6b10758bc814e621981705080bbe"
       },
       "discover": "none"
+    },
+    "PrefectHQ/fastmcp": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (the LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "f49a4e16e68b128803cc2dcea614603632b04eac"
+      },
+      "discover": "none"
+    },
+    "modelcontextprotocol/typescript-sdk": {
+      "license": "Apache-2.0 AND MIT AND CC-BY-4.0",
+      "copyright": "Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC.",
+      "licenseFiles": {
+        "LICENSE": "4a93985763241755401a10678395303de4e720ba"
+      },
+      "discover": "none"
     }
   },
   "local": {
@@ -418,6 +434,45 @@
           "LICENSE": "b3575a3c1358eac4b9ee36a4c851872d81417760"
         },
         "commit": "434b7f91364665f2f733b310ec54809bf8f37937"
+      }
+    },
+    "mcp-developer": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "jeffallan/claude-skills",
+        "path": "skills/mcp-developer",
+        "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025",
+        "licenseFiles": {
+          "LICENSE": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d"
+        }
+      }
+    },
+    "python-mcp-server-generator": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "github/awesome-copilot",
+        "path": "skills/python-mcp-server-generator",
+        "commit": "f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8",
+        "license": "MIT",
+        "copyright": "Copyright GitHub, Inc.",
+        "licenseFiles": {
+          "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
+        }
+      }
+    },
+    "mcp-typescript-sdk-upgrade-to-v2": {
+      "license": "CC-BY-4.0",
+      "derivedFrom": {
+        "source": "modelcontextprotocol/typescript-sdk",
+        "path": "skills/mcp-typescript-sdk-upgrade-to-v2",
+        "commit": "1e608caeb5130b2ad0fa067c84b26a038c1c6e36",
+        "license": "CC-BY-4.0",
+        "copyright": "Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC.",
+        "licenseFiles": {
+          "LICENSE": "4a93985763241755401a10678395303de4e720ba"
+        }
       }
     }
   },
@@ -743,10 +798,6 @@
       "commit": "16a992f09ab3ccfb642dd4f08d350d833d1990bf",
       "tree": "b688ea60bf2601fad78a7b24ead62ac78408e8e1"
     },
-    "mcp-developer": {
-      "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
-      "tree": "2f90403ca5464506ea5d0d7e7547696afca17e26"
-    },
     "microsoft-foundry": {
       "commit": "9bbcb2e7188e02dab5cc47d981f34f38a2d0419d",
       "tree": "2311f81bfa096aaefd50068b61443cb92ba70bfe"
@@ -811,10 +862,6 @@
     "prototype": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "e41d92e171f074a2b6887d8f6faca4a15c83d1ca"
-    },
-    "python-mcp-server-generator": {
-      "commit": "f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8",
-      "tree": "8b926108ed1a63b3f21b0c600718323cce27b99f"
     },
     "rag-architect": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
@@ -985,6 +1032,10 @@
     "writing-shape": {
       "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
       "tree": "ac92229646fccf7315ae139c37b479b3790617f2"
+    },
+    "fastmcp-server": {
+      "commit": "901575873111515457755df6872d7b0ccdf9407b",
+      "tree": "37fa5210e2055784b68cacd05d3509fd3cb1e2e2"
     }
   },
   "ignored": {

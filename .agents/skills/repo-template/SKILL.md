@@ -211,6 +211,20 @@ configures missing tracker/triage/domain choices for installed workflows, not th
 Use `setup-matt-pocock-skills` only when those conventions are needed; local specs, ordinary tests
 and debugging need no tracker setup. Keep CLAUDE import stubs and shared AGENTS authority intact.
 
+## MCP development baseline
+
+The `mcp` pack covers Python and TypeScript clients/servers. `mcp-developer` routes the work;
+`mcp-servers` covers Python integration, `fastmcp-server` upstream authoring,
+`python-mcp-server-generator` official-SDK scaffolding, and `mcp-typescript-sdk-upgrade-to-v2`
+a requested migration. Inspect application lockfiles first; skill updates do not migrate them.
+
+The standards checkout's `.agents/mcp-development.json` and `examples/mcp/` define validated
+pins and locked compatibility fixtures. `globals --upstream` reports development drift under
+the seven-day policy; update fixtures and verify them before accepting a new baseline. Preserve
+personal profiles and individual selections during rollout. Use clean worktrees for shared
+updates when active repositories contain user work. Format project-owned files only, avoiding
+installed skill symlinks that point into the machine catalog.
+
 ## The manifest
 
 `.repo-template.json` records the template version, the project variables, each managed file's
