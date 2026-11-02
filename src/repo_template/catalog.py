@@ -440,6 +440,13 @@ def integrity(
     unsafe to link. `rewriting` names overridden skills `globals --check` plans to rewrite, so
     their SKILL.md isn't held to the override yet."""
     problems = _Problems()
+    # Local import: development reporting reuses the upstream pin machinery.
+    from repo_template.development import load_development
+
+    try:
+        load_development(root / ".agents")
+    except ValueError as exc:
+        problems.add(None, str(exc))
     loaded = []
     for name in (LOCK_NAME, SOURCES_NAME):
         try:

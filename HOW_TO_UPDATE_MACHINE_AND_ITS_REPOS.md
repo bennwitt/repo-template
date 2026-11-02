@@ -223,6 +223,21 @@ requires manual comparison and merge; `--upgrade` never overwrites local adaptat
 skills and reasons are recorded in `.agents/skill-sources.json`; revisit them deliberately when
 requirements change. No machine setup or deployment is implied by a readiness review.
 
+### MCP development updates
+
+Follow the [MCP development baseline](README.md#mcp-development-baseline) and its locked fixtures.
+The machine catalog supplies current guidance; project lockfiles still choose application SDKs.
+After updating a clean standards checkout and reconciling globals, run the installed CLI's
+`check` and `update --no-input` against a clean repository branch/worktree, then repeat `check`.
+Existing `mcp` pack selections gain the new specialist skills; individual selections stay individual.
+For personal adoption, compare Git status before and after. Keep active application work isolated.
+
+If the machine standards checkout is dirty, preserve and review its edits before updating.
+Only restore edits when authorized, after a verified backup; never discard them to make a pull work.
+Avoid recursively formatting `.agents` or `.claude` links: these resolve into the machine catalog.
+`globals --upstream` reports development-package drift; review and test it rather than running an
+application-wide SDK upgrade. Inspector 2.12 needs Node >=22.19; the fixture uses Node 22.22.0.
+
 ### Browse and select packs or individual skills
 
 ```bash

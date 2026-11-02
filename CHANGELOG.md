@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- MCP development baseline 0.6.1: target protocol 2026-07-28, with explicit legacy-client
+  compatibility. Repair conflicting Python/TypeScript guidance, add the official FastMCP
+  authoring skill and an adapted, pinned TypeScript v2 migration skill. Keep existing names
+  and project dependency constraints; installing skills does not migrate applications.
+- Record reviewed development pins in `.agents/mcp-development.json`; `globals --upstream`
+  and weekly drift reports now check their release age and availability. Updates require
+  fixture validation rather than automatically changing application dependencies.
+- Add locked Python/TypeScript MCP fixtures and dedicated CI for real stdio/HTTP exchanges,
+  schemas, auth/ownership failures, cancellation, FastAPI cleanup and a pinned codemod.
+  Machine formatting guidance restricts formatters to project-owned files, avoiding skill links.
+
 - Generated AGENTS guidance now directs agents to use `repo-template` to discover and add
   relevant packs and individual skills before substantial implementation or when capabilities
   are missing. The workflow guide documents scripted discovery, preview, apply and verification;

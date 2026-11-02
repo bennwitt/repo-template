@@ -1,0 +1,51 @@
+name: MCP development
+
+on:
+  pull_request:
+    paths: ['.agents/**', 'examples/mcp/**', '.github/workflows/mcp-development.yml', 'tests/test_development.py', 'tests/test_mcp_examples.py', 'src/repo_template/development.py']
+  push:
+    branches: [main]
+    paths: ['.agents/**', 'examples/mcp/**', '.github/workflows/mcp-development.yml', 'tests/test_development.py', 'tests/test_mcp_examples.py', 'src/repo_template/development.py']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: examples/mcp/python
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.11.15"
+      - run: uv python install 3.12
+      - run: uv sync --locked --dev --python 3.12
+      - run: uv run pytest
+  typescript-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: examples/mcp/typescript
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '22.22.0'
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm test
+      - run: npx --no-install @modelcontextprotocol/inspector --help

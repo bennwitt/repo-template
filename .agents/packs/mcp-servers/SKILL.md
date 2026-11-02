@@ -13,8 +13,8 @@ Two things moved at once in 2026, and most MCP code an agent writes from memory 
 - **The libraries.** `mcp` 2.x renamed its bundled `FastMCP` to `MCPServer`; `import
   mcp.server.fastmcp` now raises `ModuleNotFoundError`. Standalone FastMCP 4 is built on `mcp` 2.x.
 
-Facts below were checked against fastmcp 4.0.11, mcp 2.3.0, spec 2026-07-28 and MCP Inspector
-2.9.0. Check the installed versions before relying on any of them. For FastAPI itself use the
+Facts below were checked against fastmcp 4.1.4, mcp 2.3.0, spec 2026-07-28 and MCP Inspector
+2.12.0. Check the installed versions before relying on any of them. For FastAPI itself use the
 `fastapi` skill, for Open WebUI's side the `openwebui` skill, for dependencies the `uv` skill.
 
 ## 1. Look before you change
@@ -50,8 +50,8 @@ Facts below were checked against fastmcp 4.0.11, mcp 2.3.0, spec 2026-07-28 and 
   with no upper bound and crashes on mcp 2 (issue #321, open); issue #324 (open) reports
   unauthenticated HTTP access when `AuthConfig` is unset; the mcp 2 support PR #342 was closed
   unmerged. Mount a FastMCP server instead (section 6).
-- Pin to the newest release at least 7 days old. On 2026-10-14 that was
-  `uv add "fastmcp==4.0.11"` (2026-10-04) or `uv add "mcp==2.3.0"` (2026-10-02). For a newer
+- Pin to the newest release at least 7 days old. On 2026-11-02 that was
+  `uv add "fastmcp==4.1.4"` (2026-10-26) or `uv add "mcp==2.3.0"` (2026-10-02). For a newer
   one, read the upload dates in `https://pypi.org/pypi/fastmcp/json`
   (`releases.<version>[].upload_time_iso_8601`).
 - FastMCP 4 needs Starlette 1.x, so FastAPI 0.133.0 or later, and pydantic 2.12 or later.
@@ -118,7 +118,7 @@ Inspector defaults to legacy. Write every tool so it works on both:
   validate `Origin`. The libraries default differently:
   - `MCPServer` turns the check on only when `host` is localhost, its default: then any other
     Host gets a 421 ("Invalid Host header"). With `host="0.0.0.0"` and no `transport_security`
-    there is no check at all. Pass
+    there is no check at all. Pass to `run()` or `streamable_http_app()`:
     `transport_security=TransportSecuritySettings(allowed_hosts=[...], allowed_origins=[...])`
     (from `mcp.server.transport_security`) whenever the server leaves localhost. Entries are
     `host:port`, with `:*` for any port (`"mcp.example.com:*"`). The list replaces the localhost
@@ -191,23 +191,21 @@ crossed the major on a fresh lock, not that anyone chose to upgrade.
 
 ## 8. Test in memory, on both eras
 
-Pass the server object to `Client` and it connects in process: no port, no subprocess. Run
-every tool test on both eras by parametrizing the fixture over `mode="auto"` (lands on
-2026-07-28) and `mode="legacy"` (2025-11-25), and add one test that goes through the mounted
-FastAPI app over HTTP in process. [`references/testing.md`](references/testing.md) has the
-fixtures, which pass as written on fastmcp 4.0.11 with pytest-asyncio 1.4.0, and the two traps:
-`httpx2.ASGITransport` buffers whole responses, and `run_asgi_lifespan` breaks with
-`combine_lifespans`.
+Pass the server object to `Client` for fast in-memory contract tests. Parametrize supported
+clients over `mode="auto"` (2026-07-28) and `mode="legacy"` (2025-11-25), asserting negotiation.
+Also exercise a real stdio subprocess and real HTTP socket through the mounted FastAPI app.
+[Testing guidance](references/testing.md) links the canonical locked fixtures, covering schema,
+auth, ownership, cancellation and cleanup. They run on FastMCP 4.1.4 with pytest-asyncio 1.4.0.
 
 ## 9. Check both eras with the Inspector
 
 The Inspector connects in `legacy` by default and never probes, so a run that only uses the
-default proves nothing about 2026-07-28 clients. Pin 2.9.0 (2026-09-30): 2.10.0 broke the plain
-`npx` launch and its fix, 2.10.1, is less than 7 days old. It needs Node 22.19 or later.
+default proves nothing about 2026-07-28 clients. Use the reviewed Inspector 2.12.0 pin
+(2026-10-21), which needs Node 22.19 or later.
 `npm view @modelcontextprotocol/inspector time --json` lists newer releases and their dates.
 
 ```bash
-npx -y @modelcontextprotocol/inspector@2.9.0 --cli \
+npx -y @modelcontextprotocol/inspector@2.12.0 --cli \
   --server-url http://127.0.0.1:8000/mcp --transport http \
   --protocol-era legacy --method tools/list --strict
 # repeat with --protocol-era modern, then call a tool on each era:
@@ -242,3 +240,16 @@ Report which client eras you exercised and anything you could not run.
 Primary docs: <https://gofastmcp.com/llms.txt> (FastMCP; any page with `.md` appended),
 <https://py.sdk.modelcontextprotocol.io/llms.txt> (official SDK v2),
 <https://modelcontextprotocol.io/specification/2026-07-28/changelog> (what the spec changed).
+
+## Maintained baseline and executable evidence
+
+Use `.agents/mcp-development.json` in the standards checkout for reviewed development pins.
+The `fastmcp-server` skill provides upstream authoring guidance; this skill owns our Python
+compatibility and integration choices. `mcp-developer` routes cross-language and client work.
+Inspector 2.12 requires Node >=22.19.
+
+The [locked fixtures](https://github.com/bennwitt/repo-template/tree/main/examples/mcp) test
+real stdio/HTTP clients, both eras, owner isolation, JWT audience/scope failures, cancellation
+and FastAPI cleanup. The fixtures and their locks are the executable examples; manual changes
+to the baseline need the same tests before adoption. Existing application constraints stay intact
+unless migration is requested.

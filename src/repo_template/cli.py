@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from repo_template import __version__, catalog_view
+from repo_template.development import check_development
 from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
 from repo_template.pins import HttpRegistry, check_pins
@@ -440,6 +441,7 @@ def _summary(result: Result) -> str:
 def _upstream(root: Path) -> int:
     try:
         report = upstream_report(root, GhApi())
+        check_development(root / ".agents", HttpRegistry(), datetime.now(UTC), report)
         if (root / ".agents" / MCP_SERVERS_NAME).is_file():
             servers = load_mcp_servers(root / ".agents")
             check_pins(servers, HttpRegistry(), datetime.now(UTC), report)
@@ -460,7 +462,9 @@ def _upstream(root: Path) -> int:
             for line in lines:
                 print(f"  {clean(line)}")
     if report.exit_code == 0:
-        pins = f" and {len(report.pins)} pins (MCP servers, tools)" if report.pins else ""
+        pins = (
+            f" and {len(report.pins)} pins (MCP servers, development, tools)" if report.pins else ""
+        )
         print(f"All {len(report.current)} vendored skills{pins} are current.")
     elif len(report.changed) > report.pin_changes:
         print("Run `repo-template globals --upgrade` to review and apply the skills.")

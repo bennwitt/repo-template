@@ -194,11 +194,13 @@
     ]
   },
   "mcp": {
-    "description": "Writing MCP servers in Python: FastMCP or the official SDK, testing, transports, Open WebUI and evaluations.",
+    "description": "Develop Python and TypeScript MCP servers and clients: current protocol, FastMCP, official SDKs, migration, auth, real transports and compatibility tests.",
     "skills": [
       "mcp-developer",
       "mcp-servers",
-      "python-mcp-server-generator"
+      "python-mcp-server-generator",
+      "fastmcp-server",
+      "mcp-typescript-sdk-upgrade-to-v2"
     ],
     "mcp": [
       "fastmcp-docs"
