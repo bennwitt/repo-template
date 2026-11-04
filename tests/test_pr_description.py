@@ -33,7 +33,9 @@ case "$1 $2" in
       *"--json body"*) cat "$state/body"; echo ;;
       *"--json commits"*) cat "$state/messages" ;;
     esac ;;
-  "pr edit") cp "$5" "$state/edited" && cp "$5" "$state/body" ;;
+  "pr edit")
+    cp "$5" "$state/edited" && cp "$5" "$state/body"
+    if [ -f "$state/after_edit" ]; then sh "$state/after_edit"; fi ;;
 esac
 """
 
@@ -259,17 +261,18 @@ def test_a_failure_is_logged_and_changes_nothing(
     assert said in done.stdout
 
 
-def _wait_for(path: Path) -> bool:
+def _wait_for(path: Path, *, containing: str = "") -> bool:
     deadline = time.monotonic() + 20
     while time.monotonic() < deadline:
-        if path.exists():
+        if path.exists() and (not containing or containing in path.read_text()):
             return True
         time.sleep(0.1)
     return False
 
 
 def test_a_push_returns_at_once_and_the_description_fills_in_behind_it(repo: Repo) -> None:
-    repo.set(during="sleep 2\n")  # claude takes a while
+    # The API can finish its write before the hook has logged completion.
+    repo.set(during="sleep 2\n", after_edit="sleep 1\n")
 
     done = repo.git("push", "-q", "origin", "feature")
 
@@ -278,7 +281,7 @@ def test_a_push_returns_at_once_and_the_description_fills_in_behind_it(repo: Rep
     assert repo.edited() is None  # the push didn't wait for it
     assert _wait_for(repo.state / "edited")
     log = repo.root / ".git/pr-description.log"
-    assert _wait_for(log) and "filled in #7's description" in log.read_text()
+    assert _wait_for(log, containing="filled in #7's description")
 
 
 @pytest.mark.parametrize(
