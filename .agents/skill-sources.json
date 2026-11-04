@@ -634,6 +634,22 @@
           "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
         }
       ]
+    },
+    "github-workflow": {
+      "license": "MIT"
+    },
+    "github-issues": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright GitHub, Inc.",
+        "licenseFiles": {
+          "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
+        },
+        "source": "github/awesome-copilot",
+        "path": "skills/github-issues",
+        "commit": "edbecfa9099c4addae1f500cca1ac067204b30fd"
+      }
     }
   },
   "skills": {

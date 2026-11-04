@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add the global read-only GitHub MCP for Claude Code and Codex, using a machine-owned token
+  environment reference without storing secret values. Disable the managed duplicate Claude
+  GitHub plugin and preserve machine-owned configuration and approval/trust settings.
+- Add global `github-workflow` and adapted `github-issues` skills for repository/account context,
+  PR/CI workflows and issue tracking, retaining existing PR and Actions-hardening skills.
+
 - Selectively adopt Superpowers: add locally adapted `review-feedback` to `dev-workflows`
   and `skill-evaluation` to `agent-evals`, also available individually. Keep existing names
   and selections; no upstream lifecycle router, plugin, session hook or companion runtime.

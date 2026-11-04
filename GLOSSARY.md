@@ -181,3 +181,8 @@ A task-specific progress file for substantial or interrupted implementation: pla
 completed outputs, decisions, verification evidence and unresolved work. It is reconciled with
 current contents before resuming and does not itself authorize actions or prove completion.
 _Avoid_: session transcript, task authority
+
+**MCP credential reference**:
+A variable name, not its secret value. The catalog permits `bearerTokenEnv` only for the global
+GitHub read-only endpoint and only as `GITHUB_PERSONAL_ACCESS_TOKEN`. Each client resolves that
+variable from its own process environment at connection time.

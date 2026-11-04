@@ -96,6 +96,8 @@ Format only project-owned files, never recursively through installed skill symli
 | Implement an agreed scope | implement; implement-spec for a task graph | global |
 | Test behavior or diagnose a failure | tdd, diagnosing-bugs | global |
 | Review requirements and standards | code-review | global |
+| GitHub repositories, PRs and CI | github-workflow | global |
+| GitHub issue tracking | github-issues | global |
 | Address incoming review findings | review-feedback | dev-workflows pack or individual |
 | Compare or regression-test agent skills | skill-evaluation | agent-evals pack or individual |
 | Simplify or retire code | code-simplification, deprecation-and-migration | dev-workflows pack |

@@ -220,3 +220,11 @@ Alternatively, `dev-workflows` includes review feedback and `agent-evals` includ
 evaluation. Select only useful capabilities and retain the existing adoption profile.
 Global implementation/TDD/diagnosis improvements arrive through the machine catalog; updated
 workflow seed guidance must be merged into an existing project's guide where relevant.
+
+## Global GitHub tools
+
+`repo-template globals` installs the read-only GitHub MCP for Claude Code and Codex plus the
+`github-workflow` and `github-issues` skills. Export `GITHUB_PERSONAL_ACCESS_TOKEN` through your
+machine's secret setup before launching either client. A repository `.env` is not loaded by
+clients automatically; see [authentication](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#github-mcp-authentication).
+`gh auth` remains separate and handles requested writes. Check the client MCP panel after restart.

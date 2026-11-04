@@ -471,9 +471,9 @@ for name, tool in sorted(pins.items()):
     fi
   fi
   if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
-    ok "GITHUB_PERSONAL_ACCESS_TOKEN is set (the github plugin)"
+    ok "GITHUB_PERSONAL_ACCESS_TOKEN is set (the global GitHub MCP)"
   else
-    note "GITHUB_PERSONAL_ACCESS_TOKEN isn't set: the github plugin won't connect (optional)"
+    note "GITHUB_PERSONAL_ACCESS_TOKEN isn't set: the global GitHub MCP won't connect (optional)"
   fi
   note "the MCP servers: run 'claude mcp list' (it starts each one, so it isn't run here)"
   if [ "$problems" = 0 ]; then
@@ -803,12 +803,12 @@ print((day + timedelta(days=1)).isoformat() + "T00:00:00Z", pin["package"] + "==
       optional "Fetching $package" uvx --quiet --exclude-newer "$cutoff" --from "$package" azmcp --version
     fi
   fi
-  if [ "$os" = mac ] && confirm "Store a GitHub token in the Keychain for Claude Code's github plugin?" n; then
+  if [ "$os" = mac ] && confirm "Store a GitHub token in the Keychain for the global GitHub MCP in Claude Code and Codex?" n; then
     note "Create a fine-grained, read-only token on github.com (Settings > Developer settings), then paste it when asked"
     optional "Storing the token" security add-generic-password -U -a "$USER" -s github-pat -w
     write_profile # now with the line that reads the token
   elif [ "$os" = linux ]; then
-    note "github plugin: export GITHUB_PERSONAL_ACCESS_TOKEN from a file only you can read (chmod 600), sourced by your shell profile; never in a repository"
+    note "GitHub MCP: export GITHUB_PERSONAL_ACCESS_TOKEN from a file only you can read (chmod 600), sourced by your shell profile; never in a repository"
   fi
 fi
 

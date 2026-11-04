@@ -213,7 +213,7 @@ checkout of this repository, name it: `repo-template globals --standards-root .`
 ### Per-machine tools
 
 The portable settings turn on plugins that need tools on each machine (language servers, the
-Playwright CLI, `az` and `azd`, a GitHub token for the `github` plugin), and some skills drive
+Playwright CLI, `az` and `azd`, a GitHub token for the global GitHub MCP), and some skills drive
 CLIs. `.agents/machine-tools.json` pins each one once, to its newest final release at least 7
 days old (a short supply-chain cooldown); `below` keeps one under a major version the machines
 can't run yet, a `pinException` says why a release inside its cooldown is pinned, and `azd`'s
@@ -630,6 +630,18 @@ when some pack lists it, and integrity says which `git mv` to run when that chan
 
 ### MCP servers: global and per pack
 
+GitHub is a global server for Claude Code and Codex, using
+`https://api.githubcopilot.com/mcp/readonly`. Both clients read `GITHUB_PERSONAL_ACCESS_TOKEN`
+from their process environment; the catalog stores only the variable name. `globals` disables
+the managed Claude GitHub plugin to avoid duplicates while preserving machine-owned overrides.
+The endpoint filters out write tools; choose a least-privilege read-only token for the intended
+personal or work account too. Authentication is separate from `gh auth`; a repository `.env`
+is not loaded automatically. A clean standards check verifies configuration, not a live login.
+
+`github-workflow` and `github-issues` are global skills alongside `pr`, `code-review` and
+`github-actions-hardening`. They use available MCP reads and task-authorized `gh` writes.
+See [machine authentication](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#github-mcp-authentication).
+
 `.agents/mcp-servers.json` defines each MCP server once: what it runs (a pinned `npx`/`uvx`
 package or a URL), for which clients, which of its tools are denied, and why it's here. A
 **global** server is installed on every machine by `globals`; a **pack** server comes with a
@@ -650,7 +662,8 @@ The catalog refuses what it can't vouch for:
   each machine has its own, through `az login` or its environment;
 - anything that looks like a secret: env names like `*_TOKEN`, `*_PAT` or `*AUTH*`, secret-like
   flags or values in args (pack args included), and credentials or a query in a URL. Servers
-  are keyless and read-only.
+  are read-only and contain no secret values. The sole authentication exception is GitHub’s
+  `bearerTokenEnv` reference to `GITHUB_PERSONAL_ACCESS_TOKEN` at its fixed global read-only URL.
 
 | Where | Claude Code | Codex |
 | --- | --- | --- |
@@ -797,6 +810,8 @@ itself.
 | `fullstack-guardian` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fullstack-guardian) | MIT |  |
 | `git-guardrails-claude-code` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) | MIT |  |
 | `github-actions-hardening` | global | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/df566343b3a685e821f8ebe8ea70a2a8eb8b857b/skills/github-actions-hardening) | MIT | description overridden |
+| `github-issues` | global | this repository | MIT | derived from [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/edbecfa9099c4addae1f500cca1ac067204b30fd/skills/github-issues) |
+| `github-workflow` | global | this repository | MIT |  |
 | `golang-pro` | pack `golang` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/63a6720222acfe0311422568ed9e65262107c64d/skills/golang-pro) | MIT |  |
 | `gradio` | pack `gradio` | [gradio-app/gradio](https://github.com/gradio-app/gradio/tree/b79748e4801ad9a73c6839a637a68dcad9a366b3/.agents/skills/gradio) | Apache-2.0 |  |
 | `graphql-architect` | pack `api` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/graphql-architect) | MIT |  |
@@ -902,6 +917,7 @@ itself.
 | `azure` | pack `azure`, pack `foundry` | claude, codex | `uvx msmcp-azure@3.0.0` |  | Read-only Azure tools through az login; each pack picks its namespaces (no Key Vault). App Service settings, which can hold connection strings, are returned only after a consent prompt. The foundry and arm namespaces proxy Microsoft's hosted servers, so which of their tools count as read-only comes from those services at run time, and foundryextensions can call deployed models, which spends tokens. The first start downloads about 62 MB. |
 | `docs-langchain` | pack `langchain` | claude, codex | https://docs.langchain.com/mcp | `submit_feedback` | Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers. |
 | `fastmcp-docs` | pack `mcp` | claude, codex | https://gofastmcp.com/mcp | `submit_feedback` | Searches the FastMCP docs (two read-only tools); its feedback tool is denied. |
+| `github` | global | claude, codex | https://api.githubcopilot.com/mcp/readonly |  | GitHub-hosted read-only repository, issue and pull-request tools for both clients. Authentication references a machine-owned GITHUB_PERSONAL_ACCESS_TOKEN; no token value is stored. Replaces the Claude GitHub plugin. The endpoint filters tools; use a least-privilege read-only token as well. |
 | `gradio-docs` | pack `gradio` | claude, codex | https://gradio-docs-mcp.hf.space/gradio_api/mcp/ |  | Searches and loads the Gradio docs for the gradio pack. |
 | `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |
 | `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |

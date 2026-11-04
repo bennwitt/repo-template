@@ -135,3 +135,9 @@ Repository tests cover derived-source drift/discovery, template seed ownership, 
 catalog provenance and adoption boundaries. Temporary repositories verify selected packs through
 both client links, repeat-update idempotence and unchanged visible files for personal adoption.
 No real machine globals, remote labels, deployment, commit or push is part of this change.
+
+## GitHub integration
+
+Global `github-workflow` and `github-issues` complement `pr`, `code-review` and
+`github-actions-hardening`. The MCP reads; requested writes use authorized `gh` access.
+[Evaluation and validation](evaluations/github.md) records the selected sources and limitations.

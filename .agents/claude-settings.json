@@ -5,7 +5,7 @@
       "azure@claude-plugins-official": false,
       "chrome-devtools-mcp@claude-plugins-official": true,
       "claude-code-setup@claude-plugins-official": true,
-      "github@claude-plugins-official": true,
+      "github@claude-plugins-official": false,
       "greptile@claude-plugins-official": true,
       "hookify@claude-plugins-official": true,
       "mcp-apps@claude-plugins-official": false,
