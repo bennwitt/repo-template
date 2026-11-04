@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Selectively adopt Superpowers: add locally adapted `review-feedback` to `dev-workflows`
+  and `skill-evaluation` to `agent-evals`, also available individually. Keep existing names
+  and selections; no upstream lifecycle router, plugin, session hook or companion runtime.
+- Improve implementation recovery with task-specific progress records, completion evidence,
+  tracing/condition-wait references and TDD test sensitivity. Reuse established authorization
+  and test seams; preserve unrelated work and validate recorded outputs before resuming.
+- Track every source of a locally adapted skill through `additionalSources`, including license
+  validation, generated attribution and read-only upstream drift reporting. Changed inputs
+  require a reviewed merge; automatic upgrades do not replace local adaptations.
+
 - MCP development baseline 0.6.1: target protocol 2026-07-28, with explicit legacy-client
   compatibility. Repair conflicting Python/TypeScript guidance, add the official FastMCP
   authoring skill and an adapted, pinned TypeScript v2 migration skill. Keep existing names

@@ -155,7 +155,9 @@ re-applied by `globals` after the skill is vendored again.
 
 **Derived skill**:
 A locally maintained adaptation of an upstream skill, with its source, reviewed revision and
-license recorded. Its body can differ from upstream; source changes require a reviewed merge.
+license recorded. `derivedFrom` identifies its primary source; `additionalSources` records
+other attributed inputs with their own revisions, paths and licenses. Its body can differ from
+upstream; changes to any recorded source require a reviewed merge.
 _Avoid_: vendored skill, override
 
 **Workflow guide**:
@@ -173,3 +175,9 @@ aren't mirrored).
 **Skill receipt**:
 One recorded use of a skill in a repository, appended by the receipt hook.
 _Avoid_: skill log entry, audit event
+
+**Execution record**:
+A task-specific progress file for substantial or interrupted implementation: plan identity,
+completed outputs, decisions, verification evidence and unresolved work. It is reconciled with
+current contents before resuming and does not itself authorize actions or prove completion.
+_Avoid_: session transcript, task authority

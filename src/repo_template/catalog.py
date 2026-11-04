@@ -372,6 +372,19 @@ def _frontmatter_problem(text: str) -> str | None:
     return None
 
 
+def derived_inputs(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """All attributed inputs to a local skill, preserving the original primary source."""
+    primary = record.get("derivedFrom")
+    extra = record.get("additionalSources", [])
+    if not isinstance(extra, list) or any(not isinstance(item, dict) for item in extra):
+        raise ValueError("additionalSources must be a list of source records")
+    if primary is not None and not isinstance(primary, dict):
+        raise ValueError("derivedFrom must be a source record")
+    if extra and primary is None:
+        raise ValueError("additionalSources requires derivedFrom")
+    return ([primary] if primary is not None else []) + extra
+
+
 def _check_license(root: Path, label: str, source: str, record: Any, problems: _Problems) -> None:
     """A license record: an SPDX id, the copyright line as stated upstream, and each license
     text, copied here and pinned to its upstream blob SHA."""
@@ -567,12 +580,31 @@ def integrity(
         if not isinstance(record, dict) or not record.get("license"):
             problems.add(name, f"local skill without a license in {SOURCES_NAME}")
             continue
-        derived = record.get("derivedFrom")
-        if derived is not None:
-            source = derived.get("source", "?") if isinstance(derived, dict) else "?"
-            _check_license(root, f"{name} (derived from {source})", source, derived, problems)
-            if not isinstance(derived, dict) or not SHA.fullmatch(str(derived.get("commit"))):
+        try:
+            inputs = derived_inputs(record)
+        except ValueError as exc:
+            problems.add(name, str(exc))
+            continue
+        for derived in inputs:
+            source = derived.get("source", "?")
+            before = len(problems.errors)
+            _check_license(
+                root,
+                f"{name} (derived from {source})",
+                source if isinstance(source, str) else "?",
+                derived,
+                problems,
+            )
+            if len(problems.errors) != before:
+                problems.skills.add(name)
+            if not SHA.fullmatch(str(derived.get("commit"))):
                 problems.add(name, "'derivedFrom' needs the upstream 'commit' it was made from")
+            if not isinstance(source, str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}", source
+            ):
+                problems.add(name, "derived input needs a valid source repository")
+            if not isinstance(derived.get("path"), str) or not derived["path"]:
+                problems.add(name, "derived input needs an upstream path")
 
     for name in names:
         text = read_skill(skill_folder(root, name) / "SKILL.md")
@@ -729,8 +761,7 @@ def render_catalog(root: Path, names: list[str], packs: dict[str, list[str]]) ->
         else:
             record = sources.get("local", {}).get(name, {})
             link, license_id = "this repository", record.get("license", "?")
-            derived = record.get("derivedFrom")
-            if derived:
+            for derived in derived_inputs(record):
                 url = upstream_url(derived["source"], derived["commit"], derived["path"])
                 notes.append(f"derived from [{derived['source']}]({url})")
         fields = read_fields((skill_folder(root, name) / "SKILL.md").read_text())
@@ -829,8 +860,7 @@ def render_notices(root: Path, names: list[str]) -> str:
             listed.append(line)
         entries.append((source, sources["sources"].get(source, {}), listed, texts))
     for name, record in sorted(sources.get("local", {}).items()):
-        derived = record.get("derivedFrom") if name in names else None
-        if derived:
+        for derived in derived_inputs(record) if name in names else []:
             url = upstream_url(derived["source"], derived["commit"], derived["path"])
             listed = [
                 f"`{name}` (a derived work, under {record.get('license', '?')}): from "
