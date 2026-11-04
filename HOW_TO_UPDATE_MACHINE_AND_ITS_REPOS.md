@@ -84,7 +84,7 @@ releases that old too.
 | Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill | `npm install -g --ignore-scripts --before=2026-09-29T00:00:00Z typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
 | Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
 | Azure Developer CLI (`azd`) 1.36.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
-| GitHub token | the `github` plugin | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
+| GitHub token | the global GitHub MCP | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
 | Codex CLI | Codex | `npm install -g --ignore-scripts --before=2026-10-16T00:00:00Z @openai/codex@0.163.0` | the same |
 
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
@@ -106,6 +106,28 @@ releases that old too.
   its MCP servers.
 - **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
   (authorize it in `/mcp`).
+
+### GitHub MCP authentication
+
+`repo-template globals` configures GitHub globally for Claude Code and Codex and disables the
+managed duplicate Claude plugin. Its hosted `/mcp/readonly` endpoint exposes read tools only.
+Use a fine-grained token with read access to the repositories needed for your chosen account;
+organization policy/SSO approval may also apply. The MCP token, `gh` account and Git SSH identity
+are separate. Never put a token value in the standards catalog or client configuration.
+
+Export `GITHUB_PERSONAL_ACCESS_TOKEN` in the environment that launches each client, using your
+machine's existing secret setup. A repository `.env` alone is not a machine-wide environment.
+For a deliberate one-session launch from a trusted `.env`, uv can pass its values to the client:
+
+```bash
+uv run --no-project --env-file /path/to/trusted/.env -- claude
+uv run --no-project --env-file /path/to/trusted/.env -- codex
+```
+
+Restart clients after configuration/environment changes and check GitHub in their MCP panel.
+A successful read confirms authentication; `globals --check` alone confirms configuration.
+The global `github-workflow` and `github-issues` skills cover account context, PR/CI work and
+issue tracking. Requested writes use separately authorized `gh` access.
 
 ## 2. Update or adopt a repository
 

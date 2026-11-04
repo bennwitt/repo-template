@@ -87,7 +87,9 @@ repository's temporary-folder and machine-change rules below when exercising the
 - The generated pre-push hook always exits 0 and works in the background, so it can never block
   a push, and it writes only over a description nobody wrote: empty, the untouched template,
   the commit messages alone, or its own unedited one.
-- MCP servers are keyless and read-only, defined once in `.agents/mcp-servers.json`, and each
+- MCP servers are read-only and contain no secret values. GitHub alone may reference the machine-owned
+  `GITHUB_PERSONAL_ACCESS_TOKEN` at its fixed read-only endpoint. Definitions live in
+  `.agents/mcp-servers.json`, and each
   denied tool is denied in both clients. repo-template never writes approval settings
   (`enableAllProjectMcpServers`, `enabledMcpjsonServers`) or Codex `[projects]`, trust,
   sandbox or approval settings, and an MCP entry changed by hand is kept.

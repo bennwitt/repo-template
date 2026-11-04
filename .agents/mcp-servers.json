@@ -50,6 +50,13 @@
       "source": "https://gofastmcp.com",
       "why": "Searches the FastMCP docs (two read-only tools); its feedback tool is denied."
     },
+    "github": {
+      "scope": "global",
+      "url": "https://api.githubcopilot.com/mcp/readonly",
+      "bearerTokenEnv": "GITHUB_PERSONAL_ACCESS_TOKEN",
+      "source": "https://github.com/github/github-mcp-server/blob/main/docs/remote-server.md",
+      "why": "GitHub-hosted read-only repository, issue and pull-request tools for both clients. Authentication references a machine-owned GITHUB_PERSONAL_ACCESS_TOKEN; no token value is stored. Replaces the Claude GitHub plugin. The endpoint filters tools; use a least-privilege read-only token as well."
+    },
     "gradio-docs": {
       "scope": "pack",
       "url": "https://gradio-docs-mcp.hf.space/gradio_api/mcp/",

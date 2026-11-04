@@ -1199,3 +1199,87 @@ def test_azure_token_credentials_only_names_a_credential_type(
 def test_other_azure_secrets_stay_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="keyless"):
         load_mcp_servers(_agents(tmp_path, {"az": {**AZ, "env": {"AZURE_CLIENT_SECRET": "x"}}}))
+
+
+GITHUB = {
+    **URL,
+    "scope": "global",
+    "url": "https://api.githubcopilot.com/mcp/readonly",
+    "bearerTokenEnv": "GITHUB_PERSONAL_ACCESS_TOKEN",
+}
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"url": "https://api.githubcopilot.com/mcp/"},
+        {"url": "https://other.example/mcp/readonly"},
+        {"url": "https://api.githubcopilot.com.evil.example/mcp/readonly"},
+        {"url": "https://api.githubcopilot.com/mcp/readonly?token=x"},
+        {"scope": "pack"},
+        {"bearerTokenEnv": "ghp_this_is_not_a_variable"},
+        {"bearerTokenEnv": "${GITHUB_PERSONAL_ACCESS_TOKEN}"},
+        {"bearerTokenEnv": None},
+        {"bearerTokenEnv": {"token": "private"}},
+        {"command": "npx"},
+    ],
+)
+def test_github_auth_reference_is_limited_to_its_global_readonly_endpoint(
+    tmp_path: Path, patch: dict[str, Any]
+) -> None:
+    with pytest.raises(ValueError, match="only the GitHub global read-only") as exc:
+        load_mcp_servers(_agents(tmp_path, {"github": {**GITHUB, **patch}}))
+    assert "ghp_this_is_not_a_variable" not in str(exc.value)
+
+
+def test_other_servers_cannot_request_github_credentials(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="only the GitHub"):
+        load_mcp_servers(_agents(tmp_path, {"other": GITHUB}))
+
+
+def test_github_global_sync_keeps_token_values_out_and_preserves_client_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GITHUB_PERSONAL_ACCESS_TOKEN", "SYNTHETIC_SECRET_DO_NOT_STORE")
+    servers = load_mcp_servers(_agents(tmp_path / "catalog", {"github": GITHUB}))
+    claude = FakeClaude(tmp_path / "home/.claude.json", {"mine": {"command": "mine"}})
+    path = _config(tmp_path)
+    before = tomllib.loads(path.read_text())
+    preview = _claude(tmp_path, claude, servers, check=True)
+    assert preview.created and not claude.calls
+    _claude(tmp_path, claude, servers)
+    _codex(tmp_path, servers)
+    assert claude.data["github"] == {
+        "type": "http",
+        "url": GITHUB["url"],
+        "headers": {"Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"},
+    }
+    assert claude.data["mine"] == {"command": "mine"}
+    data = tomllib.loads(path.read_text())
+    assert data["mcp_servers"].pop("github") == {
+        "url": GITHUB["url"],
+        "bearer_token_env_var": "GITHUB_PERSONAL_ACCESS_TOKEN",
+    }
+    assert data == before
+    assert not _claude(tmp_path, claude, servers, check=True).needs_attention
+    assert not _codex(tmp_path, servers, check=True).needs_attention
+    for file in (tmp_path / "home").rglob("*"):
+        if file.is_file():
+            assert b"SYNTHETIC_SECRET_DO_NOT_STORE" not in file.read_bytes()
+    assert "SYNTHETIC_SECRET_DO_NOT_STORE" not in json.dumps(claude.data)
+    # A machine-owned change is preserved rather than replaced by the template.
+    claude.data["github"]["headers"]["Authorization"] = "Bearer ${MY_GITHUB_TOKEN}"
+    text = path.read_text().replace('"GITHUB_PERSONAL_ACCESS_TOKEN"', '"MY_GITHUB_TOKEN"')
+    path.write_text(text)
+    assert _claude(tmp_path, claude, servers).preserved
+    assert _codex(tmp_path, servers).preserved
+    assert path.read_text() == text
+
+
+def test_shipped_github_replaces_plugin_for_both_clients() -> None:
+    server = load_mcp_servers(ROOT / ".agents")["github"]
+    assert server.scope == "global" and server.clients == {"claude", "codex"}
+    assert server.url == GITHUB["url"]
+    assert server.bearer_token_env == GITHUB["bearerTokenEnv"]
+    settings = json.loads((ROOT / ".agents/claude-settings.json").read_text())
+    assert settings["portable"]["enabledPlugins"]["github@claude-plugins-official"] is False

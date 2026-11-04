@@ -4,8 +4,8 @@ One definition per server, rendered for each client: Claude Code expands `${NAME
 its config, so a machine can override a default by exporting the variable; Codex expands
 nothing and passes servers a filtered environment, so it gets literal values. Pinned npx servers
 run with `npm_config_before` at their pin's date and a cache of their own, so the cooldown holds
-for their dependencies on a first install too. Servers are keyless and read-only: no headers, no
-tokens, nothing that widens what a client may do.
+for their dependencies on a first install too. Servers are read-only with no embedded secrets.
+GitHub alone may reference a machine-owned bearer-token variable at its fixed read-only endpoint.
 """
 
 from __future__ import annotations
@@ -69,7 +69,10 @@ SERVER_KEYS = {
     "source",
     "why",
     "packArgs",
+    "bearerTokenEnv",
 }
+GITHUB_READONLY_URL = "https://api.githubcopilot.com/mcp/readonly"
+GITHUB_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
 CODEX_KEYS = {"startup_timeout_sec", "tool_timeout_sec", "enabled_tools"}
 PIN_KEYS = {"registry", "package", "version", "publishedAt", "pinException"}
 CLIENTS = {"claude", "codex"}
@@ -103,6 +106,7 @@ class Server:
     why: str = ""
     pack_args: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     pack_flags: tuple[str, ...] = ()  # the flags a pack may add (packArgs)
+    bearer_token_env: str | None = None
 
 
 def _fail(path: Path, where: str, message: str) -> ValueError:
@@ -245,6 +249,20 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     if not _strings(clients) or not clients or set(clients) - CLIENTS:
         raise _fail(path, name, "'clients' lists claude and/or codex")
     command, url = raw.get("command"), raw.get("url")
+    bearer_env = raw.get("bearerTokenEnv")
+    if ("bearerTokenEnv" in raw or name == "github") and (
+        name != "github"
+        or scope != "global"
+        or url != GITHUB_READONLY_URL
+        or bearer_env != GITHUB_TOKEN_ENV
+        or command is not None
+    ):
+        raise _fail(
+            path,
+            name,
+            "bearerTokenEnv is only the GitHub global read-only endpoint's "
+            "GITHUB_PERSONAL_ACCESS_TOKEN reference; no token values",
+        )
     if (command is None) == (url is None):
         raise _fail(path, name, "a server has exactly one of 'command' and 'url'")
     args = raw.get("args", [])
@@ -338,6 +356,7 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         source=raw["source"],
         why=raw["why"],
         pack_flags=tuple(pack_flags),
+        bearer_token_env=bearer_env,
     )
 
 
@@ -466,7 +485,10 @@ def claude_entry(server: Server, cache: str) -> dict[str, Any]:
     Each env default is a `${NAME:-default}`, so a machine can override it by exporting NAME;
     the npm cooldown settings repo-template adds are literal."""
     if server.url is not None:
-        return {"type": "http", "url": server.url}
+        remote: dict[str, Any] = {"type": "http", "url": server.url}
+        if server.bearer_token_env:
+            remote["headers"] = {"Authorization": f"Bearer ${{{server.bearer_token_env}}}"}
+        return remote
     entry: dict[str, Any] = {
         "type": "stdio",
         "command": server.command,
@@ -485,6 +507,8 @@ def codex_value(server: Server, cache: str) -> dict[str, Any]:
     value: dict[str, Any] = {}
     if server.url is not None:
         value["url"] = server.url
+        if server.bearer_token_env:
+            value["bearer_token_env_var"] = server.bearer_token_env
     else:
         value["command"] = server.command
         value["args"] = _args(server, cache)

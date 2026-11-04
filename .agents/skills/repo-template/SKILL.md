@@ -239,6 +239,15 @@ Local adaptations record every attributed input through `derivedFrom` and `addit
 upstream changes to any of them require a manual reviewed merge. See the standards repository's
 `docs/evaluations/superpowers.md` for the complete decision matrix.
 
+## Global GitHub MCP
+
+`globals` installs GitHub's hosted read-only endpoint for Claude Code and Codex. Authentication
+references `GITHUB_PERSONAL_ACCESS_TOKEN` from the client process environment; repo-template never
+reads or stores its value. Choose the intended personal or work GitHub account and least-privilege
+read access on the machine, then restart the clients. `gh auth` and MCP authentication are separate.
+The managed Claude GitHub plugin is disabled to avoid duplicate tools; machine-owned overrides
+remain preserved. A current catalog confirms configuration, not an authenticated connection.
+
 ## The manifest
 
 `.repo-template.json` records the template version, the project variables, each managed file's

@@ -30,6 +30,7 @@ DOCS = [
     "docs/evaluations/pocock.md",
     "docs/evaluations/behavior.md",
     "docs/evaluations/superpowers.md",
+    "docs/evaluations/github.md",
 ]
 # Historical evaluations and the changelog retain the versions/commands they inspected.
 CURRENT = [doc for doc in DOCS if doc != "CHANGELOG.md" and not doc.startswith("docs/evaluations/")]
