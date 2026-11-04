@@ -97,6 +97,10 @@ If you cannot state the prediction, the hypothesis is a vibe: discard or sharpen
 
 **Show the ranked list to the user before testing.** They often have domain knowledge that re-ranks instantly ("we just deployed a change to #3"), or know hypotheses they've already ruled out. Cheap checkpoint, big time saver. Don't block on it; proceed with your ranking if the user is AFK.
 
+When the symptom originates across several call boundaries or depends on asynchronous state,
+read [tracing-and-waits.md](references/tracing-and-waits.md) for backward tracing and bounded
+condition waits. Keep the ranked hypotheses and original symptom as the test oracle.
+
 ## Phase 4: Instrument
 
 Each probe must map to a specific prediction from Phase 3. **Change one variable at a time.**
@@ -136,3 +140,7 @@ Required before declaring done:
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message, so the next debugger learns
+
+
+Adapted from Matt Pocock (MIT); tracing/waiting references derive from obra/superpowers (MIT).
+Both sources are recorded in the standards catalog.

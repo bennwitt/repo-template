@@ -46,6 +46,7 @@ from repo_template.catalog import (
     SOURCES_NAME,
     STAGE_PREFIX,
     blob_sha,
+    derived_inputs,
     folder_tree,
     load_commands,
     override,
@@ -392,12 +393,15 @@ def upstream_report(root: Path, github: GitHub) -> Report:
             _report_skill(report, name, lock[name], sources, overrides, github, snapshot)
         except NotFound as exc:
             report.review.append(f"{name}: not upstream any more (deleted or renamed?): {exc}")
-    derived = {
-        name: record["derivedFrom"]
-        for name, record in sources.get("local", {}).items()
-        if isinstance(record, dict) and isinstance(record.get("derivedFrom"), dict)
-    }
-    for name, record in sorted(derived.items()):
+    derived: list[tuple[str, dict[str, Any]]] = []
+    for name, local in sorted(sources.get("local", {}).items()):
+        if not isinstance(local, dict):
+            continue
+        try:
+            derived.extend((name, item) for item in derived_inputs(local))
+        except ValueError as exc:
+            report.review.append(f"{name}: {exc}")
+    for name, record in derived:
         try:
             _report_derived(report, name, record, snapshot)
         except NotFound as exc:
@@ -406,7 +410,8 @@ def upstream_report(root: Path, github: GitHub) -> Report:
     vendored = {(entry["source"], _folder(entry)) for entry in lock.values()}
     vendored.update(
         (record.get("source"), str(record.get("path", "")).removesuffix("/SKILL.md"))
-        for record in derived.values()
+        for _, record in derived
+        if isinstance(record.get("source"), str)
     )
     for source, record in sorted(sources.get("sources", {}).items()):
         refs = sorted(ref for used, ref in in_use if used == source) or ["HEAD"]

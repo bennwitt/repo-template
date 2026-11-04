@@ -398,3 +398,16 @@ folder (`~/aiDevStandards`): macOS keeps the top of the disk read-only.
      file it didn't create): read the `!` lines.
    - **Exit 1:** an error; fix it and run it again.
 6. **The optional tools:** [1.1](#11-optional-tools).
+
+## Selective Superpowers guidance
+
+`review-feedback` handles incoming findings in `dev-workflows`; `skill-evaluation` compares
+skill outcomes in `agent-evals`. Both can be selected individually. Existing global
+implementation, diagnosis and TDD skills keep their names, with durable progress for substantial
+tasks, evidence-based completion, focused tracing/waits and reuse of agreed test seams.
+The [evaluation and selection](docs/evaluations/superpowers.md) records the source decisions.
+No Superpowers plugin or universal lifecycle router is installed. After updating the machine
+catalog, reconcile existing pack users with `repo-template check .` and
+`repo-template update . --no-input`; individual choices stay individual. Existing workflow
+seed files are preserved, so merge relevant guidance manually. Format project files only,
+avoiding installed skill symlinks.

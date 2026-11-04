@@ -911,3 +911,39 @@ def test_a_catalog_without_provenance_still_links_skills_only_from_where_they_be
     )
     assert not (home / ".claude/skills/stray").is_symlink()
     assert not (standards / ".claude/skills/stray").is_symlink()
+
+
+@pytest.mark.parametrize("extra", [None, "wrong", [{}], ["wrong"]])
+def test_malformed_additional_sources_are_reported(tmp_path: Path, extra: Any) -> None:
+    root = _catalog(tmp_path / "c", {"SKILL.md": SKILL})
+    _local(root, "adapted")
+    sources = _sources(root)
+    sources["local"]["adapted"] = {"license": "MIT", "additionalSources": extra}
+    _write_sources(root, sources)
+    assert any("additionalSources" in error for error in _errors(root))
+
+
+def test_additional_sources_need_license_integrity_and_appear_in_notices(tmp_path: Path) -> None:
+    root = _catalog(tmp_path / "c", {"SKILL.md": SKILL})
+    _local(root, "adapted")
+    sources = _sources(root)
+    primary = {**sources["sources"]["o/r"], "source": "o/r", "commit": COMMIT, "path": "s"}
+    second = {**primary, "source": "other/repo", "path": "skills/second"}
+    sources["local"]["adapted"] = {
+        "license": "MIT",
+        "derivedFrom": primary,
+        "additionalSources": [second],
+    }
+    _write_sources(root, sources)
+    assert any("other_repo__LICENSE.txt is missing" in error for error in _errors(root))
+    assert "adapted" in integrity(root, skill_names(root))[1]
+    license_file = root / ".agents/licenses/other_repo__LICENSE.txt"
+    license_file.write_text(LICENSE)
+    assert not _errors(root)
+    result = Result(root)
+    sync_documents(root, skill_names(root), {}, result, check=False)
+    notices = (root / "THIRD_PARTY_NOTICES.md").read_text()
+    assert "## o/r" in notices and "## other/repo" in notices
+    assert "skills/second" in notices and "adapted" in notices
+    license_file.write_text("Changed license")
+    assert any("isn't the upstream text" in error for error in _errors(root))

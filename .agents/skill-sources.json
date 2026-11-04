@@ -32,7 +32,7 @@
     },
     "currents-dev/playwright-best-practices-skill": {
       "license": "MIT",
-      "copyright": "Copyright © 2026 Currents Software Inc.",
+      "copyright": "Copyright \u00a9 2026 Currents Software Inc.",
       "licenseFiles": {
         "LICENSE.md": "0312fd7de9487ced54515687d0026fc146aba947"
       },
@@ -56,7 +56,7 @@
     },
     "fastapi/fastapi": {
       "license": "MIT",
-      "copyright": "Copyright (c) 2018 Sebastián Ramírez",
+      "copyright": "Copyright (c) 2018 Sebasti\u00e1n Ram\u00edrez",
       "licenseFiles": {
         "LICENSE": "3e92463e6bd522a2a21e5f0a80d8089d6c4be20d"
       },
@@ -206,6 +206,14 @@
         "LICENSE": "4a93985763241755401a10678395303de4e720ba"
       },
       "discover": "none"
+    },
+    "obra/superpowers": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 Jesse Vincent",
+      "licenseFiles": {
+        "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+      },
+      "discover": "all"
     }
   },
   "local": {
@@ -408,7 +416,19 @@
           "agents/security-auditor.md",
           "agents/test-engineer.md"
         ]
-      }
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/verification-before-completion",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+        }
+      ]
     },
     "source-driven-development": {
       "license": "MIT",
@@ -474,6 +494,146 @@
           "LICENSE": "4a93985763241755401a10678395303de4e720ba"
         }
       }
+    },
+    "review-feedback": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Jesse Vincent",
+        "licenseFiles": {
+          "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+        },
+        "source": "obra/superpowers",
+        "path": "skills/receiving-code-review",
+        "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+      }
+    },
+    "skill-evaluation": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Jesse Vincent",
+        "licenseFiles": {
+          "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+        },
+        "source": "obra/superpowers",
+        "path": "skills/writing-skills",
+        "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+      }
+    },
+    "implement": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/implement",
+        "commit": "49dd158d1076134a641b33efb035946536778336"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/executing-plans",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+          "additionalPaths": [
+            "skills/subagent-driven-development/references/resuming.md",
+            "skills/verification-before-completion"
+          ]
+        }
+      ]
+    },
+    "implement-spec": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/implement-spec",
+        "commit": "c612defa9e5cf9372262d0279eb124993ba77b71"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/subagent-driven-development",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+          "additionalPaths": [
+            "skills/executing-plans",
+            "skills/verification-before-completion",
+            "skills/using-git-worktrees",
+            "skills/finishing-a-development-branch"
+          ]
+        }
+      ]
+    },
+    "diagnosing-bugs": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/diagnosing-bugs",
+        "commit": "49dd158d1076134a641b33efb035946536778336"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/systematic-debugging/root-cause-tracing.md",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+          "additionalPaths": [
+            "skills/systematic-debugging/condition-based-waiting.md",
+            "skills/systematic-debugging/defense-in-depth.md"
+          ]
+        }
+      ]
+    },
+    "tdd": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/tdd",
+        "commit": "49dd158d1076134a641b33efb035946536778336"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/test-driven-development",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+        }
+      ]
     }
   },
   "skills": {
@@ -603,10 +763,6 @@
       "commit": "514d17f139972d4513c4c01c799881a381567159",
       "tree": "d62ee11c19684fb7751c6fd629a9ed061bb98c82"
     },
-    "diagnosing-bugs": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "5fdd6cc53385395441910b026c72d71768e993d4"
-    },
     "docker-build-strategies": {
       "commit": "f79172733725e2fd236343ee7b963c446ed85d09",
       "tree": "550661626e962557558052ae594b0e16cb076df4"
@@ -725,14 +881,6 @@
     "huggingface-local-models": {
       "commit": "c3ff942be3e07116b475253f0a8fc4f54682c1a8",
       "tree": "89782df299cf7514502688a9f5f174a875e9927d"
-    },
-    "implement": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "4804b466ab26c9b9d8d42917547db133d1f20a9f"
-    },
-    "implement-spec": {
-      "commit": "c612defa9e5cf9372262d0279eb124993ba77b71",
-      "tree": "0cfefc751d0cb64f0c948ffcb17e13b94e778f08"
     },
     "improve-codebase-architecture": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
@@ -947,10 +1095,6 @@
         }
       }
     },
-    "tdd": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "667dbdd00c09d0e2189e082986e6a4d61a67c2a6"
-    },
     "teach": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
       "tree": "3fd617b610e59acbb99644de1ef37e394ff53cd1"
@@ -1069,6 +1213,21 @@
       "spec-driven-development": "overlaps to-spec and feature-forge; directs execution to other upstream skills",
       "test-driven-development": "overlaps tdd; references shared testing patterns outside its skill folder",
       "using-agent-skills": "reviewed: second universal router and plugin assumptions would compete with the selected per-task workflow; use the template workflow guide"
+    },
+    "obra/superpowers": {
+      "requesting-code-review": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "test-driven-development": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "executing-plans": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "brainstorming": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "writing-plans": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "using-superpowers": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "finishing-a-development-branch": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "subagent-driven-development": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "verification-before-completion": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "using-git-worktrees": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "systematic-debugging": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "diagnosing-superpowers": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
+      "dispatching-parallel-agents": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use."
     }
   }
 }

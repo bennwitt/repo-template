@@ -207,3 +207,16 @@ repo-template globals --upstream
 The [baseline](.agents/mcp-development.json) and [executable fixtures](examples/mcp/README.md)
 define reviewed versions and test commands. The update installs skills and configured docs MCP;
 it does not upgrade application dependencies. Keep formatting scoped to project-owned files.
+
+## Review feedback and skill evaluation
+
+```bash
+repo-template check . --skill review-feedback --skill skill-evaluation
+repo-template update . --skill review-feedback --skill skill-evaluation --no-input
+repo-template check .
+```
+
+Alternatively, `dev-workflows` includes review feedback and `agent-evals` includes skill
+evaluation. Select only useful capabilities and retain the existing adoption profile.
+Global implementation/TDD/diagnosis improvements arrive through the machine catalog; updated
+workflow seed guidance must be merged into an existing project's guide where relevant.

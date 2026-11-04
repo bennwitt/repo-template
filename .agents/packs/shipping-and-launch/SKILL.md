@@ -34,6 +34,11 @@ secrets references, health signals, alerts/runbooks, capacity, accessibility for
 relevant performance measurements. Mark missing environment access or artifacts as unverified.
 Do not infer production readiness from passing unit tests alone.
 
+Before reporting a verdict, associate each claim with the tested revision/contents, command,
+relevant inputs/environment and result. Reuse evidence that remains valid; rerun affected
+checks after changes and any required repository gates. A passing unit suite alone does not
+verify a deployment or every requirement. Apply the project's workflow guide when present.
+
 ## Plan rollout and recovery
 
 Choose stages from deployment capabilities and traffic volume, not fixed percentages. For each,

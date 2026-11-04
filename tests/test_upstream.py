@@ -2181,3 +2181,69 @@ def test_quitting_a_repin_still_lists_the_skills_named_with_it(tmp_path: Path) -
 
 def test_clean_neutralises_the_runners_older_command_form_anywhere() -> None:
     assert clean("  s: moved to ##[error]leaked/s") == "  s: moved to #\\#[error]leaked/s"
+
+
+@pytest.mark.parametrize("changed_source", ["o/r", "second/source"])
+def test_all_sources_of_a_local_adaptation_are_monitored(
+    tmp_path: Path, changed_source: str
+) -> None:
+    github = FakeGitHub()
+    original = {**V1, "skills/input/SKILL.md": _skill("input")}
+    root = _catalog(tmp_path, github, original)
+    other = {"skills/companion/SKILL.md": _skill("companion"), "LICENSE": LICENSE.encode()}
+    second = github.publish("second/source", other)
+    path = root / ".agents/skill-sources.json"
+    sources = json.loads(path.read_text())
+    sources["sources"]["second/source"] = {**sources["sources"]["o/r"]}
+    sources["local"]["adapted"] = {
+        "license": "MIT",
+        "derivedFrom": {
+            "source": "o/r",
+            "commit": github.commits[("o/r", "HEAD")][0],
+            "path": "skills/input",
+        },
+        "additionalSources": [
+            {"source": "second/source", "commit": second, "path": "skills/companion"}
+        ],
+    }
+    path.write_text(json.dumps(sources))
+    before = path.read_bytes()
+    current = upstream_report(root, github)
+    assert current.exit_code == 0 and not current.new
+    if changed_source == "o/r":
+        _publish(github, {**original, "skills/input/SKILL.md": _skill("input", "Changed")})
+    else:
+        github.publish(
+            changed_source, {**other, "skills/companion/SKILL.md": _skill("companion", "Changed")}
+        )
+    report = upstream_report(root, github)
+    assert report.exit_code == 2 and not report.changed and not report.new
+    assert any(
+        "adapted: derived inputs changed in " + changed_source in line for line in report.review
+    )
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("invalid_source", [{}, [], None, 12])
+def test_invalid_secondary_source_reports_review_without_crashing(
+    tmp_path: Path, invalid_source: Any
+) -> None:
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    path = root / ".agents/skill-sources.json"
+    sources = json.loads(path.read_text())
+    primary = {
+        "source": "o/r",
+        "commit": github.commits[("o/r", "HEAD")][0],
+        "path": "skills/s",
+    }
+    sources["local"]["adapted"] = {
+        "license": "MIT",
+        "derivedFrom": primary,
+        "additionalSources": [{**primary, "source": invalid_source}],
+    }
+    path.write_text(json.dumps(sources))
+    report = upstream_report(root, github)
+    assert report.exit_code == 2
+    assert any("adapted: invalid derivedFrom source" in line for line in report.review)
+    assert "s" in report.current

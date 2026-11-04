@@ -49,3 +49,8 @@ def test_workflow_actions_are_pinned_to_a_commit() -> None:
     for action, comment in uses:
         assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", action), action
         assert re.fullmatch(r"\s*# v\d+(\.\d+)*", comment), f"{action} needs a # vX.Y.Z comment"
+
+
+def test_seeded_workflow_matches_the_maintained_agent_guide() -> None:
+    """New projects receive the reviewed guide; existing seeds remain project-owned."""
+    assert _baseline()["docs/agents/workflow.md"] == (ROOT / "docs/agents/workflow.md").read_text()

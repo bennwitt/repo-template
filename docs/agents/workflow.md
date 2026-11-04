@@ -61,6 +61,8 @@ Format only project-owned files, never recursively through installed skill symli
 | Implement an agreed scope | implement; implement-spec for a task graph | global |
 | Test behavior or diagnose a failure | tdd, diagnosing-bugs | global |
 | Review requirements and standards | code-review | global |
+| Address incoming review findings | review-feedback | dev-workflows pack or individual |
+| Compare or regression-test agent skills | skill-evaluation | agent-evals pack or individual |
 | Simplify or retire code | code-simplification, deprecation-and-migration | dev-workflows pack |
 | Define quality gates | constraint-driven-development | delivery pack |
 | Verify versioned APIs | source-driven-development | delivery pack |
@@ -94,6 +96,17 @@ Skills describe procedures; the user's task and repository rules determine autho
 push, open or merge PRs, change trackers, deploy or delete data. Prior authorization persists.
 Readiness is a scoped assessment, not deployment permission. Keep agent-session and pre-push
 hooks nonblocking; enforce project quality gates in checks, pre-commit or CI.
+
+For substantial implementation, use the execution-record reference in `implement` to preserve
+plan identity, completed outputs, decisions, test evidence and pending findings across handoffs.
+On resumption, compare the record with current plan contents, commits and uncommitted work;
+reopen invalidated work instead of repeating completed tasks. Small edits need no extra ledger.
+
+Support completion claims with the tested contents/revision, proving command, relevant inputs
+and environment, observed result and limits. Reuse passing evidence that remains valid; rerun
+affected checks after changes and all required repository gates. A new message alone does not
+invalidate a check, and a passing subset does not prove the whole system or deployment ready.
+Reuse established test seams; ask only about material unresolved interface or scope choices.
 
 Choose installed tool versions and the project's dependency manager. Read version-sensitive
 official documentation when needed. Measure performance before claiming gains; separate source

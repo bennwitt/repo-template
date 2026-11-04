@@ -6,6 +6,14 @@ The monitoring specialist also receives narrow corrections discovered during com
 This is a best-fit engineering selection backed by source review and targeted behavioral
 exercises, not a claim of universal superiority or a model benchmark.
 
+## Subsequent source evaluations
+
+- [Superpowers v7.0.2 — 2026-11-03](evaluations/superpowers.md): all 15 skills, overlap with
+  the selected workflow, runtime/installation behavior and proposed selective adaptations.
+  The authorized implementation adds review-feedback and skill-evaluation, and adapts selected
+  implementation, debugging, testing and evidence guidance. The earlier Pocock/Addy decisions
+  below remain the core workflow; the linked report records this subsequent change.
+
 ## Evidence and method
 
 - [Pocock: all 38 skills](evaluations/pocock.md), at
@@ -35,6 +43,8 @@ they overlapped; this was not an exhaustive audit of every third-party skill in 
 | Implementation | Pocock implement / implement-spec | Existing TDD composition and explicit task-graph/worktree workflow |
 | Testing/debugging | Pocock tdd / diagnosing-bugs | Public-interface tests, independent expectations and diagnostic loop |
 | Review | Locally adapted Pocock code-review | Retains separate Standards/Spec passes; includes requested WIP and local requirements |
+| Incoming feedback | Superpowers-derived review-feedback, dev-workflows | Verify findings, handle independent fixes and record evidence-backed dispositions |
+| Skill evaluation | Superpowers-derived skill-evaluation, agent-evals | Compare observed outcomes with matched controls, bounded trials and disclosed uncertainty |
 | Workflow setup | Locally adapted setup-matt-pocock-skills | Configures existing skills, preserves AGENTS authority, supports local tracking |
 | Refactoring | Addy-derived code-simplification, dev-workflows | Behavior preservation, scoped incremental changes, explicit async/error/cleanup traps |
 | Retirement | Addy-derived deprecation-and-migration, dev-workflows | Consumer inventory, phased schemas, concurrent backfills and honest recovery limits |

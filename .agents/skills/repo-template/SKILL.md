@@ -225,6 +225,20 @@ personal profiles and individual selections during rollout. Use clean worktrees 
 updates when active repositories contain user work. Format project-owned files only, avoiding
 installed skill symlinks that point into the machine catalog.
 
+## Selective Superpowers additions
+
+`review-feedback` is available individually or through `dev-workflows`; `skill-evaluation`
+is available individually or through `agent-evals`. Existing global implementation, debugging
+and TDD names are retained. Substantial tasks can use execution records; completion claims
+track actual tested contents, and established authorization/test seams carry forward.
+
+Reconcile existing pack users to add new members, preserving individual selections and profiles.
+Existing workflow seeds stay project-owned: merge the completion/recovery guidance deliberately.
+No upstream router, session hook, companion server or transcript collector is installed.
+Local adaptations record every attributed input through `derivedFrom` and `additionalSources`;
+upstream changes to any of them require a manual reviewed merge. See the standards repository's
+`docs/evaluations/superpowers.md` for the complete decision matrix.
+
 ## The manifest
 
 `.repo-template.json` records the template version, the project variables, each managed file's

@@ -1,8 +1,9 @@
 {
   "agent-evals": {
-    "description": "Benchmarks and evals for agent repositories (Harbor tasks, verifiers, calibration)",
+    "description": "Agent and skill evaluations: outcome-based comparisons, regression scenarios, controlled trials, Harbor verifiers and calibration.",
     "skills": [
-      "eval-engineering"
+      "eval-engineering",
+      "skill-evaluation"
     ]
   },
   "api": {
@@ -84,7 +85,7 @@
     ]
   },
   "dev-workflows": {
-    "description": "Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features, behavior-preserving simplification, and deprecation or schema migration. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked.",
+    "description": "Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features, behavior-preserving simplification, and deprecation or schema migration. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked. Includes evidence-based handling of incoming review feedback.",
     "skills": [
       "architecture-designer",
       "code-reviewer",
@@ -95,7 +96,8 @@
       "fullstack-guardian",
       "ponytail",
       "test-master",
-      "the-fool"
+      "the-fool",
+      "review-feedback"
     ]
   },
   "fastapi": {

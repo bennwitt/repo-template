@@ -6,7 +6,8 @@ disable-model-invocation: true
 
 You have been provided a spec. This spec should have tickets associated with it, describing how to implement the spec.
 
-The issue tracker should have been provided to you. If not, tell the user to run `/setup-matt-pocock-skills`.
+Use the supplied tracker or local spec/task files. Configure missing tracker conventions only
+when the task needs them; a supplied local plan does not require remote setup.
 
 The goal is the entire spec implemented on a single **integration branch**, with every ticket resolved the way the issue tracker closes work.
 
@@ -15,6 +16,11 @@ The tickets are not a list of steps. They are a **task graph** with blocking rel
 Communication to and from subagents should be sparse. Communicate primarily through **context pointers**: to the spec, tickets, research notes, and previous commits. Don't duplicate information already available via pointers.
 
 **Implementer subagents** should be run in the background where possible for maximum concurrency.
+
+Read [the execution-record reference](../implement/references/execution-record.md) before
+substantial execution or resuming interrupted work. Keep plan identity, task outputs, decisions,
+verification and pending findings there. Match completed tasks against current contents before
+skipping or redispatching them. Reuse authorization and settled test seams.
 
 ## Steps
 
@@ -25,7 +31,8 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR after the first merge in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
 4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Each implementer subagent:
-   - confirms its worktree is based on the integration branch before starting, and resets onto it if not;
+   - confirms its worktree is based on the integration branch before starting; if not, preserves
+     existing work and creates a correctly based worktree or integrates changes without a reset;
    - calls the Skill tool with `tdd` to build the ticket;
    - merges the integration branch tip into its own branch before reporting done
 
@@ -37,4 +44,9 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 8. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
 
-9. Clean up all **implementer subagent** worktrees.
+9. Clean up only task-created worktrees whose ownership is recorded and which hold no unique
+   uncommitted or untracked work. Preserve open-PR work and host-owned workspaces.
+
+
+Adapted from Matt Pocock (MIT), with execution/recovery inputs from obra/superpowers (MIT).
+Both sources and their reviewed revisions are recorded in the standards catalog.
