@@ -7,7 +7,7 @@ supplied plan is preserved with its target, formatting and implementation record
 
 ## Delivered behavior
 
-The existing registries, CLI, transactional updater and sole maintenance scheduler now cover
+The existing registries, CLI, transactional updater and manual maintenance workflow now cover
 freshness evidence, source filtering, forced checks, maximum age, JSON, dry runs, automatic
 admission and optional native providers. Default freshness is 24 hours; executable cooldown is
 one day. Partial checks cannot claim complete freshness. Ordinary repository commands stay
@@ -20,7 +20,7 @@ installs roll back with diagnostic backups; failed revocations explicitly retain
 grants. Pack selection never activates optional write MCP integrations. Authentication remains
 machine-owned.
 
-The twice-daily scheduler evaluates without write credentials, then uses a scoped App to publish
+The manually dispatched workflow evaluates without write credentials, then uses a scoped App to publish
 one eligible update PR. Merging requires exact-head App admission evidence, successful checks and
 verified repository protections. Behind PRs are rebuilt from the newly tested tree without force
 pushing. No candidate code runs in the credential-bearing publication job.
@@ -89,7 +89,8 @@ The final upstream JSON contains available revisions and exact configuration-bou
 
 The default gh account is read-only; the already authenticated repository-owner account has admin
 access and is used per command for this implementation's PR, without changing the default login.
-Scheduled automation still needs its own scoped App,
+As requested on 2026-11-06, updates are ad hoc and the recurring catalog schedule has been removed.
+Local CLI maintenance needs no App. Optional manual workflow publication still needs its own scoped App,
 `MAINTENANCE_APP_ID`, `MAINTENANCE_APP_PRIVATE_KEY`, repository auto-merge/squash merging and
 required main-branch checks. Give the App Contents, Pull requests and Checks write access plus
 Administration read access to verify protection, with no protection bypass. Details are in

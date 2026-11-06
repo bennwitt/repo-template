@@ -1183,8 +1183,9 @@ still means the repository needs no reconciliation. Executable releases have a o
 
 Use `globals --upstream --force --json` for a complete inspection, or filter with `--source`.
 `globals --upgrade --auto --dry-run --catalog-only` previews automatically eligible changes.
-The existing twice-daily maintenance workflow tests eligible updates and publishes one App-owned
-PR. Reviewed exceptions, local adaptations, executable changes and removals remain for review.
+Updates are ad hoc: run the CLI when needed, or manually dispatch the Catalog maintenance workflow
+to test eligible updates and publish one App-owned PR. The workflow has no recurring schedule.
+Reviewed exceptions, local adaptations, executable changes and removals remain for review.
 
 Vendored assets remain the default. Explicit client-qualified `--plugin` / `--remove-plugin`
 selection uses native client commands; confirmed plugin assets suppress managed duplicates after

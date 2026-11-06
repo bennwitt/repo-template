@@ -190,6 +190,7 @@ variable from its own process environment at connection time.
 **Freshness evidence**:
 Disposable local records of attempted and successful upstream checks, keyed by source and
 configuration. A complete successful inspection is fresh for 24 hours; missing evidence is unknown.
+Freshness is advisory between ad hoc runs and does not schedule background maintenance.
 
 **Automatic admission**:
 Accepting a compatible established-source candidate after integrity, license and security checks.

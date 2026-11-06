@@ -1,8 +1,6 @@
 name: Catalog maintenance
 
 on:
-  schedule:
-    - cron: "17 6,18 * * *"
   workflow_dispatch:
 
 permissions:

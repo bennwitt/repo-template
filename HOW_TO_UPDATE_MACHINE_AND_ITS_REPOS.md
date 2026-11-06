@@ -449,6 +449,6 @@ assets, then reconcile affected repositories with `check`/`update`. Customized c
 Optional write-capable services require `--allow-write-mcp langsmith` or `azure-write` on this
 machine; remove that grant with `--revoke-write-mcp`. Client authentication stays machine-owned.
 
-Scheduled maintenance needs the scoped App and branch settings described in the guide. Local
-implementation does not activate GitHub automation or deploy Azure resources. Optional native
+Updates are ad hoc. The CLI needs no maintenance App; the optional manually dispatched workflow
+needs the scoped App and branch settings described in the guide. Optional native
 and legacy LangChain examples run in separate locked environments under `examples/mcp/`.

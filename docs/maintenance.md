@@ -95,10 +95,18 @@ The five LangSmith evaluation skills are attributed local adaptations. Their aut
 installation and feedback boundaries differ intentionally from the upstream native plugin.
 Native provider selection is an explicit choice to use the upstream implementation.
 
-## Scheduled updates and activation
+## Ad hoc updates and optional workflow activation
 
-The existing Catalog maintenance workflow runs at 06:17 and 18:17 UTC. Forced inspection provides
-retry headroom; GitHub scheduling and service outages cannot guarantee a strict 24-hour SLA.
+Updates run when requested. Use the CLI commands above for local inspection and application;
+they do not need a GitHub App. The Catalog maintenance workflow has only `workflow_dispatch`,
+so it runs when manually started from GitHub Actions or with:
+
+```bash
+gh workflow run catalog-drift.yml --repo bennwitt/repo-template --ref main
+```
+
+The 24-hour threshold describes cached freshness; it does not trigger background checks or updates.
+Configure the optional App-backed publication path below before dispatching the workflow.
 The job publishes inspection and upgrade reports as a 30-day artifact, even on failure.
 Immutable blobs are reused after hash verification. Runs without admitted content changes skip
 development dependency installation and fixture tests; no timestamp-only catalog changes are made.
@@ -110,7 +118,7 @@ requests and Checks write access, plus Administration read access for protection
 Enable repository auto-merge and squash merging and configure main branch protection to require the
 quality and all MCP fixture jobs. Do not give the App a branch-protection bypass.
 
-One `automation/catalog-maintenance` PR is outstanding at a time. A subsequent maintenance run
+One `automation/catalog-maintenance` PR is outstanding at a time. A subsequent manually started run
 merges it only when its recorded head still matches, its author is the configured App, all expected
 checks succeeded, an App-issued admission check matches that head, and repository review/protection
 requirements are satisfied. Editing the PR description cannot authorize a different head. Missing, skipped,

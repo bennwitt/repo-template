@@ -115,7 +115,8 @@ For each upstream source, use existing metadata or extend it to track:
 
 Policy:
 
-**If a source has not been successfully checked within the last 24 hours, the existing updater must evaluate it again.**
+**During an explicitly requested upstream inspection, re-evaluate sources whose successful check
+is at least 24 hours old. Between ad hoc runs, stale evidence produces an advisory warning.**
 
 When newer content exists:
 
@@ -128,7 +129,8 @@ When newer content exists:
 
 Do not update a successful-check timestamp if the check failed.
 
-If the existing maintenance cadence does not guarantee a check within 24 hours, adjust its established scheduling mechanism. Do not add another scheduler.
+Updates are ad hoc, per the 2026-11-06 decision. Keep the existing CLI and optional manual workflow
+dispatch; do not schedule recurring checks or updates to enforce the freshness threshold.
 
 Maintain separate timestamps for checking, synchronizing, and validating.
 
@@ -768,7 +770,9 @@ Only stop for a consequential destructive operation, an unresolved security issu
 
 Implemented in the existing CLI, registries, updater transactions and catalog workflow. The
 approved defaults are 24-hour successful-check freshness, a one-day executable-release cooldown,
-offline use with a visible warning, and App-mediated automatic PR merging after required checks.
+offline use with a visible warning, and optional App-mediated PR merging after required checks
+when maintenance is manually requested. The recurring schedule was removed on 2026-11-06;
+the 24-hour threshold remains an advisory cache policy between ad hoc runs.
 Native providers remain optional; writes need explicit machine-local activation. Review-required
 upstream candidates remain deferred. See `HANDOFF.md` for accepted revisions, tests, activation
 requirements and rollback, and `docs/maintenance.md` for the implemented operator workflow.
