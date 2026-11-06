@@ -6,7 +6,9 @@
   source filtering, force/max-age controls, JSON reports, dry runs and explicit automatic admission.
   Default freshness is 24 hours; all executable pin checks share a one-day cooldown. Offline
   repository operations warn about stale evidence while retaining their existing check semantics.
-- Extend the sole catalog scheduler to twice daily. Evaluate and test without write credentials;
+- Make catalog maintenance ad hoc: remove its recurring schedule and retain manual workflow
+  dispatch plus the existing CLI inspection/application commands.
+- Evaluate and test catalog updates without write credentials;
   a scoped GitHub App publishes eligible changes and merges only the admitted tested revision.
   Missing credentials or required repository settings fail activation explicitly.
 - Add optional client-qualified native providers, verified duplicate suppression and explicit

@@ -272,7 +272,8 @@ entry again); `update` maintains the rest.
 ## Maintain the catalog or select a native provider
 
 For upstream freshness, automatic admission, plugin selection/removal, optional write-capable
-MCP activation, or scheduled PR activation, read the standards repository's `docs/maintenance.md`.
+MCP activation, or manual maintenance workflow activation, read the standards repository's
+`docs/maintenance.md`. Updates are ad hoc; start inspection or application only when requested.
 Use `globals --upstream` for inspection and `globals --upgrade` for application. Default freshness
 is 24 hours; stale evidence warns without blocking offline repository operations. Preview
 automatic application with `--upgrade --auto --dry-run --catalog-only`.
