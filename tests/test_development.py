@@ -40,7 +40,7 @@ class Registry:
         return {
             "2.3.0": datetime(2026, 10, 2, 22, tzinfo=UTC),
             "2.4.0": NOW - timedelta(days=8),
-            "2.5.0": NOW - timedelta(days=1),
+            "2.5.0": NOW - timedelta(hours=12),
         }
 
 
@@ -76,5 +76,6 @@ def test_missing_package_needs_review_and_network_failure_propagates(tmp_path: P
     report = Report()
     check_development(tmp_path, Registry(NotFound("gone")), NOW, report)
     assert report.exit_code == 2
-    with pytest.raises(NetworkError):
-        check_development(tmp_path, Registry(NetworkError("offline")), NOW, Report())
+    failed = Report()
+    check_development(tmp_path, Registry(NetworkError("offline")), NOW, failed)
+    assert failed.exit_code == 3 and "offline" in failed.errors[0]

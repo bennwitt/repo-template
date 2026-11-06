@@ -1,66 +1,139 @@
-name: Catalog drift
-
-# Weekly, compare every vendored skill and license text with its upstream repository, and each
-# MCP server and development pin with npm or PyPI. Read-only: the report goes to this log and to the run's
-# summary page; upgrading a skill or re-pinning a server is a reviewed, local
-# `repo-template globals --upgrade`. Exit 1 means updates are available (a skill, or a pin with a
-# release past its 7-day cooldown); 2 means one needs review (removed, moved, a license changed,
-# a pin yanked or mis-recorded); 3 means GitHub, npm or PyPI couldn't be reached. Each fails the
-# run. The report's upstream text is already cleaned by the CLI; it is replayed into the log with
-# workflow commands stopped, and reaches the summary only through a file, never an expression.
+name: Catalog maintenance
 
 on:
   schedule:
-    - cron: "17 6 * * 1"
+    - cron: "17 6,18 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+  group: catalog-maintenance
+  cancel-in-progress: false
 
 jobs:
-  upstream:
+  evaluate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
+    env:
+      REPO_TEMPLATE_CACHE: ${{ github.workspace }}/.maintenance-cache
+      LANGSMITH_TRACING: 'false'
+      OTEL_SDK_DISABLED: 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: "0.11.15"
           enable-cache: false
-      - run: uv python install
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .maintenance-cache
+          key: upstream-${{ github.run_id }}
+          restore-keys: upstream-
       - run: uv sync --locked --no-dev
-      - name: Compare the catalog with upstream
+      - name: Inspect all upstream sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_TELEMETRY: "0"
+        run: |
+          mkdir -p "$RUNNER_TEMP/maintenance"
+          set +e
+          uv run --no-sync repo-template globals --upstream --force --json --standards-root . > "$RUNNER_TEMP/maintenance/upstream.json"
+          code=$?
+          set -e
+          test "$code" -le 3
+          test -s "$RUNNER_TEMP/maintenance/upstream.json"
+      - name: Apply admitted catalog changes
         env:
           GH_TOKEN: ${{ github.token }}
           GH_TELEMETRY: "0"
         run: |
           set +e
-          uv run --no-sync repo-template globals --upstream --standards-root . >report.txt 2>&1
+          uv run --no-sync repo-template globals --upgrade --auto --catalog-only --json --standards-root . > "$RUNNER_TEMP/maintenance/upgrade.json"
           code=$?
           set -e
-          token=$(openssl rand -hex 16) # no line of the report can run a workflow command
-          echo "::stop-commands::$token"
-          cat report.txt
-          echo "::$token::"
-          {
-            echo "## Catalog drift"
-            echo
-            case "$code" in
-              0) echo "Everything is current." ;;
-              1) echo "Updates are available: follow each line of the report below, locally (skills: \`repo-template globals --upgrade\`; MCP servers: \`--upgrade mcp:<name>\`; MCP development: update baseline and fixture locks, rerun compatibility tests; per-machine tools: edit \`.agents/machine-tools.json\`)." ;;
-              2) echo "Something needs review (a skill removed or moved, a license changed, or a pin to fix)." ;;
-              3) echo "GitHub, npm or PyPI couldn't be reached: run it again later." ;;
-              *) echo "The check failed (exit $code)." ;;
-            esac
-            echo
-            echo '```text'
-            sed 's/```/` ` `/g' report.txt
-            echo '```'
-          } >>"$GITHUB_STEP_SUMMARY"
-          exit "$code"
+          test "$code" -le 3
+          test -s "$RUNNER_TEMP/maintenance/upgrade.json"
+      - name: Detect admitted content changes
+        id: candidate
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads((Path(os.environ['RUNNER_TEMP']) / 'maintenance/upgrade.json').read_text())
+          changed = bool(report.get('applied'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'changed={str(changed).lower()}\n')
+          PY
+      - name: Validate candidate
+        if: steps.candidate.outputs.changed == 'true'
+        run: |
+          uv sync --locked --dev
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src
+          uv run pytest
+          for example in python langchain legacy-langchain; do
+            uv sync --project "examples/mcp/$example" --locked --dev --python 3.12
+            uv run --directory "examples/mcp/$example" --locked pytest
+          done
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        if: steps.candidate.outputs.changed == 'true'
+        with:
+          node-version: '22.22.0'
+      - name: Validate TypeScript fixture
+        if: steps.candidate.outputs.changed == 'true'
+        working-directory: examples/mcp/typescript
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          npm test
+      - name: Package validated candidate
+        run: uv run --no-sync python -m repo_template.maintenance_ci prepare "$RUNNER_TEMP/maintenance" "$RUNNER_TEMP/maintenance/upgrade.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: catalog-maintenance
+          path: ${{ runner.temp }}/maintenance
+          retention-days: 30
+
+  publish:
+    needs: evaluate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check automation credentials
+        env:
+          APP_ID: ${{ vars.MAINTENANCE_APP_ID }}
+          APP_KEY: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "Configure MAINTENANCE_APP_ID and MAINTENANCE_APP_PRIVATE_KEY: repository-scoped Contents, Pull requests and Checks write; Administration read."
+            exit 1
+          fi
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        id: app
+        with:
+          app-id: ${{ vars.MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          token: ${{ steps.app.outputs.token }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: catalog-maintenance
+          path: ${{ runner.temp }}/maintenance
+      - name: Publish or merge the validated update
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          MAINTENANCE_BOT_LOGIN: ${{ steps.app.outputs.app-slug }}[bot]
+        run: |
+          gh auth setup-git
+          PYTHONPATH=src python -m repo_template.maintenance_ci publish "$RUNNER_TEMP/maintenance"

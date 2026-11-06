@@ -110,7 +110,7 @@ person's machine (`.git/`, Claude Code's local scope).
 _Avoid_: private adoption, local adoption
 
 **Cooldown**:
-The 7 days a package release must be public before repo-template pins it (MCP servers, tools).
+The one day a package release must be public before repo-template pins it (MCP servers, tools).
 Upstream skill revisions don't wait; they are reviewed and scanned instead.
 
 **MCP catalog**:
@@ -186,3 +186,21 @@ _Avoid_: session transcript, task authority
 A variable name, not its secret value. The catalog permits `bearerTokenEnv` only for the global
 GitHub read-only endpoint and only as `GITHUB_PERSONAL_ACCESS_TOKEN`. Each client resolves that
 variable from its own process environment at connection time.
+
+**Freshness evidence**:
+Disposable local records of attempted and successful upstream checks, keyed by source and
+configuration. A complete successful inspection is fresh for 24 hours; missing evidence is unknown.
+
+**Automatic admission**:
+Accepting a compatible established-source candidate after integrity, license and security checks.
+Executable changes, removals, permissions and local adaptations require review. CI tests the
+resulting catalog before an App publishes it, and merges only its admitted, tested PR revision.
+
+**Native provider**:
+A client plugin optionally selected instead of overlapping managed skills or MCP definitions.
+Only verified installed capabilities suppress defaults; a receipt is not a reproducibility claim
+for floating executable dependencies.
+
+**Machine capability grant**:
+Explicit machine-local authorization to configure an optional write-capable MCP integration.
+It stores integration names and evidence, never credentials or client approval/trust settings.

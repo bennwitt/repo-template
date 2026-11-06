@@ -16,6 +16,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  langchain-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LANGSMITH_TRACING: 'false'
+      OTEL_SDK_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --project examples/mcp/langchain --locked --dev --python 3.12
+      - run: uv run --directory examples/mcp/langchain --locked pytest
+
+  legacy-langchain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LANGSMITH_TRACING: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --project examples/mcp/legacy-langchain --locked --dev --python 3.12
+      - run: uv run --directory examples/mcp/legacy-langchain --locked pytest
+
   python-mcp:
     runs-on: ubuntu-latest
     timeout-minutes: 10

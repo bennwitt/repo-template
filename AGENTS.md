@@ -19,10 +19,14 @@ hook: after a push, a read-only `claude -p` fills in the pull request's descript
 `claude mcp add-json --scope user` and into `~/.codex/config.toml`, and `update` writes a
 repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`; for a personal
 repository Claude Code's local scope instead of `.mcp.json`, plus `.git/repo-template.json` and a
-block in `.git/info/exclude`). Only
+block in `.git/info/exclude`).
 `globals --upstream` (read-only: GitHub, npm and PyPI) and `globals --upgrade` (skills, and MCP
 server re-pins) use the network; `--upgrade` records the files it vendors (skills and license
-copies) with `git add -N` and leaves committing to you.
+copies) with `git add -N` and leaves committing to you. Explicit `globals --plugin` selection
+also uses native clients and the network. Optional writes need a machine-local capability grant;
+pack selection never enables them. The maintenance workflow alone publishes and merges eligible
+tested PRs through a scoped App. For freshness, admission, providers and automation activation,
+read [docs/maintenance.md](docs/maintenance.md).
 
 `setup-machine.sh` (macOS and Linux) sets up a machine in one run: it clones or pulls the standards
 repository (only a clean `main`), installs the CLI with `uv tool install --editable`, previews
@@ -87,7 +91,8 @@ repository's temporary-folder and machine-change rules below when exercising the
 - The generated pre-push hook always exits 0 and works in the background, so it can never block
   a push, and it writes only over a description nobody wrote: empty, the untouched template,
   the commit messages alone, or its own unedited one.
-- MCP servers are read-only and contain no secret values. GitHub alone may reference the machine-owned
+- MCP servers default to read-only and contain no secret values. Optional write-capable servers
++  require explicit machine-local activation. The default GitHub server may reference the machine-owned
   `GITHUB_PERSONAL_ACCESS_TOKEN` at its fixed read-only endpoint. Definitions live in
   `.agents/mcp-servers.json`, and each
   denied tool is denied in both clients. repo-template never writes approval settings

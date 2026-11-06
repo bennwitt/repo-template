@@ -134,6 +134,43 @@
       },
       "source": "https://ui.shadcn.com/docs/mcp",
       "why": "Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself)."
+    },
+    "azure-write": {
+      "scope": "global",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "msmcp-azure==3.0.0",
+        "azmcp",
+        "server",
+        "start"
+      ],
+      "env": {
+        "AZURE_MCP_COLLECT_TELEMETRY": "false",
+        "AZURE_TOKEN_CREDENTIALS": "AzureCliCredential"
+      },
+      "pin": {
+        "registry": "pypi",
+        "package": "msmcp-azure",
+        "version": "3.0.0",
+        "publishedAt": "2026-10-12T22:33:00Z"
+      },
+      "codex": {
+        "startup_timeout_sec": 120,
+        "tool_timeout_sec": 120
+      },
+      "source": "https://github.com/microsoft/mcp/tree/main/servers/Azure.Mcp.Server",
+      "why": "Optional infrastructure-changing Azure and Foundry tools. Activate explicitly on this machine; client approvals remain unchanged.",
+      "optIn": true,
+      "access": "write"
+    },
+    "langsmith": {
+      "scope": "global",
+      "optIn": true,
+      "access": "write",
+      "url": "https://api.smith.langchain.com/mcp",
+      "source": "https://github.com/langchain-ai/langchain-plugins/tree/main/plugins/langsmith-mcp",
+      "why": "Optional authenticated LangSmith workspace integration. Complete OAuth in the client; this template stores no credentials."
     }
   }
 }

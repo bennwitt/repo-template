@@ -17,7 +17,8 @@ from typing import Any
 
 from repo_template.catalog import PACKS_DIR, SKILLS_DIR
 from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
-from repo_template.pins import COOLDOWN, FINAL, Registry, _key, _stamp
+from repo_template.pins import FINAL, Registry, _key, _stamp
+from repo_template.release_policy import COOLDOWN
 
 SERVER_PREFIX = "mcp:"  # `globals --upgrade mcp:<name>`, when a skill has the same name
 

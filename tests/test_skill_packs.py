@@ -34,6 +34,39 @@ def _repository(root: Path) -> Path:
     return root
 
 
+def test_plugin_selection_prunes_owned_duplicates_and_removal_restores_them(tmp_path, monkeypatch):
+    from repo_template import standards
+
+    agents = _catalog(tmp_path / "standards")
+    root = _repository(tmp_path / "project")
+    selected = set()
+    monkeypatch.setattr(standards, "supplied", lambda *args: selected)
+
+    def reconcile(check=False):
+        result = Result(root)
+        sync_project_packs(
+            root, ["lc"], result, check=check, agents_dir=agents, ignored=lambda paths: set(paths)
+        )
+        return result
+
+    reconcile()
+    link = root / ".agents/skills/lc-one"
+    assert link.is_symlink()
+    selected.add("lc-one")
+    assert reconcile(check=True).removed and link.is_symlink()
+    reconcile()
+    assert not link.exists()
+    selected.clear()
+    reconcile()
+    assert link.is_symlink()
+    link.unlink()
+    link.mkdir()
+    (link / "SKILL.md").write_text("custom")
+    selected.add("lc-one")
+    reconcile()
+    assert (link / "SKILL.md").read_text() == "custom"
+
+
 def test_globals_links_only_skills_outside_packs(tmp_path: Path) -> None:
     standards = tmp_path / "standards"
     _catalog(standards)

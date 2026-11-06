@@ -1101,7 +1101,7 @@ def test_a_young_pin_is_held_back_from_both_syncs(tmp_path: Path) -> None:
 
     from repo_template.mcp import usable
 
-    recent = (datetime.now(UTC) - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent = (datetime.now(UTC) - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%SZ")
     young = {**NPX, "pin": {**NPX["pin"], "publishedAt": recent}}
     servers = load_mcp_servers(_agents(tmp_path / "c", {"x": young, "docs": URL}))
     errors: list[str] = []
@@ -1114,7 +1114,7 @@ def test_a_young_pin_is_held_back_from_both_syncs(tmp_path: Path) -> None:
     catalog_servers["servers"]["docs"] = {**young, "scope": "pack"}
     (catalog / "mcp-servers.json").write_text(json.dumps(catalog_servers))
     result = _update(root, catalog, packs=["lc"])
-    assert any("less than 7 days old" in error for error in result.errors)
+    assert any("less than 1 day old" in error for error in result.errors)
     project = root / ".mcp.json"
     assert not project.exists() or "docs" not in json.loads(project.read_text())["mcpServers"]
 
@@ -1137,7 +1137,7 @@ def test_the_cutoff_is_the_next_utc_midnight_whatever_the_offset(tmp_path: Path)
     ("change", "problem"),
     [
         ({"publishedAt": "2099-01-01T00:00:00Z"}, "publishedAt is in the future"),
-        ({"publishedAt": "{recent}"}, "is less than 7 days old"),
+        ({"publishedAt": "{recent}"}, "is less than 1 day old"),
         ({"publishedAt": "{recent}", "pinException": "fixes the crash on Node 20"}, None),
     ],
 )
@@ -1148,7 +1148,7 @@ def test_the_catalog_check_holds_pins_to_the_cooldown(
 
     from repo_template.catalog import _check_mcp, _Problems
 
-    recent = (datetime.now(UTC) - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent = (datetime.now(UTC) - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%SZ")
     pin = {**NPX["pin"], **{k: v.replace("{recent}", recent) for k, v in change.items()}}
     root = tmp_path
     _agents(root, {"x": {**NPX, "pin": pin}})

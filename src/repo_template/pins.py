@@ -1,6 +1,6 @@
 """Newer releases of the packages MCP servers pin, for `globals --upstream`.
 
-A release is offered once it is a week old (COOLDOWN), so a bad release has time to be caught
+A release is offered once it is a day old (COOLDOWN), so a bad release has time to be caught
 and pulled first; pre-releases, and releases yanked or deprecated, never are. A pin younger than
 that needs a `pinException` saying why, and is reported once the exception is no longer needed.
 Versions are plain final releases (1.2.3; 1.2 and 1.2.0 are the same one); a post-release or
@@ -20,9 +20,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 from repo_template.mcp import MCP_SERVERS_NAME, Server
+from repo_template.release_policy import COOLDOWN
 from repo_template.upstream import NetworkError, NotFound, Report, clean
 
-COOLDOWN = timedelta(days=7)
 FINAL = re.compile(r"\d+(?:\.\d+)*")  # 1.2.3: a final release, the only kind offered
 EXTRAS = re.compile(r"\[[^\]]*\]$")
 URLS = {"npm": "https://registry.npmjs.org/{}", "pypi": "https://pypi.org/pypi/{}/json"}
@@ -123,6 +123,9 @@ def check_pins(
             releases = registry.releases(pin.registry, pin.package)
         except NotFound:
             report.review.append(f"{label} isn't on {pin.registry} any more")
+            continue
+        except NetworkError as exc:
+            report.errors.append(f"{label}: {exc}")
             continue
         check_pin(
             name,

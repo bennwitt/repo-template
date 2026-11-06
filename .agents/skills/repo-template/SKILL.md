@@ -220,7 +220,7 @@ a requested migration. Inspect application lockfiles first; skill updates do not
 
 The standards checkout's `.agents/mcp-development.json` and `examples/mcp/` define validated
 pins and locked compatibility fixtures. `globals --upstream` reports development drift under
-the seven-day policy; update fixtures and verify them before accepting a new baseline. Preserve
+the one-day policy; update fixtures and verify them before accepting a new baseline. Preserve
 personal profiles and individual selections during rollout. Use clean worktrees for shared
 updates when active repositories contain user work. Format project-owned files only, avoiding
 installed skill symlinks that point into the machine catalog.
@@ -268,3 +268,17 @@ entry again); `update` maintains the rest.
   0.4.2): follow Appendix A, step 1, of `HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md`.
 - Before changing a machine, run `repo-template globals --check`, and `globals` only once the
   user agrees.
+
+## Maintain the catalog or select a native provider
+
+For upstream freshness, automatic admission, plugin selection/removal, optional write-capable
+MCP activation, or scheduled PR activation, read the standards repository's `docs/maintenance.md`.
+Use `globals --upstream` for inspection and `globals --upgrade` for application. Default freshness
+is 24 hours; stale evidence warns without blocking offline repository operations. Preview
+automatic application with `--upgrade --auto --dry-run --catalog-only`.
+
+Vendored skills remain the default. Preview a client-qualified `--plugin CLIENT:ID` with
+`globals --check`; explicit write-capable integrations also need `--allow-write-mcp` on this
+machine. Reconcile affected repositories through normal `check`/`update` after provider changes.
+Keep customized assets and treat unverifiable plugin components as review-required. Use temporary
+homes for fixture validation; native installation on the real machine needs user authorization.

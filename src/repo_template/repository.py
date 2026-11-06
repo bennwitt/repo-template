@@ -44,6 +44,7 @@ from repo_template.personal import (
     team_servers,
     tracked_paths,
 )
+from repo_template.plugins import filter_servers
 from repo_template.runner import SUBPROCESS, Completed, Runner, SubprocessRunner
 from repo_template.scaffold import (
     PACKS_ONLY,
@@ -151,6 +152,7 @@ def _mcp(
     owned = manifest.get("project_owned", [])
     errors: list[str] = []
     wanted = for_packs(known, servers, pack_servers(agents_dir, servers))
+    wanted = filter_servers(agents_dir, Path.home(), wanted)
     return _Mcp(
         usable(wanted, datetime.now(UTC), errors),
         {item for item in owned if isinstance(item, str)} if isinstance(owned, list) else set(),
