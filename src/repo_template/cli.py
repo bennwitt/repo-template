@@ -1,16 +1,30 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
+from dataclasses import asdict
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 
 from repo_template import __version__, catalog_view
 from repo_template.development import check_development
+from repo_template.maintenance import (
+    CachedGitHub,
+    CachedRegistry,
+    CheckCache,
+    check_dependencies,
+    freshness_warning,
+    inspect_reference,
+    inventory,
+    read_json,
+)
 from repo_template.mcp import MCP_SERVERS_NAME, load_mcp_servers
 from repo_template.model import Result
-from repo_template.pins import HttpRegistry, check_pins
+from repo_template.pins import HttpRegistry, Registry, check_pins
+from repo_template.plugins import reconcile
 from repo_template.repository import AGENTS_DIR, SUBPROCESS, create_repository, update_repository
 from repo_template.resolve import TerminalPrompt, resolve_conflicts, visible
 from repo_template.scaffold import manifest_version, normalize_project_name, read_manifest
@@ -194,7 +208,45 @@ def _parser() -> argparse.ArgumentParser:
         choices=("all", "packs", "skills"),
         help="list the local catalog without changing the machine",
     )
-    globals_parser.add_argument("--json", action="store_true", help="with --list: emit JSON")
+    globals_parser.add_argument("--json", action="store_true", help="emit machine-readable output")
+    globals_parser.add_argument(
+        "--plugin",
+        action="append",
+        default=[],
+        metavar="CLIENT:ID",
+        help="explicitly select a native plugin for codex or claude",
+    )
+    globals_parser.add_argument("--remove-plugin", action="append", default=[], metavar="CLIENT:ID")
+    globals_parser.add_argument(
+        "--allow-write-mcp",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="activate an optional MCP server or write-capable plugin locally",
+    )
+    globals_parser.add_argument("--revoke-write-mcp", action="append", default=[], metavar="NAME")
+    globals_parser.add_argument(
+        "--source",
+        action="append",
+        default=[],
+        help="upstream source identity; repeat to select several",
+    )
+    globals_parser.add_argument("--force", action="store_true", help="inspect even fresh sources")
+    globals_parser.add_argument(
+        "--max-age-hours",
+        type=float,
+        default=24,
+        help="successful-check freshness threshold (default: 24)",
+    )
+    globals_parser.add_argument("--dry-run", action="store_true", help="evaluate without applying")
+    globals_parser.add_argument(
+        "--auto", action="store_true", help="apply only updates admitted by the unattended policy"
+    )
+    globals_parser.add_argument(
+        "--catalog-only",
+        action="store_true",
+        help="upgrade the catalog without changing this machine",
+    )
     globals_parser.add_argument(
         "--repo", type=Path, help="with --list: show selections recorded for this repository"
     )
@@ -210,7 +262,7 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="vendor skills from upstream, each verified, scanned and shown before it goes live: "
         "the SKILLs named, or every changed one; a name that is an MCP server (or mcp:NAME) "
-        "re-pins it to its newest release at least 7 days old",
+        "re-pins it to its newest release at least 1 day old",
     )
     globals_parser.add_argument(
         "skills",
@@ -438,19 +490,68 @@ def _summary(result: Result) -> str:
     return ", ".join(f"{count} {label}" for count, label in counts if count)
 
 
-def _upstream(root: Path) -> int:
+def _upstream(root: Path, args: argparse.Namespace | None = None) -> int:
+    cache = (
+        CheckCache(root, force=args.force, max_age_hours=args.max_age_hours, dry_run=args.dry_run)
+        if args
+        else None
+    )
+    selected = args.source if args else []
+    github: GhApi | CachedGitHub = GhApi()
+    raw_registry = HttpRegistry()
+    configuration = inventory(root)
+    _validate_sources(root, selected)
+    if cache:
+        github = CachedGitHub(github, cache, configuration)
+    registry: Registry = (
+        CachedRegistry(raw_registry, cache, configuration) if cache else raw_registry
+    )
     try:
-        report = upstream_report(root, GhApi())
-        check_development(root / ".agents", HttpRegistry(), datetime.now(UTC), report)
+        report = (
+            upstream_report(root, github, cache=cache, selected=selected)
+            if cache
+            else upstream_report(root, github)
+        )
+        # Filtering the transport prevents unselected packages from being contacted.
+        if selected:
+            registry = _SelectedRegistry(registry, selected)
+        check_development(root / ".agents", registry, datetime.now(UTC), report)
+        check_dependencies(root, registry, datetime.now(UTC), report)
         if (root / ".agents" / MCP_SERVERS_NAME).is_file():
             servers = load_mcp_servers(root / ".agents")
-            check_pins(servers, HttpRegistry(), datetime.now(UTC), report)
+            check_pins(servers, registry, datetime.now(UTC), report)
         tools = load_machine_tools(root / ".agents")
         if tools:
-            check_machine_tools(tools, HttpRegistry(), GhApi(), datetime.now(UTC), report)
+            if selected:
+                tools = {
+                    n: t
+                    for n, t in tools.items()
+                    if t.package in selected or f"{t.registry}:{t.package}" in selected
+                }
+            check_machine_tools(tools, registry, github, datetime.now(UTC), report)
     except NetworkError as exc:
         print(f"repo-template: error: {exc}", file=sys.stderr)
         return 3
+    if cache:
+        references = read_json(root / ".agents/skill-sources.json").get("references", {})
+        for name, record in references.items():
+            if selected and not (
+                {name, record.get("source"), f"github:{record.get('source')}"} & set(selected)
+            ):
+                continue
+            try:
+                data = cache.inspect(name, record, partial(inspect_reference, record, github))
+                report.available[name] = data["available_ref"]
+            except (NetworkError, OSError, ValueError) as exc:
+                report.errors.append(f"{name}: {clean(str(exc))}")
+        report.sources.update(cache.observed)
+    # A selection is an omission, not an upstream failure.
+    report.errors = [e for e in report.errors if "source not selected" not in e]
+    if cache and not selected:
+        cache.complete()
+    if args and args.json:
+        print(json.dumps({"schema": 1, "inventory": configuration, **asdict(report)}, indent=2))
+        return report.exit_code
     for title, lines in (
         ("Changed upstream", report.changed),
         ("Needs review", report.review),
@@ -461,6 +562,8 @@ def _upstream(root: Path) -> int:
             print(f"{title} ({len(lines)}):")
             for line in lines:
                 print(f"  {clean(line)}")
+    for error in report.errors:
+        print(f"repo-template: error: {clean(error)}", file=sys.stderr)
     if report.exit_code == 0:
         pins = (
             f" and {len(report.pins)} pins (MCP servers, development, tools)" if report.pins else ""
@@ -471,8 +574,54 @@ def _upstream(root: Path) -> int:
     return report.exit_code
 
 
+class _SelectedRegistry:
+    def __init__(self, registry: Registry, selected: list[str]) -> None:
+        self.registry, self.selected = registry, selected
+
+    def releases(self, registry: str, package: str) -> dict[str, datetime]:
+        if package not in self.selected and f"{registry}:{package}" not in self.selected:
+            raise NetworkError("source not selected")
+        return self.registry.releases(registry, package)
+
+
+def _validate_sources(root: Path, selected: list[str]) -> None:
+    if not selected:
+        return
+    known: set[str] = set()
+    for row in inventory(root):
+        config = row.get("configuration", {})
+        for source in (
+            row.get("source"),
+            config.get("source"),
+            row["name"] if row["type"] == "source" else None,
+        ):
+            if source:
+                known.update((source, f"github:{source}"))
+        if row["type"] == "reference":
+            known.add(row["name"])
+        if package := config.get("package"):
+            known.update((package, f"{config.get('registry')}:{package}"))
+    for server in load_mcp_servers(root / ".agents").values():
+        if server.pin:
+            known.update((server.pin.package, f"{server.pin.registry}:{server.pin.package}"))
+    # Derived inputs are included even when no vendored skill uses their source.
+    from repo_template.catalog import derived_inputs
+
+    for record in read_json(root / ".agents/skill-sources.json").get("local", {}).values():
+        for item in derived_inputs(record):
+            known.update((item["source"], f"github:{item['source']}"))
+    unknown = set(selected) - known
+    if unknown:
+        raise ValueError("unknown --source: " + ", ".join(sorted(unknown)))
+
+
 def _upgrade(root: Path, args: argparse.Namespace) -> int:
-    if not args.no_input and not sys.stdin.isatty():
+    _validate_sources(root, args.source)
+    cache = CheckCache(
+        root, force=args.force, max_age_hours=args.max_age_hours, dry_run=args.dry_run
+    )
+    configuration = inventory(root)
+    if not (args.no_input or args.auto or args.dry_run) and not sys.stdin.isatty():
         print(
             "repo-template: error: --upgrade asks about each skill; run it in a terminal, or "
             "pass --no-input",
@@ -483,12 +632,21 @@ def _upgrade(root: Path, args: argparse.Namespace) -> int:
         outcome = upgrade(
             root,
             args.skills,
-            github=GhApi(),
+            github=CachedGitHub(GhApi(), cache, configuration),
             scanner=scanner,
-            prompt=None if args.no_input else TerminalPrompt(),
+            prompt=None if args.no_input or args.auto or args.dry_run else TerminalPrompt(),
             allow_findings=args.allow_findings,
-            registry=HttpRegistry(),
+            registry=CachedRegistry(HttpRegistry(), cache, configuration),
+            automatic=args.auto,
+            dry_run=args.dry_run,
+            selected=args.source,
+            catalog_only=args.catalog_only,
         )
+    if args.json:
+        data = asdict(outcome)
+        data["result"]["root"] = str(root)
+        print(json.dumps({"schema": 1, **data}, indent=2))
+        return outcome.exit_code
     if outcome.result.needs_attention:
         _print_result(outcome.result)
     for title, names in (
@@ -526,9 +684,30 @@ def _globals(args: argparse.Namespace) -> int:
         catalog_view.show_catalog(root / ".agents", args.list, selection, json_output=args.json)
         return 0
     if args.upstream:
-        return _upstream(root)
+        return _upstream(root, args)
     if args.upgrade:
         return _upgrade(root, args)
+    if args.plugin or args.remove_plugin or args.allow_write_mcp or args.revoke_write_mcp:
+        servers = load_mcp_servers(root / ".agents")
+        for name in [*args.allow_write_mcp, *args.revoke_write_mcp]:
+            if ":" not in name and (name not in servers or not servers[name].opt_in):
+                raise ValueError(f"{name}: not an optional MCP integration")
+        result = reconcile(
+            root / ".agents",
+            Path.home(),
+            args.plugin,
+            args.remove_plugin,
+            check=args.check,
+            allow_write=args.allow_write_mcp,
+            revoke_write=args.revoke_write_mcp,
+        )
+        _print_result(result, check=args.check)
+        if args.check:
+            baseline = sync_globals(root, check=True)
+            _print_result(baseline, check=True)
+            return 1 if result.needs_attention or baseline.needs_attention else 0
+        if result.errors:
+            return _exit_code(result)
     result = sync_globals(root, check=args.check)
     _print_result(result, check=args.check)
     if args.check:
@@ -553,8 +732,25 @@ def main(argv: list[str] | None = None) -> int:
     )
     if upgrade_only and not args.upgrade:
         parser.error("SKILL, --no-input and --allow-findings work only with --upgrade")
-    if args.command == "globals" and (args.json or args.repo is not None) and not args.list:
-        parser.error("--json and --repo work only with --list")
+    if args.command == "globals":
+        if (
+            args.plugin or args.remove_plugin or args.allow_write_mcp or args.revoke_write_mcp
+        ) and (args.list or args.upstream or args.upgrade):
+            parser.error("plugin and write activation options need globals or globals --check")
+        if args.repo is not None and not args.list:
+            parser.error("--repo works only with --list")
+        if args.json and not (args.list or args.upstream or args.upgrade):
+            parser.error("--json works only with --list, --upstream or --upgrade")
+        if (args.auto or args.catalog_only) and not args.upgrade:
+            parser.error("--auto and --catalog-only work only with --upgrade")
+        if (args.source or args.force or args.max_age_hours != 24 or args.dry_run) and not (
+            args.upstream or args.upgrade
+        ):
+            parser.error("source, freshness and dry-run options need --upstream or --upgrade")
+    if args.command in {"new", "update", "check"} and AGENTS_DIR.is_dir():
+        warning = freshness_warning(AGENTS_DIR.resolve().parent)
+        if warning:
+            print(f"repo-template: warning: {warning}", file=sys.stderr)
     try:
         if args.command == "new":
             return _new(args)

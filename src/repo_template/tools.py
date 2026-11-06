@@ -1,5 +1,5 @@
 """Per-machine tools: the CLIs the skills and plugins drive on each machine, each pinned once in
-.agents/machine-tools.json, to its newest final release at least a week old (pins.COOLDOWN).
+.agents/machine-tools.json, to its newest final release at least a day old (pins.COOLDOWN).
 
 setup-machine.sh installs them from this file (an npm package by version; a GitHub release's
 asset only once its SHA-256 matches), and `globals --upstream` reports a newer release past the
@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from repo_template.pins import FINAL, Registry, _time, check_pin
-from repo_template.upstream import NotFound, Report, clean
+from repo_template.upstream import NetworkError, NotFound, Report, clean
 
 TOOLS_NAME = "machine-tools.json"
 NAME = re.compile(r"[a-z0-9][a-z0-9-]*")
@@ -176,6 +176,9 @@ def check_machine_tools(
                         )
         except NotFound:
             report.review.append(f"{label} isn't on {tool.registry} any more")
+            continue
+        except NetworkError as exc:
+            report.errors.append(f"{label}: {clean(str(exc))}")
             continue
         check_pin(
             name,

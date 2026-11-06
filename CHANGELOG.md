@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Modernize the existing updater with a complete inventory, atomic local freshness evidence,
+  source filtering, force/max-age controls, JSON reports, dry runs and explicit automatic admission.
+  Default freshness is 24 hours; all executable pin checks share a one-day cooldown. Offline
+  repository operations warn about stale evidence while retaining their existing check semantics.
+- Extend the sole catalog scheduler to twice daily. Evaluate and test without write credentials;
+  a scoped GitHub App publishes eligible changes and merges only the admitted tested revision.
+  Missing credentials or required repository settings fail activation explicitly.
+- Add optional client-qualified native providers, verified duplicate suppression and explicit
+  machine-local write MCP grants. Preserve customizations and machine-owned authentication.
+- Add five attributed LangSmith evaluation skills, separately optional authenticated LangSmith
+  MCP, and isolated locked native/legacy LangChain MCP fixtures. Demonstrate one injectable graph
+  across local, FastAPI and Foundry hosts with synthetic approval-controlled tools.
+
 - Add the global read-only GitHub MCP for Claude Code and Codex, using a machine-owned token
   environment reference without storing secret values. Disable the managed duplicate Claude
   GitHub plugin and preserve machine-owned configuration and approval/trust settings.
@@ -121,7 +134,8 @@
     with) and in `fastapi-expert`, `fullstack-guardian`, `security-reviewer` and `test-master`
     (placeholder passwords in examples) were reviewed and are recorded under `allowFindings`.
 - Skills refreshed from upstream: `atlassian-mcp`, `azure-prepare`, `fastapi`, `golang-pro`,
-  `microsoft-foundry`, `model-recipes`, `playwright-trace`.
+  `grilling`, `improve-codebase-architecture`, `microsoft-foundry`, `model-recipes`,
+  `playwright-trace`, `research`, `wayfinder`.
 - MCP servers re-pinned to their newest release at least 7 days old: `shadcn`.
 
 ## 0.5.4 - 2026-10-14

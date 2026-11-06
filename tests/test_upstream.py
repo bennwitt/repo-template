@@ -257,6 +257,57 @@ def _home(tmp_path: Path) -> Path:
     return tmp_path / "home"
 
 
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_automatic_upgrade_applies_only_eligible_exact_candidate(tmp_path, dry_run):
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    candidate = {**V1, "skills/s/SKILL.md": V2_SKILL}
+    github.publish("o/r", {"LICENSE": LICENSE.encode(), **candidate})
+    before = (root / ".agents/.skill-lock.json").read_bytes()
+    outcome = upgrade(
+        root,
+        [],
+        github=github,
+        scanner=FakeScanner(),
+        prompt=None,
+        automatic=True,
+        dry_run=dry_run,
+        catalog_only=True,
+    )
+    assert not outcome.refused and not outcome.result.errors
+    path = root / ".agents/skills/s/SKILL.md"
+    if dry_run:
+        assert path.read_bytes() == V1["skills/s/SKILL.md"]
+        assert (root / ".agents/.skill-lock.json").read_bytes() == before
+    else:
+        assert path.read_bytes() == V2_SKILL and outcome.applied == ["s"]
+
+
+@pytest.mark.parametrize("kind", ["mode", "removal", "script"])
+def test_automatic_upgrade_defers_executables_and_removals(tmp_path, kind):
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    candidate = dict(V1)
+    if kind == "mode":
+        candidate["skills/s/SKILL.md"] = (V2_SKILL, "100755")
+    elif kind == "removal":
+        del candidate["skills/s/notes.md"]
+    else:
+        candidate["skills/s/setup.sh"] = b"echo changed\n"
+    github.publish("o/r", {"LICENSE": LICENSE.encode(), **candidate})
+    outcome = upgrade(
+        root,
+        [],
+        github=github,
+        scanner=FakeScanner(),
+        prompt=None,
+        automatic=True,
+        catalog_only=True,
+    )
+    assert outcome.undecided and not outcome.applied
+    assert (root / ".agents/skills/s/SKILL.md").read_bytes() == V1["skills/s/SKILL.md"]
+
+
 def test_upstream_reports_current_changed_removed_and_new(tmp_path: Path) -> None:
     github = FakeGitHub()
     root = _catalog(tmp_path, github, V1)
@@ -2070,7 +2121,7 @@ def test_a_named_server_is_repinned_to_its_newest_release_past_the_cooldown(
     now = datetime.now(UTC)
     _with_servers(root, x=_npx("1.0.0", now - 60 * DAY, pinException="needed it early"))
     registry = FakeRegistry(
-        {"@x/mcp": {"1.0.0": now - 60 * DAY, "1.0.10": now - 9 * DAY, "1.1.0": now - 2 * DAY}}
+        {"@x/mcp": {"1.0.0": now - 60 * DAY, "1.0.10": now - 9 * DAY, "1.1.0": now - DAY / 2}}
     )
     scanner = FakeScanner()
 
@@ -2081,7 +2132,7 @@ def test_a_named_server_is_repinned_to_its_newest_release_past_the_cooldown(
     assert entry["args"] == ["-y", "@x/mcp@1.0.10", "mcp"]
     assert entry["pin"]["version"] == "1.0.10" and "pinException" not in entry["pin"]
     assert entry["pin"]["publishedAt"] == (now - 9 * DAY).strftime("%Y-%m-%dT%H:%M:%SZ")
-    assert "- MCP servers re-pinned to their newest release at least 7 days old: `x`." in (
+    assert "- MCP servers re-pinned to their newest release at least 1 day old: `x`." in (
         (root / "CHANGELOG.md").read_text()
     )
     assert scanner.scanned == []  # no skill was touched
@@ -2101,6 +2152,25 @@ def test_a_server_already_current_is_left_alone(tmp_path: Path) -> None:
     assert outcome.repinned == [] and outcome.exit_code == 0
     assert (root / ".agents/mcp-servers.json").read_text() == before
     assert "x: already pinned to its newest release past the cooldown" in outcome.result.notes
+
+
+def test_source_filter_prevents_unselected_named_mcp_repin(tmp_path):
+    github = FakeGitHub()
+    root = _catalog(tmp_path, github, V1)
+    now = datetime.now(UTC)
+    _with_servers(root, x=_npx("1.0.0", now - 60 * DAY))
+    before = (root / ".agents/mcp-servers.json").read_bytes()
+    outcome = upgrade(
+        root,
+        ["mcp:x"],
+        github=github,
+        scanner=FakeScanner(),
+        prompt=None,
+        registry=FakeRegistry({"@x/mcp": {"1.1.0": now - 2 * DAY}}),
+        selected=["o/r"],
+        catalog_only=True,
+    )
+    assert not outcome.repinned and (root / ".agents/mcp-servers.json").read_bytes() == before
 
 
 @pytest.mark.parametrize(("answer", "repinned"), [("a", ["x"]), ("s", []), ("q", [])])

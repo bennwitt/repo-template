@@ -63,3 +63,11 @@ Sources: [MCP specification](https://modelcontextprotocol.io/specification/2026-
 [authorization](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization),
 [Python SDK migration](https://py.sdk.modelcontextprotocol.io/migration/),
 [TypeScript 2.4.0](https://github.com/modelcontextprotocol/typescript-sdk/releases/tag/v2.4.0).
+
+## Optional LangChain environments
+
+The [native LangChain example](langchain/README.md) locks beta `langchain.mcp.MCPAdapter` and an
+injectable LangGraph with approval-controlled synthetic writes. The same graph runs locally,
+through FastAPI/Container Apps, and through Foundry Responses or Invocations adapters. Tests use
+local tools and deterministic models; deployment configuration is provided without deploying.
+`legacy-langchain/` separately locks `langchain-mcp-adapters` and MCP v1 for legacy consumers.

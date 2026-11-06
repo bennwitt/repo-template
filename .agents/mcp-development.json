@@ -49,6 +49,30 @@
       "package": "@modelcontextprotocol/inspector",
       "version": "2.12.0",
       "publishedAt": "2026-10-21T18:35:58.828Z"
+    },
+    "langchain": {
+      "registry": "pypi",
+      "package": "langchain",
+      "version": "1.4.9",
+      "publishedAt": "2026-11-04T17:07:20.201103Z"
+    },
+    "langgraph": {
+      "registry": "pypi",
+      "package": "langgraph",
+      "version": "1.2.19",
+      "publishedAt": "2026-10-30T22:23:31.334338Z"
+    },
+    "langchain-azure-ai": {
+      "registry": "pypi",
+      "package": "langchain-azure-ai",
+      "version": "1.3.0",
+      "publishedAt": "2026-11-04T08:27:37.067882Z"
+    },
+    "langchain-mcp-adapters": {
+      "registry": "pypi",
+      "package": "langchain-mcp-adapters",
+      "version": "0.3.2",
+      "publishedAt": "2026-08-06T06:15:02.832559Z"
     }
   }
 }

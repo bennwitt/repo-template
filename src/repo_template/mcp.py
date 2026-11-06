@@ -20,6 +20,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
+from repo_template.release_policy import COOLDOWN
+
 MCP_SERVERS_NAME = "mcp-servers.json"
 SERVER_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")  # a TOML bare key and a Claude name too
 ENV_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
@@ -43,7 +45,7 @@ NOT_SECRET = {  # names that look secret but only choose something, with the val
 }  # fmt: skip
 FLAG = re.compile(r"--[a-z0-9][a-z0-9-]*")
 UV_PINNED = re.compile(r"[A-Za-z0-9._-]+(?:\[[A-Za-z0-9,._-]+\])?")  # a package, extras allowed
-PACK_KEYS = {"description", "skills", "mcp"}
+PACK_KEYS = {"description", "skills", "mcp", "plugins"}
 REF_KEYS = {"server", "args"}
 REGISTRY = {"npx": "npm", "uvx": "pypi"}
 CACHE = "{cache}"  # in args: the machine's repo-template cache folder
@@ -70,6 +72,8 @@ SERVER_KEYS = {
     "why",
     "packArgs",
     "bearerTokenEnv",
+    "optIn",
+    "access",
 }
 GITHUB_READONLY_URL = "https://api.githubcopilot.com/mcp/readonly"
 GITHUB_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
@@ -107,6 +111,8 @@ class Server:
     pack_args: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     pack_flags: tuple[str, ...] = ()  # the flags a pack may add (packArgs)
     bearer_token_env: str | None = None
+    opt_in: bool = False
+    access: Literal["read", "write"] = "read"
 
 
 def _fail(path: Path, where: str, message: str) -> ValueError:
@@ -143,9 +149,6 @@ def _pin(path: Path, name: str, raw: Any) -> Pin | None:
     return Pin(raw["registry"], raw["package"], raw["version"], raw["publishedAt"], exception)
 
 
-COOLDOWN = timedelta(days=7)  # how old a release must be before it is pinned
-
-
 def cooldown_problem(server: Server, now: datetime) -> str | None:
     """Why a server's pin can't be used yet: published in the future, or less than COOLDOWN
     old without a pinException saying why."""
@@ -158,7 +161,7 @@ def cooldown_problem(server: Server, now: datetime) -> str | None:
     if now - published < COOLDOWN and not pin.exception:
         return (
             f"MCP server {server.name}: {pin.package}@{pin.version} is less than "
-            f"{COOLDOWN.days} days old; pin an older release, or give the pin a pinException "
+            f"{COOLDOWN.days} day old; pin an older release, or give the pin a pinException "
             f"saying why"
         )
     return None
@@ -249,13 +252,30 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     if not _strings(clients) or not clients or set(clients) - CLIENTS:
         raise _fail(path, name, "'clients' lists claude and/or codex")
     command, url = raw.get("command"), raw.get("url")
+    access = raw.get("access", "read")
+    opt_in = raw.get("optIn", False)
+    if access not in {"read", "write"} or not isinstance(opt_in, bool):
+        raise _fail(path, name, "access is read or write; optIn is boolean")
+    if access == "write" and (not opt_in or scope != "global"):
+        raise _fail(path, name, "write-capable MCP requires global scope and explicit optIn")
     bearer_env = raw.get("bearerTokenEnv")
-    if ("bearerTokenEnv" in raw or name == "github") and (
+    optional_bearer = (
         name != "github"
-        or scope != "global"
-        or url != GITHUB_READONLY_URL
-        or bearer_env != GITHUB_TOKEN_ENV
-        or command is not None
+        and opt_in
+        and isinstance(bearer_env, str)
+        and ENV_NAME.fullmatch(bearer_env)
+        and url is not None
+    )
+    if (
+        not optional_bearer
+        and ("bearerTokenEnv" in raw or name == "github")
+        and (
+            name != "github"
+            or scope != "global"
+            or url != GITHUB_READONLY_URL
+            or bearer_env != GITHUB_TOKEN_ENV
+            or command is not None
+        )
     ):
         raise _fail(
             path,
@@ -310,7 +330,7 @@ def _server(path: Path, name: str, raw: Any) -> Server:
             raise _fail(path, name, f"the {command} args must run the pinned package first")
     elif pin is not None:
         raise _fail(path, name, "a url server has no 'pin'")
-    if any("azmcp" in arg for arg in args) and "--read-only" not in args:
+    if any("azmcp" in arg for arg in args) and "--read-only" not in args and access != "write":
         raise _fail(path, name, "an Azure MCP server runs --read-only")
     pack_flags = raw.get("packArgs", [])
     if not _strings(pack_flags) or not all(FLAG.fullmatch(flag) for flag in pack_flags):
@@ -357,6 +377,8 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         why=raw["why"],
         pack_flags=tuple(pack_flags),
         bearer_token_env=bearer_env,
+        opt_in=opt_in,
+        access=access,
     )
 
 

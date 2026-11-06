@@ -1,0 +1,12 @@
+name: portable-langgraph-agent
+services:
+  agent:
+    host: azure.ai.agent
+    kind: hosted
+    project: .
+    language: python
+    env:
+      PYTHONNOUSERSITE: "1"
+    codeConfiguration:
+      runtime: python_3_12
+      entryPoint: '-m agent_example --host responses --bind 0.0.0.0'

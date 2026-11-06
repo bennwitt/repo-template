@@ -159,7 +159,7 @@ def test_a_newer_npm_release_is_a_change_below_its_bound(tmp_path: Path) -> None
 def test_a_github_tool_is_checked_and_its_digests_compared(tmp_path: Path) -> None:
     tools = load_machine_tools(_write(tmp_path, {"tool": _github()}))
     releases = FakeReleases(
-        [_release("1.1.0", NOW - 2 * DAY), _release("1.0.0", NOW - 60 * DAY, digest="b" * 64)]
+        [_release("1.1.0", NOW - DAY / 2), _release("1.0.0", NOW - 60 * DAY, digest="b" * 64)]
     )
     report = Report()
 
@@ -167,7 +167,7 @@ def test_a_github_tool_is_checked_and_its_digests_compared(tmp_path: Path) -> No
 
     assert report.changed == []  # 1.1.0 is still in its cooldown
     assert report.notes == [
-        "tool: github o/tool 1.1.0 is in its cooldown until 2026-10-19T12:00:00Z"
+        "tool: github o/tool 1.1.0 is in its cooldown until 2026-10-15T00:00:00Z"
     ]
     assert len(report.review) == 1 and "has sha256 " + "b" * 64 in report.review[0]
 
@@ -189,7 +189,7 @@ def test_a_pin_older_than_the_recent_releases_is_found_by_its_tag(tmp_path: Path
     ]
 
 
-@pytest.mark.parametrize(("age", "review"), [(2, False), (30, True)])
+@pytest.mark.parametrize(("age", "review"), [(0.5, False), (30, True)])
 def test_a_pin_exception_lets_a_young_release_through_until_it_is_old_enough(
     tmp_path: Path, age: int, review: bool
 ) -> None:

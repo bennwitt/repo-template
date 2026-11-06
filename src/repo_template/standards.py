@@ -40,6 +40,7 @@ from repo_template.mcp_globals import (
     sync_codex_mcp,
 )
 from repo_template.model import Result
+from repo_template.plugins import filter_servers, supplied
 from repo_template.policies import marked_block_intact, merge_marked_block
 from repo_template.settings import SOURCE_NAME, sync_claude_settings
 from repo_template.skillfile import field_lines
@@ -507,6 +508,13 @@ def sync_project_packs(
             )
     owned = _points_into_any(packs_dir, skills_dir)
     real_root, catalog = root.resolve(), agents_dir.resolve()
+    supplied_skills = {
+        client: supplied(agents_dir, Path.home(), client, "skills")
+        for client in ("claude", "codex")
+    }
+    if (root / ".claude/skills").resolve() == (root / ".agents/skills").resolve():
+        common = supplied_skills["claude"] & supplied_skills["codex"]
+        supplied_skills = {"claude": common, "codex": common}
     seen: set[Path] = set()
     for relative in (".claude/skills", ".agents/skills"):
         target_dir = root / relative
@@ -533,9 +541,22 @@ def sync_project_packs(
                         f"linked there)"
                     )
                 continue
+        desired = {
+            name: path
+            for name, path in sorted(wanted.items())
+            if name not in supplied_skills["claude" if relative.startswith(".claude") else "codex"]
+        }
+        for name in set(wanted) - set(desired):
+            path = target_dir / name
+            if path.exists() and (
+                not path.is_symlink() or not owned(path) or (tracked and tracked(path))
+            ):
+                result.preserved.append(
+                    f"{relative}/{name} (customized content overlaps the selected plugin)"
+                )
         _sync_links(
             target_dir,
-            dict(sorted(wanted.items())),
+            desired,
             owned,
             result,
             check=check,
@@ -548,7 +569,7 @@ def sync_project_packs(
         )
         if not undefined:
             _prune_links(
-                target_dir, owned, set(wanted), result, check=check, base=root, tracked=tracked
+                target_dir, owned, set(desired), result, check=check, base=root, tracked=tracked
             )
         elif target_dir.is_dir():  # an undefined pack's links are kept: still this tool's
             kept = [
@@ -619,7 +640,9 @@ def _sync_global_mcp(
     """The global MCP servers, in Claude Code's user scope and ~/.codex/config.toml. With no
     servers in the catalog, the ones installed before are removed."""
     try:
-        servers = usable(load_mcp_servers(agents), datetime.now(UTC), result.errors)
+        servers = usable(
+            filter_servers(agents, home, load_mcp_servers(agents)), datetime.now(UTC), result.errors
+        )
     except ValueError as exc:
         result.errors.append(str(exc))
         return

@@ -28,7 +28,7 @@ import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager, suppress
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from types import FrameType, TracebackType
@@ -57,6 +57,7 @@ from repo_template.catalog import (
     upstream_skill_md,
     upstream_url,
 )
+from repo_template.maintenance import CheckCache, automatic_reason
 from repo_template.model import Result
 from repo_template.resolve import Options, Prompt, visible
 from repo_template.skillfile import field_lines, read_fields
@@ -375,15 +376,69 @@ class Report:
     notes: list[str] = field(default_factory=list)
     pins: list[str] = field(default_factory=list)  # MCP pins with nothing newer to offer
     pin_changes: int = 0  # of the changed lines, how many are MCP pins (not for --upgrade)
+    errors: list[str] = field(default_factory=list)
+    available: dict[str, str] = field(default_factory=dict)
+    sources: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @property
     def exit_code(self) -> int:
-        return 2 if self.review else (1 if self.changed else 0)
+        return 3 if self.errors else (2 if self.review else (1 if self.changed else 0))
+
+    def extend(self, other: Report) -> None:
+        for name in ("current", "changed", "review", "new", "notes", "pins", "errors"):
+            getattr(self, name).extend(getattr(other, name))
+        self.pin_changes += other.pin_changes
+        self.available.update(other.available)
+        self.sources.update(other.sources)
 
 
-def upstream_report(root: Path, github: GitHub) -> Report:
-    """Compare vendored and derived skills and license texts with upstream. Writes nothing."""
+def upstream_report(
+    root: Path,
+    github: GitHub,
+    *,
+    cache: CheckCache | None = None,
+    selected: Sequence[str] = (),
+) -> Report:
+    """Inspect every source independently; failures never hide unrelated results."""
+    sources = _json(root, SOURCES_NAME)
     lock = _json(root, LOCK_NAME).get("skills", {})
+    names = set(sources.get("sources", {})) | {r["source"] for r in lock.values()}
+    for local in sources.get("local", {}).values():
+        if isinstance(local, dict):
+            with suppress(ValueError):
+                names.update(
+                    r["source"] for r in derived_inputs(local) if isinstance(r.get("source"), str)
+                )
+    report = Report()
+    for source in sorted(names):
+        if selected and source not in selected and f"github:{source}" not in selected:
+            continue
+
+        def inspect(source: str = source) -> dict[str, Any]:
+            return asdict(_source_report(root, github, source))
+
+        try:
+            config = {
+                "source": source,
+                "registry": sources,
+                "lock": lock,
+                "overrides": _json(root, OVERRIDES_NAME)
+                if (root / OVERRIDES_NAME).exists()
+                else {},
+            }
+            data = cache.inspect(f"github:{source}", config, inspect) if cache else inspect()
+            report.extend(Report(**data))
+        except (NetworkError, OSError, ValueError) as exc:
+            report.errors.append(f"{source}: {clean(str(exc))}")
+    if cache:
+        report.sources.update(cache.observed)
+    return report
+
+
+def _source_report(root: Path, github: GitHub, only_source: str) -> Report:
+    """Compare one registered source's vendored/derived assets and license texts."""
+    lock = _json(root, LOCK_NAME).get("skills", {})
+    lock = {name: item for name, item in lock.items() if item["source"] == only_source}
     sources = _json(root, SOURCES_NAME)
     overrides = _json(root, OVERRIDES_NAME) if (root / OVERRIDES_NAME).is_file() else {}
     report = Report()
@@ -402,6 +457,8 @@ def upstream_report(root: Path, github: GitHub) -> Report:
         except ValueError as exc:
             report.review.append(f"{name}: {exc}")
     for name, record in derived:
+        if isinstance(record.get("source"), str) and record["source"] != only_source:
+            continue
         try:
             _report_derived(report, name, record, snapshot)
         except NotFound as exc:
@@ -414,9 +471,12 @@ def upstream_report(root: Path, github: GitHub) -> Report:
         if isinstance(record.get("source"), str)
     )
     for source, record in sorted(sources.get("sources", {}).items()):
+        if source != only_source:
+            continue
         refs = sorted(ref for used, ref in in_use if used == source) or ["HEAD"]
         try:
             upstream = snapshot(source, refs[0])
+            report.available[source] = upstream.commit
         except NotFound as exc:
             report.review.append(f"{source}: not upstream any more: {exc}")
             continue
@@ -846,6 +906,8 @@ class Diff:
     escaped: list[str] = field(default_factory=list)  # files with control characters
     binary: list[str] = field(default_factory=list)  # changed files shown only as binary
     new_urls: list[str] = field(default_factory=list)
+    executable: list[str] = field(default_factory=list)
+    removed: list[str] = field(default_factory=list)
 
 
 def folder_diff(
@@ -875,6 +937,10 @@ def folder_diff(
         if old_bytes == new_bytes and old_mode == new_mode:
             continue
         diff.changed.append(path)
+        if old_mode or new_mode:
+            diff.executable.append(path)
+        if path not in after:
+            diff.removed.append(path)
         status = "added" if path not in before else "deleted" if path not in after else "changed"
         mode = (" (now executable)" if new_mode and old_mode is False else "") + (
             " executable" if new_mode and path not in before else ""
@@ -1121,6 +1187,12 @@ class _Records:
             (k, v) for k, v in records.get(target.name, {}).items() if k not in {"commit", "tree"}
         )
         record.pop("ref", None)
+        record.update(
+            last_synced_at=now,
+            last_validated_at=now,
+            validation_ref=staged.commit,
+            validation_scope="integrity-and-skill-scan",
+        )
         if target.ref != "HEAD":
             record["ref"] = target.ref
         if over:
@@ -1236,7 +1308,7 @@ CHANGELOG_NOTES = {
     "applied": "- Skills refreshed from upstream: ",
     "added": "- Skills added from upstream: ",
     "removed": "- Skills removed (gone upstream): ",
-    "repinned": "- MCP servers re-pinned to their newest release at least 7 days old: ",
+    "repinned": "- MCP servers re-pinned to their newest release at least 1 day old: ",
 }
 
 
@@ -1511,6 +1583,10 @@ def upgrade(
     allow_findings: str | None = None,
     home: Path | None = None,
     registry: Registry | None = None,
+    automatic: bool = False,
+    dry_run: bool = False,
+    selected: Sequence[str] = (),
+    catalog_only: bool = False,
 ) -> Upgrade:
     """Vendor the named skills (or every changed one): stage, verify, scan, show, ask, swap.
     A name that is an MCP server (and no vendored skill), or `mcp:<name>`, re-pins that server
@@ -1530,12 +1606,28 @@ def upgrade(
                 "on its own:\n" + clean(dirty.strip())
             )
         try:
-            _upgrade(root, specs, outcome, github, scanner, prompt, allow_findings, registry)
+            _upgrade(
+                root,
+                specs,
+                outcome,
+                github,
+                scanner,
+                prompt,
+                allow_findings,
+                registry,
+                automatic=automatic,
+                dry_run=dry_run,
+                selected=selected,
+            )
         except (KeyboardInterrupt, _Interrupted) as exc:
             outcome.interrupted = str(exc) or type(exc).__name__
         finally:
-            if outcome.changed:
-                _finish(root, outcome, home)
+            if outcome.changed and not dry_run:
+                if catalog_only:
+                    with tempfile.TemporaryDirectory(prefix="repo-template-home-") as temporary:
+                        _finish(root, outcome, Path(temporary))
+                else:
+                    _finish(root, outcome, home)
         return outcome
 
 
@@ -1548,21 +1640,48 @@ def _upgrade(
     prompt: Prompt | None,
     allow_findings: str | None,
     registry: Registry | None = None,
+    *,
+    automatic: bool = False,
+    dry_run: bool = False,
+    selected: Sequence[str] = (),
 ) -> None:
     records = _Records(root)
     servers, skills = _split_servers(root, specs, records.skills)
-    if servers:
-        if registry is None:
-            raise ValueError("re-pinning an MCP server needs npm and PyPI")
-        if _repin_servers(root, servers, outcome, registry, prompt):
-            outcome.undecided += list(skills)  # quit, or npm or PyPI out of reach
+    if servers and selected:
+        from repo_template.mcp import load_mcp_servers
+
+        definitions = load_mcp_servers(root / ".agents")
+        servers = [
+            name
+            for name in servers
+            if name in definitions
+            and (pin := definitions[name].pin)
+            and (pin.package in selected or f"{pin.registry}:{pin.package}" in selected)
+        ]
+        if not servers and not skills:
             return
+    if servers:
+        if automatic or dry_run:
+            outcome.undecided.extend(
+                f"mcp:{name}: executable re-pin requires review" for name in servers
+            )
+            servers = []
+        else:
+            if registry is None:
+                raise ValueError("re-pinning an MCP server needs npm and PyPI")
+            if _repin_servers(root, servers, outcome, registry, prompt):
+                outcome.undecided += list(skills)
+                return
         if not skills:
             return
     specs = skills
     snapshot = _snapshots(github)
     try:
         targets = _targets(specs, records.skills, records.sources, snapshot)
+        if selected:
+            targets = [
+                t for t in targets if t.source in selected or f"github:{t.source}" in selected
+            ]
     except NotFound as exc:
         raise ValueError(str(exc)) from None
     except NetworkError as exc:
@@ -1570,12 +1689,12 @@ def _upgrade(
         return
     if prompt is None and any(t.name == "skill-scanner" for t in targets):
         raise ValueError("upgrade skill-scanner in a terminal, without --no-input")
-    named = {target.name for target in targets} if specs else set()
+    named = {target.name for target in targets} if specs or automatic else set()
     for position, target in enumerate(targets):
         try:
             records.reload()  # anything edited by hand meanwhile is kept
             _upgrade_one(root, target, outcome, records, github, snapshot, scanner, prompt,
-                         allow_findings, named)  # fmt: skip
+                         allow_findings, named, automatic=automatic, dry_run=dry_run)  # fmt: skip
         except _Quit:
             outcome.undecided += [t.name for t in targets[position:]]
             break
@@ -1583,8 +1702,8 @@ def _upgrade(
             outcome.refused.append(f"{target.name}: not upstream any more: {exc}")
         except NetworkError as exc:
             outcome.network = str(exc)
-            outcome.undecided += [t.name for t in targets[position:]]
-            break
+            outcome.undecided.append(target.name)
+            continue
         except (ValueError, OSError, KeyError, TypeError) as exc:
             message = clean(str(exc))
             prefix = f"{target.name}: "
@@ -1638,8 +1757,8 @@ def _repin_servers(
             continue
         except NetworkError as exc:
             outcome.network = str(exc)
-            outcome.undecided += list(names[position:])
-            return True
+            outcome.undecided.append(name)
+            continue
         except ValueError as exc:
             message = clean(str(exc))
             outcome.refused.append(
@@ -1709,6 +1828,9 @@ def _upgrade_one(
     prompt: Prompt | None,
     allow_findings: str | None,
     named: set[str],
+    *,
+    automatic: bool = False,
+    dry_run: bool = False,
 ) -> None:
     upstream = snapshot(target.source, target.ref)
     sha = upstream.folder(target.folder)
@@ -1728,7 +1850,7 @@ def _upgrade_one(
             )
             return
         if not moved:
-            _remove(root, target, outcome, records, prompt)
+            _remove(root, target, outcome, records, None if dry_run or automatic else prompt)
             return
         if not FOLDER.fullmatch(moved[0]):
             raise ValueError(f"{target.name}: moved to an unusual path {clean(moved[0])!r}")
@@ -1743,6 +1865,9 @@ def _upgrade_one(
             outcome.result.unchanged.append(target.name)
             return
         message = f"the same files, now at {target.folder}@{target.ref} upstream"
+        if automatic or dry_run:
+            outcome.undecided.append(f"{target.name}: {message}; needs review")
+            return
         if not _ask_or_leave(target, outcome, prompt, named, message):
             return
         _apply(root, Staged(target, upstream.commit, sha, None), None, None, records, None, [])
@@ -1766,6 +1891,10 @@ def _upgrade_one(
             notes.append(f"upstream changed its {key!r}, which an override replaces; review it")
     live = _tracked(root, target.name) if current.is_dir() else None
     diff = folder_diff(current, staged.path, target.name, replaced, live)
+    if automatic and diff.executable:
+        notes.append("executable file changes require review: " + ", ".join(diff.executable))
+    if automatic and diff.removed:
+        notes.append("file removals require review: " + ", ".join(diff.removed))
     read = staged.scan.read
     unscanned = [p for p in diff.changed if not (p in read if read is not None else scanned(p))]
     if unscanned:
@@ -1783,6 +1912,17 @@ def _upgrade_one(
         notes.append("frontmatter that decides what it may do changed: " + ", ".join(permissions))
     if target.folder != _folder(entry) and not target.adding:
         notes.append(f"moved upstream from {_folder(entry)} to {target.folder}")
+    if automatic:
+        reason = automatic_reason(
+            target.source,
+            records.sources,
+            adding=target.adding,
+            changed=list(diff.changed),
+            notes=notes,
+        )
+        if reason:
+            outcome.undecided.append(f"{target.name}: {reason}")
+            return
     if prompt is None:
         if target.name not in named:
             why = "not named"
@@ -1812,6 +1952,9 @@ def _upgrade_one(
         if choice == "s":
             outcome.undecided.append(f"{target.name}: skipped")
             return
+    if dry_run:
+        outcome.result.notes.append(f"Would apply {target.name} at {staged.commit}")
+        return
     provenance = None
     if isinstance(override_entry, dict):  # the folder never goes live without its override
         spdx = records.sources.get("sources", {}).get(target.source, {}).get("license", "?")

@@ -73,7 +73,7 @@ To do these steps by hand instead, see [Appendix A](#appendix-a-setting-up-a-mac
 ### 1.1 Optional tools
 
 The script offers each of these, at the versions `.agents/machine-tools.json` pins: each the
-newest release at least 7 days old, except `typescript-language-server` 5.3 and TypeScript 6,
+newest release at least one day old, except `typescript-language-server` 5.3 and TypeScript 6,
 held back on purpose (6 needs Node 22.22, and TypeScript 7 has no `tsserver`; see the README's
 Per-machine tools). The commands below are for installing one by hand; `--before` (the day
 after the newest pin in the command was published) keeps each package's dependencies to
@@ -90,7 +90,7 @@ releases that old too.
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
   `az account set --subscription "<name>"`. On a Mac the script installs `az` with Homebrew
   (install it first from [brew.sh](https://brew.sh)), which takes the current release: the one
-  exception to the 7-day rule. It installs `azd` as `~/.local/bin/azd` whenever the one on
+  exception to the one-day rule. It installs `azd` as `~/.local/bin/azd` whenever the one on
   your `PATH` isn't the pinned version, only once the download's SHA-256 matches the pin, then
   runs `azd config set auth.useAzCliAuth true`. An `azd` elsewhere (Homebrew's, say) is named,
   for you to remove, so the pinned one runs. By
@@ -433,3 +433,22 @@ catalog, reconcile existing pack users with `repo-template check .` and
 `repo-template update . --no-input`; individual choices stay individual. Existing workflow
 seed files are preserved, so merge relevant guidance manually. Format project files only,
 avoiding installed skill symlinks.
+
+## Catalog freshness, native providers and optional writes
+
+Before catalog maintenance, read [the maintenance guide](docs/maintenance.md). Inspect with
+`repo-template globals --upstream --force --json --standards-root .`; preview application with
+`repo-template globals --upgrade --auto --dry-run --catalog-only --standards-root .`.
+The default freshness threshold is 24 hours, independent of the one-day executable-release
+cooldown. Missing evidence warns while allowing validated local assets to be used offline.
+
+Native plugins are optional and client-qualified, for example
+`repo-template globals --check --plugin codex:langchain-mcp@langchain-plugins`.
+Apply only after reviewing the provider; use `--remove-plugin` to restore managed fallback
+assets, then reconcile affected repositories with `check`/`update`. Customized content is kept.
+Optional write-capable services require `--allow-write-mcp langsmith` or `azure-write` on this
+machine; remove that grant with `--revoke-write-mcp`. Client authentication stays machine-owned.
+
+Scheduled maintenance needs the scoped App and branch settings described in the guide. Local
+implementation does not activate GitHub automation or deploy Azure resources. Optional native
+and legacy LangChain examples run in separate locked environments under `examples/mcp/`.

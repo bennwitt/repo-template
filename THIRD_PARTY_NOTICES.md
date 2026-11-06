@@ -1786,14 +1786,14 @@ SOFTWARE.
   - `git-guardrails-claude-code`: [skills/misc/git-guardrails-claude-code](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) at 321658273cb1
   - `grill-me`: [skills/productivity/grill-me](https://github.com/mattpocock/skills/tree/fcf0071560d32913c9d4f820e0d7ca467c881619/skills/productivity/grill-me) at fcf0071560d3
   - `grill-with-docs`: [skills/engineering/grill-with-docs](https://github.com/mattpocock/skills/tree/447ca70872026d5b79d6073a546dac082117fed7/skills/engineering/grill-with-docs) at 447ca7087202
-  - `grilling`: [skills/productivity/grilling](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/grilling) at 49dd158d1076
+  - `grilling`: [skills/productivity/grilling](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/productivity/grilling) at 4ae2317ddb22
   - `handoff`: [skills/productivity/handoff](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/handoff) at 49dd158d1076
-  - `improve-codebase-architecture`: [skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/improve-codebase-architecture) at d80fa0f4ebe0
+  - `improve-codebase-architecture`: [skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/improve-codebase-architecture) at 4ae2317ddb22
   - `loop-me`: [skills/in-progress/loop-me](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/loop-me) at 321658273cb1
   - `migrate-to-shoehorn`: [skills/misc/migrate-to-shoehorn](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/misc/migrate-to-shoehorn) at 697d4ce9742d
   - `pr`: [skills/engineering/pr](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/pr) at e484a8095543
   - `prototype`: [skills/engineering/prototype](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/prototype) at 321658273cb1
-  - `research`: [skills/engineering/research](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/research) at 321658273cb1
+  - `research`: [skills/engineering/research](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/research) at 4ae2317ddb22
   - `retro`: [skills/engineering/retro](https://github.com/mattpocock/skills/tree/a7d038f6bf7f01b516408e95e2fb56e0b338fa6f/skills/engineering/retro) at a7d038f6bf7f
   - `setup-ts-deep-modules`: [skills/in-progress/setup-ts-deep-modules](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/setup-ts-deep-modules) at 321658273cb1
   - `teach`: [skills/productivity/teach](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/teach) at 49dd158d1076
@@ -1802,7 +1802,7 @@ SOFTWARE.
   - `to-tickets`: [skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/to-tickets) at 49dd158d1076
   - `triage`: [skills/engineering/triage](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/triage) at d80fa0f4ebe0
   - `wait-what`: [skills/productivity/wait-what](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/productivity/wait-what) at d80fa0f4ebe0
-  - `wayfinder`: [skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wayfinder) at 49dd158d1076
+  - `wayfinder`: [skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/wayfinder) at 4ae2317ddb22
   - `wizard`: [skills/engineering/wizard](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wizard) at 49dd158d1076
   - `writing-beats`: [skills/in-progress/writing-beats](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/writing-beats) at 321658273cb1
   - `writing-for-agents`: [skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/writing-for-agents) at 321658273cb1
@@ -3959,6 +3959,176 @@ SOFTWARE.
 MIT License
 
 Copyright (c) 2023 Anthropic
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## langchain-ai/langsmith-skills
+
+- Source: https://github.com/langchain-ai/langsmith-skills
+- License: MIT
+- Copyright: Copyright (c) LangChain, Inc.
+- Skills:
+  - `langsmith-dataset` (a derived work, under MIT): from [config/skills/langsmith-dataset](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-dataset) at 13c168b28dbc
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) LangChain, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## langchain-ai/langsmith-skills
+
+- Source: https://github.com/langchain-ai/langsmith-skills
+- License: MIT
+- Copyright: Copyright (c) LangChain, Inc.
+- Skills:
+  - `langsmith-evaluator` (a derived work, under MIT): from [config/skills/langsmith-evaluator](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-evaluator) at 13c168b28dbc
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) LangChain, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## langchain-ai/langsmith-skills
+
+- Source: https://github.com/langchain-ai/langsmith-skills
+- License: MIT
+- Copyright: Copyright (c) LangChain, Inc.
+- Skills:
+  - `langsmith-experiment-diagnosis` (a derived work, under MIT): from [config/skills/langsmith-experiment-diagnosis](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-experiment-diagnosis) at 13c168b28dbc
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) LangChain, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## langchain-ai/langsmith-skills
+
+- Source: https://github.com/langchain-ai/langsmith-skills
+- License: MIT
+- Copyright: Copyright (c) LangChain, Inc.
+- Skills:
+  - `langsmith-online-eval-engineering` (a derived work, under MIT): from [config/skills/langsmith-online-eval-engineering](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-online-eval-engineering) at 13c168b28dbc
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) LangChain, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## langchain-ai/langsmith-skills
+
+- Source: https://github.com/langchain-ai/langsmith-skills
+- License: MIT
+- Copyright: Copyright (c) LangChain, Inc.
+- Skills:
+  - `langsmith-trace` (a derived work, under MIT): from [config/skills/langsmith-trace](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-trace) at 13c168b28dbc
+
+### LICENSE
+
+```text
+MIT License
+
+Copyright (c) LangChain, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

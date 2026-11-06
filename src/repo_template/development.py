@@ -8,7 +8,7 @@ from pathlib import Path
 
 from repo_template.mcp import Pin, _pin
 from repo_template.pins import FINAL, Registry, check_pin
-from repo_template.upstream import NotFound, Report
+from repo_template.upstream import NetworkError, NotFound, Report
 
 DEVELOPMENT_NAME = "mcp-development.json"
 
@@ -52,6 +52,9 @@ def check_development(agents: Path, registry: Registry, now: datetime, report: R
             releases = registry.releases(pin.registry, pin.package)
         except NotFound:
             report.review.append(f"{label} isn't on {pin.registry} any more")
+            continue
+        except NetworkError as exc:
+            report.errors.append(f"{label}: {exc}")
             continue
         check_pin(
             f"mcp-dev:{name}",

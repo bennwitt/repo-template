@@ -3,7 +3,16 @@
     "description": "Agent and skill evaluations: outcome-based comparisons, regression scenarios, controlled trials, Harbor verifiers and calibration.",
     "skills": [
       "eval-engineering",
-      "skill-evaluation"
+      "skill-evaluation",
+      "langsmith-trace",
+      "langsmith-dataset",
+      "langsmith-evaluator",
+      "langsmith-experiment-diagnosis",
+      "langsmith-online-eval-engineering"
+    ],
+    "plugins": [
+      "langsmith-skills@langchain-plugins",
+      "langsmith-mcp@langchain-plugins"
     ]
   },
   "api": {
@@ -60,6 +69,9 @@
           ]
         }
       }
+    ],
+    "plugins": [
+      "azure@azure-skills"
     ]
   },
   "cli": {
@@ -131,6 +143,9 @@
           ]
         }
       }
+    ],
+    "plugins": [
+      "azure@azure-skills"
     ]
   },
   "golang": {
@@ -182,6 +197,10 @@
     "mcp": [
       "docs-langchain",
       "reference-langchain"
+    ],
+    "plugins": [
+      "langchain-skills@langchain-plugins",
+      "langchain-mcp@langchain-plugins"
     ]
   },
   "local-inference": {

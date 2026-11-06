@@ -1,17 +1,49 @@
 {
   "sources": {
+    "DietrichGebert/ponytail": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 DietrichGebert",
+      "licenseFiles": {
+        "LICENSE": "715d483338cea4365f0d91a27799cf61226d6bcf"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "PrefectHQ/fastmcp": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (the LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "f49a4e16e68b128803cc2dcea614603632b04eac"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
     "addyosmani/agent-skills": {
       "license": "MIT",
       "copyright": "Copyright (c) 2025 Addy Osmani",
       "licenseFiles": {
         "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
       },
-      "discover": "all"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "anthropics/skills": {
       "license": "See each skill",
       "copyright": "Anthropic, PBC (each skill's own license file)",
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "astral-sh/claude-code-plugins": {
       "license": "MIT OR Apache-2.0",
@@ -20,7 +52,11 @@
         "LICENSE-MIT": "014835144877ea9c926d027ece3e1a26290cf481",
         "LICENSE-APACHE": "47fd5b871ae0c1b3158ce6c41aca0f592731cb50"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "cloudflare/security-audit-skill": {
       "license": "MIT",
@@ -28,7 +64,11 @@
       "licenseFiles": {
         "LICENSE": "6dbc9ecb3a5b9080e95b962869e8c7ab16cfdc20"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "currents-dev/playwright-best-practices-skill": {
       "license": "MIT",
@@ -36,15 +76,11 @@
       "licenseFiles": {
         "LICENSE.md": "0312fd7de9487ced54515687d0026fc146aba947"
       },
-      "discover": "none"
-    },
-    "DietrichGebert/ponytail": {
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 DietrichGebert",
-      "licenseFiles": {
-        "LICENSE": "715d483338cea4365f0d91a27799cf61226d6bcf"
-      },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "docker/skills": {
       "license": "Apache-2.0",
@@ -52,7 +88,11 @@
       "licenseFiles": {
         "LICENSE": "34f4d2496fa7340441d0b70900bcae0646a0a643"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "fastapi/fastapi": {
       "license": "MIT",
@@ -60,7 +100,11 @@
       "licenseFiles": {
         "LICENSE": "3e92463e6bd522a2a21e5f0a80d8089d6c4be20d"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "getsentry/skills": {
       "license": "Apache-2.0",
@@ -68,7 +112,11 @@
       "licenseFiles": {
         "LICENSE": "753a6c03c60a9232405d05170bd3ad3cab49a1ef"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "github/awesome-copilot": {
       "license": "MIT",
@@ -76,7 +124,11 @@
       "licenseFiles": {
         "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "gradio-app/gradio": {
       "license": "Apache-2.0",
@@ -84,7 +136,11 @@
       "licenseFiles": {
         "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "huggingface/skills": {
       "license": "Apache-2.0",
@@ -92,7 +148,11 @@
       "licenseFiles": {
         "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "jeffallan/claude-skills": {
       "license": "MIT",
@@ -100,7 +160,11 @@
       "licenseFiles": {
         "LICENSE": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "langchain-ai/langchain-skills": {
       "license": "MIT",
@@ -108,7 +172,11 @@
       "licenseFiles": {
         "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
       },
-      "discover": "all"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "mattpocock/skills": {
       "license": "MIT",
@@ -116,7 +184,11 @@
       "licenseFiles": {
         "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
       },
-      "discover": "all"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "microsoft/azure-skills": {
       "license": "MIT",
@@ -124,7 +196,11 @@
       "licenseFiles": {
         "LICENSE": "356b112bcc4f07e03b6e57569eedf9d79978d2d5"
       },
-      "discover": "none"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "microsoft/playwright": {
       "license": "Apache-2.0",
@@ -133,7 +209,11 @@
         "LICENSE": "df112373eb2e23e459bf93ec412be1764dc5a38b",
         "NOTICE": "814ec1696f7ad36c1b524fb6adeef14b4b367fec"
       },
-      "discover": "none"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "microsoft/playwright-cli": {
       "license": "Apache-2.0",
@@ -141,7 +221,11 @@
       "licenseFiles": {
         "LICENSE": "cefe596afef12e19a8e5e923f1a04c7da3188760"
       },
-      "discover": "none"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "microsoft/skills": {
       "license": "MIT",
@@ -149,55 +233,11 @@
       "licenseFiles": {
         "LICENSE": "79656060de00aa4659ad2c276d5be8830664d544"
       },
-      "discover": "none"
-    },
-    "trailofbits/skills": {
-      "license": "CC-BY-SA-4.0",
-      "copyright": "Not stated upstream; the README says \"Made by Trail of Bits\"",
-      "licenseFiles": {
-        "LICENSE": "3b7b82d0da2db857eda1a798dbd908ea136f07b5"
-      },
-      "discover": "none"
-    },
-    "vercel-labs/agent-skills": {
-      "license": "MIT",
-      "copyright": "Not stated upstream (there is no license file; its README.md says 'License: MIT')",
-      "licenseFiles": {
-        "README.md": "04a1a5a46a22cfd430e2877b7c145e34fc2653ab"
-      },
-      "discover": "none"
-    },
-    "vercel-labs/skills": {
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 Vercel, Inc.",
-      "licenseFiles": {
-        "LICENSE": "eabe3008f6c0275929faa8b07d406e82717648cc"
-      },
-      "discover": "none"
-    },
-    "vllm-project/vllm": {
-      "license": "Apache-2.0",
-      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
-      "licenseFiles": {
-        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
-      },
-      "discover": "none"
-    },
-    "vllm-project/vllm-skills": {
-      "license": "Apache-2.0",
-      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
-      "licenseFiles": {
-        "LICENSE": "5e6620780bdc6b10758bc814e621981705080bbe"
-      },
-      "discover": "none"
-    },
-    "PrefectHQ/fastmcp": {
-      "license": "Apache-2.0",
-      "copyright": "Not stated upstream (the LICENSE has no copyright line)",
-      "licenseFiles": {
-        "LICENSE": "f49a4e16e68b128803cc2dcea614603632b04eac"
-      },
-      "discover": "none"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "modelcontextprotocol/typescript-sdk": {
       "license": "Apache-2.0 AND MIT AND CC-BY-4.0",
@@ -205,7 +245,11 @@
       "licenseFiles": {
         "LICENSE": "4a93985763241755401a10678395303de4e720ba"
       },
-      "discover": "none"
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     },
     "obra/superpowers": {
       "license": "MIT",
@@ -213,7 +257,84 @@
       "licenseFiles": {
         "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
       },
-      "discover": "all"
+      "discover": "all",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "trailofbits/skills": {
+      "license": "CC-BY-SA-4.0",
+      "copyright": "Not stated upstream; the README says \"Made by Trail of Bits\"",
+      "licenseFiles": {
+        "LICENSE": "3b7b82d0da2db857eda1a798dbd908ea136f07b5"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "vercel-labs/agent-skills": {
+      "license": "MIT",
+      "copyright": "Not stated upstream (there is no license file; its README.md says 'License: MIT')",
+      "licenseFiles": {
+        "README.md": "04a1a5a46a22cfd430e2877b7c145e34fc2653ab"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "vercel-labs/skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Vercel, Inc.",
+      "licenseFiles": {
+        "LICENSE": "eabe3008f6c0275929faa8b07d406e82717648cc"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "vllm-project/vllm": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "vllm-project/vllm-skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "5e6620780bdc6b10758bc814e621981705080bbe"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "langchain-ai/langsmith-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) LangChain, Inc.",
+      "licenseFiles": {
+        "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+      },
+      "discover": "all",
+      "stability": "preview",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
     }
   },
   "local": {
@@ -650,6 +771,71 @@
         "path": "skills/github-issues",
         "commit": "edbecfa9099c4addae1f500cca1ac067204b30fd"
       }
+    },
+    "langsmith-trace": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-trace",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-dataset": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-dataset",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-evaluator": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-evaluator",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-experiment-diagnosis": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-experiment-diagnosis",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-online-eval-engineering": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-online-eval-engineering",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
     }
   },
   "skills": {
@@ -822,6 +1008,10 @@
         }
       }
     },
+    "fastmcp-server": {
+      "commit": "901575873111515457755df6872d7b0ccdf9407b",
+      "tree": "37fa5210e2055784b68cacd05d3509fd3cb1e2e2"
+    },
     "feature-forge": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "cc538fe054308d7f525e50fa6f35d5cf7717f9dd"
@@ -879,8 +1069,8 @@
       "tree": "eedaf2562c83155115e9c649fa3ecaac2e10e81d"
     },
     "grilling": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "28aceb4c9567b985cb47f7db88cf23c9f33af8b8"
+      "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "tree": "f551b6e0d219fdda0b6abf277f8f915b3127d1e9"
     },
     "handoff": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
@@ -899,8 +1089,8 @@
       "tree": "89782df299cf7514502688a9f5f174a875e9927d"
     },
     "improve-codebase-architecture": {
-      "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
-      "tree": "39bd9cc130f7dfcc4e3ea0b3613f6ebed0d0ad2b"
+      "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "tree": "587147dd230da299cc5e84971cb0a33f6676f8a6"
     },
     "langchain-dependencies": {
       "commit": "d00eed0bf1b3debfb8e248f98037da7ad07a0972",
@@ -1040,8 +1230,8 @@
       "tree": "64bc758e8ea54df7e52b5333d3450e6fec58dd84"
     },
     "research": {
-      "commit": "321658273cb1d20b76026717d027d505790106d4",
-      "tree": "0a6796c5667e95ed2301ba7381c123b4acb2ae1a"
+      "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "tree": "2f8f36af48796faed5c687c75bb650071631a984"
     },
     "retro": {
       "commit": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f",
@@ -1170,8 +1360,8 @@
       "tree": "c8b050e6b8c711be1a9008ceacb2126914f0763e"
     },
     "wayfinder": {
-      "commit": "49dd158d1076134a641b33efb035946536778336",
-      "tree": "32b0ce970b1394ede47116e1d3e07f9ccc87591f"
+      "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "tree": "25da74eadc3e388b2f2a2cc716f3d44b2fb9dfe0"
     },
     "wizard": {
       "commit": "49dd158d1076134a641b33efb035946536778336",
@@ -1192,10 +1382,6 @@
     "writing-shape": {
       "commit": "5c89081d4bbeb3d039a42093653f90bb698d780e",
       "tree": "ac92229646fccf7315ae139c37b479b3790617f2"
-    },
-    "fastmcp-server": {
-      "commit": "901575873111515457755df6872d7b0ccdf9407b",
-      "tree": "37fa5210e2055784b68cacd05d3509fd3cb1e2e2"
     }
   },
   "ignored": {
@@ -1244,6 +1430,158 @@
       "systematic-debugging": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
       "diagnosing-superpowers": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use.",
       "dispatching-parallel-agents": "Reviewed 2026-11-03: retain existing workflow; see docs/evaluations/superpowers.md for exclusion or selective reference use."
+    },
+    "langchain-ai/langsmith-skills": {
+      "langsmith-custom-apps": "Custom hosted applications are outside the evaluation and observability scope."
+    }
+  },
+  "maintenance": {
+    "freshnessHours": 24,
+    "releaseCooldownHours": 24,
+    "newSources": "review",
+    "executableChanges": "review",
+    "unsafeContent": "block"
+  },
+  "references": {
+    "langchain-framework": {
+      "kind": "github",
+      "source": "langchain-ai/langchain",
+      "ref": "HEAD"
+    },
+    "langchain-plugins": {
+      "kind": "github",
+      "source": "langchain-ai/langchain-plugins",
+      "ref": "HEAD"
+    },
+    "microsoft-mcp": {
+      "kind": "github",
+      "source": "microsoft/mcp",
+      "ref": "HEAD"
+    },
+    "langchain-azure": {
+      "kind": "github",
+      "source": "langchain-ai/langchain-azure",
+      "ref": "HEAD"
+    },
+    "langchain-native-mcp-docs": {
+      "kind": "documentation",
+      "url": "https://docs.langchain.com/oss/python/langchain/mcp",
+      "stability": "beta"
+    },
+    "foundry-hosting-docs": {
+      "kind": "documentation",
+      "url": "https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-hosted-agents"
+    },
+    "claude-official-plugins": {
+      "kind": "github",
+      "source": "anthropics/claude-plugins-official",
+      "ref": "HEAD"
+    }
+  },
+  "plugins": {
+    "langchain-skills@langchain-plugins": {
+      "source": "langchain-ai/langchain-plugins",
+      "clients": [
+        "codex",
+        "claude"
+      ],
+      "skills": [
+        "deep-agents-core",
+        "deep-agents-memory",
+        "deep-agents-orchestration",
+        "deepagents-python-quickstart",
+        "deepagents-typescript-quickstart",
+        "ecosystem-primer",
+        "langchain-dependencies",
+        "langchain-fundamentals",
+        "langchain-middleware",
+        "langchain-python-quickstart",
+        "langchain-rag",
+        "langchain-typescript-quickstart",
+        "langgraph-cli",
+        "langgraph-fundamentals",
+        "langgraph-human-in-the-loop",
+        "langgraph-persistence",
+        "langgraph-python-quickstart",
+        "langgraph-typescript-quickstart",
+        "managed-deep-agents"
+      ],
+      "mcp": [],
+      "writeCapable": false,
+      "stability": "preview",
+      "review": "Native upstream plugins may follow floating source references; explicit selection is required. Review hooks, dependencies and authentication before activation."
+    },
+    "langsmith-skills@langchain-plugins": {
+      "source": "langchain-ai/langchain-plugins",
+      "clients": [
+        "codex",
+        "claude"
+      ],
+      "skills": [
+        "langsmith-trace",
+        "langsmith-dataset",
+        "langsmith-evaluator",
+        "langsmith-experiment-diagnosis",
+        "langsmith-online-eval-engineering"
+      ],
+      "mcp": [],
+      "writeCapable": true,
+      "stability": "preview",
+      "review": "Native upstream plugins may follow floating source references; explicit selection is required. Review hooks, dependencies and authentication before activation."
+    },
+    "langchain-mcp@langchain-plugins": {
+      "source": "langchain-ai/langchain-plugins",
+      "clients": [
+        "codex",
+        "claude"
+      ],
+      "skills": [],
+      "mcp": [
+        "docs-langchain",
+        "reference-langchain"
+      ],
+      "writeCapable": false,
+      "stability": "preview",
+      "review": "Native upstream plugins may follow floating source references; explicit selection is required. Review hooks, dependencies and authentication before activation."
+    },
+    "langsmith-mcp@langchain-plugins": {
+      "source": "langchain-ai/langchain-plugins",
+      "clients": [
+        "codex",
+        "claude"
+      ],
+      "skills": [],
+      "mcp": [
+        "langsmith"
+      ],
+      "writeCapable": true,
+      "stability": "preview",
+      "review": "Native upstream plugins may follow floating source references; explicit selection is required. Review hooks, dependencies and authentication before activation."
+    },
+    "azure@azure-skills": {
+      "source": "microsoft/azure-skills",
+      "clients": [
+        "codex",
+        "claude"
+      ],
+      "skills": [
+        "appinsights-instrumentation",
+        "azure-deploy",
+        "azure-diagnostics",
+        "azure-prepare",
+        "azure-resource-lookup",
+        "azure-storage",
+        "azure-validate",
+        "entra-app-registration",
+        "azure-ai",
+        "microsoft-foundry"
+      ],
+      "mcp": [
+        "azure",
+        "azure-write"
+      ],
+      "writeCapable": true,
+      "review": "Includes infrastructure tools, hooks and upstream-controlled executable dependencies; explicit write activation and source review are required."
     }
   }
 }

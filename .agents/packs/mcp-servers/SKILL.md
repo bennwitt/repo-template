@@ -253,3 +253,12 @@ real stdio/HTTP clients, both eras, owner isolation, JWT audience/scope failures
 and FastAPI cleanup. The fixtures and their locks are the executable examples; manual changes
 to the baseline need the same tests before adoption. Existing application constraints stay intact
 unless migration is requested.
+
+## Native MCP and portable hosting fixture
+
+For native `langchain.mcp.MCPAdapter` (beta), use the standards repository’s
+`examples/mcp/langchain/README.md` and its isolated locked environment. One injectable LangGraph
+serves local execution, FastAPI/Container Apps, and Foundry Responses or Invocations; local tests
+cover checkpoint continuity and approval-controlled writes. Keep legacy `langchain-mcp-adapters`
+in `examples/mcp/legacy-langchain`; pack selection never changes an application’s dependencies.
+Deploy Azure resources only within explicit deployment authorization.

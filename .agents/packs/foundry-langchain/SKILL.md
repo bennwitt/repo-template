@@ -249,3 +249,12 @@ azd ai agent invoke --local "Hello"
   `api_key=` literals. None of them belong in code, `azure.yaml`, `.env.example` or docs.
 - If tracing was in scope, invoke once and confirm the spans arrive in App Insights and, if it
   is configured, in LangSmith.
+
+## Native MCP and portable hosting fixture
+
+For native `langchain.mcp.MCPAdapter` (beta), use the standards repository’s
+`examples/mcp/langchain/README.md` and its isolated locked environment. One injectable LangGraph
+serves local execution, FastAPI/Container Apps, and Foundry Responses or Invocations; local tests
+cover checkpoint continuity and approval-controlled writes. Keep legacy `langchain-mcp-adapters`
+in `examples/mcp/legacy-langchain`; pack selection never changes an application’s dependencies.
+Deploy Azure resources only within explicit deployment authorization.

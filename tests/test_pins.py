@@ -75,8 +75,8 @@ def test_the_newest_release_past_its_cooldown_is_offered(tmp_path: Path) -> None
     releases = {
         "1.0.0": _at(PUBLISHED),
         "1.0.2": NOW - timedelta(days=8),
-        "1.0.10": NOW - timedelta(days=7),  # numeric order, not text order
-        "1.1.0": NOW - timedelta(days=2),
+        "1.0.10": NOW - timedelta(days=1),  # numeric order, not text order
+        "1.1.0": NOW - timedelta(hours=12),
     }
 
     report = _report(tmp_path, releases)
@@ -85,15 +85,15 @@ def test_the_newest_release_past_its_cooldown_is_offered(tmp_path: Path) -> None
         "x: npm @x/mcp 1.0.10 is newer than the pinned 1.0.0; re-pin it with "
         "`repo-template globals --upgrade mcp:x`"
     ]
-    assert report.notes == ["x: npm @x/mcp 1.1.0 is in its cooldown until 2026-10-19T12:00:00Z"]
+    assert report.notes == ["x: npm @x/mcp 1.1.0 is in its cooldown until 2026-10-15T00:00:00Z"]
     assert report.pins == [] and report.exit_code == 1
 
 
 def test_a_release_still_in_its_cooldown_is_only_noted(tmp_path: Path) -> None:
-    report = _report(tmp_path, {"1.0.0": _at(PUBLISHED), "1.0.1": NOW - timedelta(days=6)})
+    report = _report(tmp_path, {"1.0.0": _at(PUBLISHED), "1.0.1": NOW - timedelta(hours=23)})
 
     assert report.changed == [] and report.exit_code == 0
-    assert report.notes == ["x: npm @x/mcp 1.0.1 is in its cooldown until 2026-10-15T12:00:00Z"]
+    assert report.notes == ["x: npm @x/mcp 1.0.1 is in its cooldown until 2026-10-14T13:00:00Z"]
 
 
 @pytest.mark.parametrize(
@@ -111,9 +111,9 @@ def test_a_release_still_in_its_cooldown_is_only_noted(tmp_path: Path) -> None:
             "as mcp-servers.json records",
         ),
         (
-            {"1.0.0": _at("2026-10-12T22:33:00Z")},
-            {"publishedAt": "2026-10-12T22:33:00Z"},
-            "x: npm @x/mcp@1.0.0 is inside its cooldown until 2026-10-19T22:33:00Z; pin an older "
+            {"1.0.0": _at("2026-10-14T06:33:00Z")},
+            {"publishedAt": "2026-10-14T06:33:00Z"},
+            "x: npm @x/mcp@1.0.0 is inside its cooldown until 2026-10-15T06:33:00Z; pin an older "
             "release "
             "or give a pinException",
         ),
@@ -134,7 +134,7 @@ def test_a_pin_that_needs_a_decision_is_for_review(
 
 
 def test_a_young_pin_with_a_reason_is_accepted(tmp_path: Path) -> None:
-    young = "2026-10-12T22:33:00Z"
+    young = "2026-10-14T06:33:00Z"
 
     report = _report(tmp_path, {"1.0.0": _at(young)}, publishedAt=young, pinException="why")
 
@@ -190,15 +190,15 @@ def test_upstream_checks_the_pins_and_a_registry_failure_exits_3(
 def test_two_young_releases_note_the_newest_and_a_boundary_pin_is_ripe(tmp_path: Path) -> None:
     releases = {
         "1.0.0": _at(PUBLISHED),
-        "1.0.9": NOW - timedelta(days=7),  # exactly 7 days: ripe
-        "1.0.10": NOW - timedelta(days=3),
-        "1.0.11": NOW - timedelta(days=1),
+        "1.0.9": NOW - timedelta(days=1),  # exactly 24 hours: ripe
+        "1.0.10": NOW - timedelta(hours=12),
+        "1.0.11": NOW - timedelta(hours=1),
     }
 
     report = _report(tmp_path, releases)
 
     assert report.changed[0].startswith("x: npm @x/mcp 1.0.9 is newer")
-    assert report.notes == ["x: npm @x/mcp 1.0.11 is in its cooldown until 2026-10-20T12:00:00Z"]
+    assert report.notes == ["x: npm @x/mcp 1.0.11 is in its cooldown until 2026-10-15T11:00:00Z"]
 
 
 def test_a_pin_spelled_with_trailing_zeros_matches_its_release(tmp_path: Path) -> None:

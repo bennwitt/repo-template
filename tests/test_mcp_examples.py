@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tomllib
 from pathlib import Path
 
@@ -13,15 +14,23 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_fixture_direct_dependencies_match_development_baseline() -> None:
     pins = load_development(ROOT / ".agents")
-    py = tomllib.loads((ROOT / "examples/mcp/python/pyproject.toml").read_text())
-    lock = tomllib.loads((ROOT / "examples/mcp/python/uv.lock").read_text())
-    locked = {entry["name"]: entry["version"] for entry in lock["package"]}
+    python_fixtures = []
+    for project in ["python", "langchain", "legacy-langchain"]:
+        path = ROOT / "examples/mcp" / project
+        py = tomllib.loads((path / "pyproject.toml").read_text())
+        dependencies = {re.sub(r"\[.*?\]", "", dep) for dep in py["project"]["dependencies"]}
+        lock = tomllib.loads((path / "uv.lock").read_text())
+        locked = {entry["name"]: entry["version"] for entry in lock["package"]}
+        python_fixtures.append((dependencies, locked))
     npm = json.loads((ROOT / "examples/mcp/typescript/package.json").read_text())
     npm_lock = json.loads((ROOT / "examples/mcp/typescript/package-lock.json").read_text())
     for pin in pins.values():
         if pin.registry == "pypi":
-            assert f"{pin.package}=={pin.version}" in py["project"]["dependencies"]
-            assert locked[pin.package] == pin.version
+            assert any(
+                f"{pin.package}=={pin.version}" in dependencies
+                and locked[pin.package] == pin.version
+                for dependencies, locked in python_fixtures
+            )
         else:
             dependencies = npm["dependencies"] | npm["devDependencies"]
             assert dependencies[pin.package] == pin.version
