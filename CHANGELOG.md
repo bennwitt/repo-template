@@ -1,5 +1,41 @@
 # Changelog
 
+## [docs] Add machine and repo update workflow to cheat sheet
+**2026-11-15** at 23:14 UTC
+
+Document the end-to-end update process for keeping the standards machine checkout and already-adopted repositories in sync, including required commands, restart guidance, and optional selection/preview flows.
+
+### Changes
+
+**Modified:**
+- `CHEAT_SHEET.md`
+
+### Details
+## What changed
+- Added a new step-by-step section to `CHEAT_SHEET.md` covering:
+  - Updating `~/aiDevStandards` from `main` with a clean working tree.
+  - Running `repo-template globals --check` and `repo-template globals`.
+  - Restarting Claude Code and Codex after machine updates.
+- Added per-repository update commands for adopted repos:
+  - `repo-template check .`
+  - `repo-template update .`
+  - Follow-up `repo-template check .`
+- Documented behavior and expectations:
+  - Existing profiles/packs/selections are preserved.
+  - Tracked standards changes should be reviewed on a clean branch and committed.
+  - Personal adoptions do not require a commit.
+- Added optional usage guidance:
+  - Interactive selection via `repo-template update . --select`.
+  - Multi-repo preview checks in a single command.
+- Clarified the relationship between machine updates (shared skills refresh) and repo updates (selection/config reconciliation).
+
+## Why
+- Provides a single, practical reference for routine maintenance.
+- Reduces ambiguity around when to restart clients and when commits are needed.
+- Improves consistency across machines and repositories using the standards tooling.
+
+---
+
 ## Unreleased
 
 - Modernize the existing updater with a complete inventory, atomic local freshness evidence,
