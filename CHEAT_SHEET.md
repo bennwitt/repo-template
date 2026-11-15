@@ -228,3 +228,44 @@ workflow seed guidance must be merged into an existing project's guide where rel
 machine's secret setup before launching either client. A repository `.env` is not loaded by
 clients automatically; see [authentication](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#github-mcp-authentication).
 `gh auth` remains separate and handles requested writes. Check the client MCP panel after restart.
+
+
+
+
+**1. Update the machine** — start with a clean checkout:
+
+```bash
+cd ~/aiDevStandards
+git status --short
+git switch main
+git pull --ff-only
+repo-template globals --check
+repo-template globals
+```
+
+Restart Claude Code and Codex afterward.
+
+**2. Update each already-adopted repository:**
+
+```bash
+cd /path/to/repo
+repo-template check .
+repo-template update .
+repo-template check .
+```
+
+Existing profiles, packs and individual selections are remembered. For tracked standards changes, use a clean branch and review/commit the diff. Personal adoptions need no commit.
+
+**Optional: choose additional packs or skills:**
+
+```bash
+repo-template update . --select
+```
+
+You can preview several repositories together:
+
+```bash
+repo-template check /path/to/repo-a /path/to/repo-b
+```
+
+Updating the machine refreshes shared skills; repository updates reconcile their selections and configuration.
