@@ -250,11 +250,15 @@
     ]
   },
   "playwright": {
-    "description": "Playwright end-to-end tests: best practices and reading traces.",
+    "description": "Playwright, complete: drive a real browser through the Playwright MCP server (every optional capability) or the playwright-cli skill, and write, debug and read traces of end-to-end tests.",
     "skills": [
       "playwright-best-practices",
+      "playwright-cli",
       "playwright-expert",
       "playwright-trace"
+    ],
+    "mcp": [
+      "playwright"
     ]
   },
   "react": {

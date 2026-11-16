@@ -521,7 +521,7 @@ if have node; then
       ;;
   esac
 else
-  warn "Node isn't installed: MCP servers started with npx (playwright, shadcn) won't run until it is (Node 22 or 24 LTS)"
+  warn "Node isn't installed: MCP servers started with npx (the playwright and react packs') won't run until it is (Node 22 or 24 LTS)"
 fi
 if have claude; then
   note "claude: $(claude --version 2>/dev/null | head -n 1)"
@@ -815,6 +815,6 @@ fi
 say "Done"
 if [ "$status" != 0 ]; then warn "some steps reported problems (above); fix them, then run this again"; fi
 note "Open a new terminal, then restart Claude Code and Codex"
-note "Check the MCP servers: claude mcp list   (playwright and huggingface, connected)"
+note "Check the MCP servers: claude mcp list   (huggingface connected; github too once its token is set)"
 note "Your repositories: section 2 of $dir/HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md"
 exit "$status"

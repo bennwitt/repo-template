@@ -97,6 +97,7 @@ In an adopted repository:
 repo-template check . --pack security                # preview adding a pack
 repo-template update . --pack security               # add it
 repo-template update . --pack typescript --pack react # add several
+repo-template update . --pack playwright             # Playwright MCP server and CLI skill (not global)
 repo-template check .
 ```
 

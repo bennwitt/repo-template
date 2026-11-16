@@ -38,6 +38,15 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Make Playwright a complete pack of its own instead of a global: the `playwright` MCP server
+  and the `playwright-cli` skill join the `playwright` pack, and the server now runs with every
+  optional capability (`--caps=vision,pdf,devtools,network,storage,testing,config`: coordinate
+  input, PDF, devtools tracing and video, network routing, storage and cookies, test assertions
+  and config). `browser_run_code_unsafe` stays denied in both clients. `globals` removes the
+  global copies an earlier release installed (Claude Code's user-scope entry, Codex's table and
+  the skill link), leaving entries changed by hand. **Migration:** a repository that used the
+  global Playwright server or skill adds the pack: `repo-template update . --pack playwright`.
+
 - Modernize the existing updater with a complete inventory, atomic local freshness evidence,
   source filtering, force/max-age controls, JSON reports, dry runs and explicit automatic admission.
   Default freshness is 24 hours; all executable pin checks share a one-day cooldown. Offline

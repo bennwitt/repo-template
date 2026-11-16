@@ -233,6 +233,9 @@ def test_a_first_install_clones_installs_and_applies_then_a_second_run_changes_n
     ]
     profile = (home / ".zshrc").read_text()
     assert f'export AI_DEV_STANDARDS="{target}"' in profile
+    # Playwright is the playwright pack's now, so the global servers to check are these
+    assert "claude mcp list   (huggingface connected; github too" in first.stdout
+    assert "playwright and huggingface" not in first.stdout
 
     _git(machine["origin"], "commit", "-q", "--allow-empty", "-m", "newer standards")
     (home / "calls.log").unlink()

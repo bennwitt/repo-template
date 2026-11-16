@@ -86,7 +86,7 @@
       "why": "Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin."
     },
     "playwright": {
-      "scope": "global",
+      "scope": "pack",
       "command": "npx",
       "args": [
         "-y",
@@ -94,6 +94,7 @@
         "--isolated",
         "--headless",
         "--no-webmcp",
+        "--caps=vision,pdf,devtools,network,storage,testing,config",
         "--output-dir",
         "{cache}/playwright-mcp"
       ],
@@ -110,7 +111,7 @@
         "startup_timeout_sec": 30
       },
       "source": "https://github.com/microsoft/playwright-mcp",
-      "why": "Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile."
+      "why": "Drives a real browser for the playwright pack, with every optional capability (coordinate clicks, PDF, devtools tracing and video, network routing, storage and cookies, test assertions, config). Pinned, with a fresh profile each session (--isolated), headless, and output written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. browser_run_code_unsafe stays denied: it runs code in the server's own process."
     },
     "reference-langchain": {
       "scope": "pack",
