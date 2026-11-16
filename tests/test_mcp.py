@@ -1338,6 +1338,20 @@ def test_a_launched_server_is_refused_unless_it_names_a_locked_folder(
         load_mcp_servers(agents)
 
 
+def test_a_launched_server_loads_through_a_linked_agents_folder(tmp_path: Path) -> None:
+    """Every machine reads the catalog through ~/.agents, a link into the standards checkout:
+    the server folder is beside the checkout's .agents, not beside the link."""
+    standards = tmp_path / "standards"
+    _server_folder(standards)
+    _agents(standards, {"browser": LAUNCHED})
+    (tmp_path / "home").mkdir()
+    (tmp_path / "home/.agents").symlink_to(standards / ".agents")
+
+    servers = load_mcp_servers(tmp_path / "home/.agents")
+
+    assert servers["browser"].args == ("browser-mcp",)
+
+
 def test_env_vars_belong_to_command_servers(tmp_path: Path) -> None:
     agents = _agents(tmp_path, {"docs": {**URL, "codex": {"env_vars": ["X"]}}})
 
