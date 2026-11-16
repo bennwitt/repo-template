@@ -36,6 +36,7 @@ from repo_template.model import Result
 from repo_template.repository import update_repository
 from repo_template.runner import Completed
 from repo_template.scaffold import new_project, read_manifest
+from repo_template.standards import load_skill_packs, sync_globals
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = "/home/u/.cache/repo-template"
@@ -1377,3 +1378,103 @@ def test_the_launcher_runs_the_locked_server_from_the_linked_checkout(
     assert "no server 'absent-mcp'" in capsys.readouterr().err
     assert serve.main(["../x"], agents=tmp_path / "home/.agents") == 2
     assert serve.main([], agents=tmp_path / "home/.agents") == 2
+
+
+# Playwright: its own pack, no longer global.
+
+PLAYWRIGHT_CAPS = "--caps=vision,pdf,devtools,network,storage,testing,config"
+
+
+def test_playwright_is_its_packs_server_with_every_capability() -> None:
+    servers = load_mcp_servers(ROOT / ".agents")
+    refs = pack_servers(ROOT / ".agents", servers)
+    playwright = servers["playwright"]
+
+    assert playwright.scope == "pack"
+    users = [pack for pack, used in refs.items() if any(name == "playwright" for name, _ in used)]
+    assert users == ["playwright"] and refs["playwright"] == [("playwright", {})]
+    assert {"--isolated", "--headless", "--no-webmcp", PLAYWRIGHT_CAPS} <= set(playwright.args)
+    assert playwright.deny == ("browser_run_code_unsafe",)  # it runs code in the server process
+    assert "playwright-cli" in load_skill_packs(ROOT / ".agents")["playwright"]
+    assert (ROOT / ".agents/packs/playwright-cli/SKILL.md").is_file()
+    assert not (ROOT / ".agents/skills/playwright-cli").exists()
+
+
+def test_a_repository_with_the_playwright_pack_gets_the_full_server(tmp_path: Path) -> None:
+    root = tmp_path / "service"
+    new_project(root, name="service", description="S.", python_version="3.12")
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(["git", "-C", str(root), "config", "core.excludesFile", os.devnull], check=True)
+
+    result = _update(root, ROOT / ".agents", packs=["playwright"])
+
+    entry = json.loads((root / ".mcp.json").read_text())["mcpServers"]["playwright"]
+    assert entry["command"] == "npx"
+    assert entry["args"] == [
+        "-y", "@playwright/mcp@0.0.83", "--isolated", "--headless", "--no-webmcp",
+        PLAYWRIGHT_CAPS, "--output-dir", "${HOME}/.cache/repo-template/playwright-mcp",
+    ]  # fmt: skip
+    assert entry["env"]["npm_config_cache"] == "${HOME}/.cache/repo-template/npm"
+    codex = tomllib.loads((root / ".codex/config.toml").read_text())["mcp_servers"]["playwright"]
+    assert codex["disabled_tools"] == ["browser_run_code_unsafe"]
+    assert PLAYWRIGHT_CAPS in codex["args"]
+    assert (root / ".claude/skills/playwright-cli").is_symlink()
+    assert not result.errors, result.errors
+
+
+def _standards_before_the_playwright_pack(tmp_path: Path) -> Path:
+    """A standards checkout as it was before Playwright became a pack: its server global, its
+    CLI skill in .agents/skills."""
+    root = tmp_path / "standards"
+    skill = root / ".agents/skills/playwright-cli"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: playwright-cli\ndescription: x\n---\n")
+    deny = {"permissions": {"deny": ["mcp__*__browser_run_code_unsafe"]}}
+    (root / ".agents/claude-settings.json").write_text(json.dumps({"portable": deny}))
+    server = json.loads((ROOT / ".agents/mcp-servers.json").read_text())["servers"]["playwright"]
+    _agents(
+        root,
+        {"playwright": {**server, "scope": "global"}},
+        {"playwright": {"description": "P", "skills": []}},
+    )
+    return root
+
+
+def _move_playwright_into_its_pack(root: Path) -> None:
+    agents = root / ".agents"
+    (agents / "packs").mkdir()
+    (agents / "skills/playwright-cli").rename(agents / "packs/playwright-cli")
+    server = json.loads((ROOT / ".agents/mcp-servers.json").read_text())["servers"]["playwright"]
+    _agents(
+        root,
+        {"playwright": server},
+        {"playwright": {"description": "P", "skills": ["playwright-cli"], "mcp": ["playwright"]}},
+    )
+
+
+def test_a_machine_set_up_before_the_playwright_pack_loses_the_global_copies(
+    tmp_path: Path,
+) -> None:
+    standards = _standards_before_the_playwright_pack(tmp_path)
+    home = tmp_path / "home"
+    (home / ".codex").mkdir(parents=True)  # Codex is set up on this machine
+    claude = FakeClaude(tmp_path / ".claude.json")
+    sync_globals(standards, home=home, claude=claude)
+    codex = home / ".codex/config.toml"
+    assert set(claude.data) == {"playwright"}
+    assert "playwright" in tomllib.loads(codex.read_text())["mcp_servers"]
+    assert (home / ".claude/skills/playwright-cli").is_symlink()
+
+    _move_playwright_into_its_pack(standards)
+    planned = sync_globals(standards, home=home, check=True, claude=claude)
+    applied = sync_globals(standards, home=home, claude=claude)
+
+    gone = {f"{claude.path} mcpServers.playwright", f"{codex} mcp_servers.playwright"}
+    for removed in (planned.removed, applied.removed):
+        assert gone <= set(removed), removed
+        assert any(item.endswith("skills/playwright-cli") for item in removed), removed
+    assert claude.data == {}
+    assert "playwright" not in tomllib.loads(codex.read_text()).get("mcp_servers", {})
+    assert not os.path.lexists(home / ".claude/skills/playwright-cli")
+    assert not applied.errors, applied.errors
+    assert not sync_globals(standards, home=home, check=True, claude=claude).needs_attention

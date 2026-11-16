@@ -46,7 +46,7 @@
       "package": "@playwright/cli",
       "version": "0.1.22",
       "publishedAt": "2026-09-28T23:24:31Z",
-      "why": "Drives the browser for the playwright-cli skill, which is vendored at the same version: move both together."
+      "why": "Drives the browser for the playwright pack's playwright-cli skill, which is vendored at the same version: move both together."
     },
     "pyright": {
       "registry": "npm",

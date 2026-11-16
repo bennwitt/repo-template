@@ -56,6 +56,14 @@ Document the end-to-end update process for keeping the standards machine checkou
   baseline tracks the Python `stagehand` 4.4.0 pin.
 - 0.7.0: the generated `docs/agents/workflow.md` (a seed file) gains a browser automation row:
   the playwright or stagehand pack (they exclude each other). Existing repositories keep their copy.
+- Make Playwright a complete pack of its own instead of a global: the `playwright` MCP server
+  and the `playwright-cli` skill join the `playwright` pack, and the server now runs with every
+  optional capability (`--caps=vision,pdf,devtools,network,storage,testing,config`: coordinate
+  input, PDF, devtools tracing and video, network routing, storage and cookies, test assertions
+  and config). `browser_run_code_unsafe` stays denied in both clients. `globals` removes the
+  global copies an earlier release installed (Claude Code's user-scope entry, Codex's table and
+  the skill link), leaving entries changed by hand. **Migration:** a repository that used the
+  global Playwright server or skill adds the pack: `repo-template update . --pack playwright`.
 
 - Modernize the existing updater with a complete inventory, atomic local freshness evidence,
   source filtering, force/max-age controls, JSON reports, dry runs and explicit automatic admission.
