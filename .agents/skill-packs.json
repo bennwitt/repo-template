@@ -258,7 +258,8 @@
       "playwright-trace"
     ],
     "mcp": [
-      "playwright"
+      "playwright",
+      "playwright-unsafe"
     ]
   },
   "react": {

@@ -81,7 +81,13 @@ repo-template globals --check --allow-write-mcp langsmith
 repo-template globals --allow-write-mcp langsmith
 repo-template globals --allow-write-mcp azure-write
 repo-template globals --revoke-write-mcp azure-write
+repo-template globals --allow-write-mcp playwright-unsafe
 ```
+
+`playwright-unsafe` is an optional pack server: the grant lets `update` add it to repositories
+with the playwright pack, on this machine only (Claude Code's local scope and the ignored Codex
+file, recorded in `~/.repo-template/globals-state.json`); `globals` itself installs nothing for
+it. After a grant or a revocation, run `update` in those repositories.
 
 LangSmith uses the official remote endpoint and client OAuth. Complete sign-in in the client;
 the base template works without it. Azure uses machine-owned Azure CLI authentication. Selecting

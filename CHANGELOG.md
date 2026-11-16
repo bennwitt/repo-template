@@ -38,6 +38,16 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Add `playwright-unsafe`, an optional server in the playwright pack: the same pinned Playwright
+  MCP server with `browser_run_code_unsafe` allowed. It reaches a repository only on a machine
+  granted it (`globals --allow-write-mcp playwright-unsafe`), and then only that checkout's
+  Claude Code local scope and ignored `.codex/config.toml`, never `.mcp.json` or the manifest;
+  revoking the grant removes it on the next `update`. Claude Code asks before each call.
+- Optional write-capable servers may be pack servers, and a server can `allow` a tool other
+  servers deny: that tool is then denied per server (`mcp__playwright__browser_run_code_unsafe`,
+  and the disabled plugin's name) instead of by glob, and asked for on the allowing server.
+  `globals` replaces the old glob on each machine.
+
 - Add the self-hosted `stagehand` pack, for Stagehand browser automation with no Browserbase
   account: the `stagehand` skill (Stagehand v4 code with act, extract and observe on your own
   Chrome and an OpenAI-compatible model you host, through a model callback), `stagehand-browse`

@@ -676,7 +676,13 @@ def integrity(
 def _check_mcp(root: Path, problems: _Problems) -> None:
     """The MCP catalog loads, packs use only pack servers, and every server's denied tools are
     denied for Claude Code too (Codex gets them as disabled_tools)."""
-    from repo_template.mcp import cooldown_problem, deny_rules, load_mcp_servers, pack_servers
+    from repo_template.mcp import (
+        ask_rules,
+        cooldown_problem,
+        deny_rules,
+        load_mcp_servers,
+        pack_servers,
+    )
 
     try:
         servers = load_mcp_servers(root / ".agents")
@@ -703,6 +709,20 @@ def _check_mcp(root: Path, problems: _Problems) -> None:
             f"{rule}: an MCP server denies this tool; add the rule to portable permissions.deny "
             f"in .agents/claude-settings.json so Claude Code denies it too",
         )
+    asked = set(portable.get("permissions", {}).get("ask", []))
+    for rule in sorted(ask_rules(servers) - asked):
+        problems.add(
+            None,
+            f"{rule}: an optional server allows this tool; add the rule to portable "
+            f"permissions.ask in .agents/claude-settings.json so Claude Code asks before each call",
+        )
+    for tool in sorted({tool for server in servers.values() for tool in server.allow}):
+        if f"mcp__*__{tool}" in denied:
+            problems.add(
+                None,
+                f"mcp__*__{tool} in portable permissions.deny denies the tool for the optional "
+                f"server that allows it too; deny it per server (mcp__<server>__{tool})",
+            )
 
 
 def check_integrity(root: Path, names: list[str]) -> list[str]:

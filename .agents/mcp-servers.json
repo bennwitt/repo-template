@@ -113,6 +113,36 @@
       "source": "https://github.com/microsoft/playwright-mcp",
       "why": "Drives a real browser for the playwright pack, with every optional capability (coordinate clicks, PDF, devtools tracing and video, network routing, storage and cookies, test assertions, config). Pinned, with a fresh profile each session (--isolated), headless, and output written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. browser_run_code_unsafe stays denied: it runs code in the server's own process."
     },
+    "playwright-unsafe": {
+      "scope": "pack",
+      "optIn": true,
+      "access": "write",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.83",
+        "--isolated",
+        "--headless",
+        "--no-webmcp",
+        "--caps=vision,pdf,devtools,network,storage,testing,config",
+        "--output-dir",
+        "{cache}/playwright-mcp-unsafe"
+      ],
+      "pin": {
+        "registry": "npm",
+        "package": "@playwright/mcp",
+        "version": "0.0.83",
+        "publishedAt": "2026-09-28T23:19:13Z"
+      },
+      "allow": [
+        "browser_run_code_unsafe"
+      ],
+      "codex": {
+        "startup_timeout_sec": 30
+      },
+      "source": "https://github.com/microsoft/playwright-mcp",
+      "why": "Optional: the playwright pack's server with browser_run_code_unsafe allowed, which runs code in the server's own process, so it can do anything this machine's user can. Only in repositories with the playwright pack, on a machine granted it (globals --allow-write-mcp playwright-unsafe), and only in Claude Code's local scope and the ignored .codex/config.toml, never the committed .mcp.json. Claude Code asks before each call. It runs its own browser beside the playwright server's: browse in it for run-code to see the page."
+    },
     "reference-langchain": {
       "scope": "pack",
       "url": "https://reference.langchain.com/mcp",
