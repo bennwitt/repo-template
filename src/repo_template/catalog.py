@@ -803,7 +803,7 @@ def _mcp_rows(root: Path) -> list[str]:
         elif server.pin:
             runs = f"`{server.command} {server.pin.package}@{server.pin.version}`"
         else:
-            runs = f"`{server.command}`"
+            runs = f"`{' '.join([server.command or '', *server.args])}`"
         denied = ", ".join(f"`{tool}`" for tool in server.deny)
         clients = ", ".join(sorted(server.clients))
         rows.append(f"| `{name}` | {where} | {clients} | {runs} | {denied} | {_cell(server.why)} |")

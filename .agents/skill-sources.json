@@ -836,6 +836,32 @@
         "path": "config/skills/langsmith-online-eval-engineering",
         "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
       }
+    },
+    "stagehand": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2024 Browserbase Inc.",
+        "licenseFiles": {
+          "LICENSE": "683c709c95b54b899bb1a49207cd5bff296ba087"
+        },
+        "source": "browserbase/stagehand",
+        "path": "packages/docs/v4",
+        "commit": "5a5b48acfadf637f2243233745fc5fc277b89b34"
+      }
+    },
+    "stagehand-browse": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2024 Browserbase Inc.",
+        "licenseFiles": {
+          "LICENSE": "683c709c95b54b899bb1a49207cd5bff296ba087"
+        },
+        "source": "browserbase/stagehand",
+        "path": "packages/cli/skills/browse",
+        "commit": "bc45be1ab9bcc196c2519b3f09b7b6a40ac60404"
+      }
     }
   },
   "skills": {

@@ -20,7 +20,9 @@
     },
     "env": {
       "AZURE_MCP_COLLECT_TELEMETRY": "false",
-      "AZURE_DEV_COLLECT_TELEMETRY": "no"
+      "AZURE_DEV_COLLECT_TELEMETRY": "no",
+      "BROWSERBASE_TELEMETRY_DISABLED": "1",
+      "BROWSE_DISABLE_UPDATE_CHECK": "1"
     },
     "permissions": {
       "deny": [

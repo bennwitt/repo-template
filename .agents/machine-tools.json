@@ -27,6 +27,13 @@
       },
       "why": "The Azure Developer CLI, for the azure and foundry packs."
     },
+    "browse": {
+      "registry": "npm",
+      "package": "browse",
+      "version": "0.11.3",
+      "publishedAt": "2026-10-20T20:52:25.238Z",
+      "why": "Stagehand's browse CLI, for the stagehand pack's stagehand-browse skill, which is adapted from the same version: move both together. Needs Node 22.18 or later."
+    },
     "codex": {
       "registry": "npm",
       "package": "@openai/codex",

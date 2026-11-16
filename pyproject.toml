@@ -1,6 +1,6 @@
 [project]
 name = "repo-template"
-version = "0.6.1"
+version = "0.7.0"
 description = "Create and safely update opinionated Python repositories and shared AI development standards."
 readme = "README.md"
 license = "MIT"
@@ -10,6 +10,7 @@ dependencies = []
 
 [project.scripts]
 repo-template = "repo_template.cli:main"
+repo-template-mcp = "repo_template.serve:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]

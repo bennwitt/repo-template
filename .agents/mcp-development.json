@@ -73,6 +73,12 @@
       "package": "langchain-mcp-adapters",
       "version": "0.3.2",
       "publishedAt": "2026-08-06T06:15:02.832559Z"
+    },
+    "stagehand": {
+      "registry": "pypi",
+      "package": "stagehand",
+      "version": "4.4.0",
+      "publishedAt": "2026-11-04T17:06:39.095709Z"
     }
   }
 }

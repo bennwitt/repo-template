@@ -86,6 +86,7 @@ releases that old too.
 | Azure Developer CLI (`azd`) 1.36.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
 | GitHub token | the global GitHub MCP | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
 | Codex CLI | Codex | `npm install -g --ignore-scripts --before=2026-10-16T00:00:00Z @openai/codex@0.163.0` | the same |
+| Stagehand `browse` CLI | the `stagehand` pack's `stagehand-browse` skill (Node 22.18 or later) | `npm install -g --ignore-scripts --before=2026-10-21T00:00:00Z browse@0.11.3` | the same |
 
 - **Azure:** after installing `az`, run `az login` and pick the subscription with
   `az account set --subscription "<name>"`. On a Mac the script installs `az` with Homebrew
@@ -104,6 +105,17 @@ releases that old too.
   ```
 - **Codex:** after installing it, run `codex` once, then the setup script again, so Codex gets
   its MCP servers.
+- **Stagehand:** the `stagehand` pack is self-hosted, with no Browserbase account. Its MCP
+  server launches the machine's Chrome (or attaches to `STAGEHAND_CDP_URL`) and asks the
+  OpenAI-compatible model you host. Set these in your shell profile, outside the script's
+  block, then restart the client:
+  ```bash
+  export STAGEHAND_MODEL_BASE_URL=http://127.0.0.1:8000/v1   # your server, ending in /v1
+  export STAGEHAND_MODEL=<the model it serves>
+  # export STAGEHAND_MODEL_API_KEY=...                       # only if the server needs a key
+  ```
+  The model must return JSON for a JSON schema (vLLM, Ollama and llama.cpp's server can). The
+  script's profile block already turns off the `browse` CLI's telemetry and update check.
 - **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
   (authorize it in `/mcp`).
 
@@ -293,6 +305,11 @@ repo-template check . --pack delivery --skill code-simplification
 repo-template update . --pack delivery --skill code-simplification
 repo-template update . --remove-pack delivery --remove-skill code-simplification
 ```
+
+Some packs exclude each other: `globals --list packs` shows `excludes:` for them. `playwright`
+and `stagehand` do, so a repository has one browser stack, and `check` or `update` refuses a
+selection with both, changing nothing. Switch in one command:
+`repo-template update . --pack stagehand --remove-pack playwright`.
 
 `--skill` also works with `new`. Individual selections are recorded in `individual_skills`
 beside `skill_packs` in the manifest. They link the complete skill directory, including its

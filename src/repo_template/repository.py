@@ -54,7 +54,7 @@ from repo_template.scaffold import (
     update_packs_only,
     update_project,
 )
-from repo_template.selection import Selection, require_skills
+from repo_template.selection import Selection, require_compatible, require_skills
 from repo_template.standards import load_skill_packs, sync_project_packs, unknown_packs
 
 AGENTS_DIR = Path.home() / ".agents"
@@ -199,6 +199,7 @@ def create_repository(
     """Render the baseline into an empty directory, then initialize Git and the lockfile."""
     _require_known_packs(packs, agents_dir)
     require_skills(skills, agents_dir)
+    require_compatible(packs, skills, agents_dir)
     mcp = _mcp(target.resolve(), list(packs), agents_dir, {})
     plan = _plan_claude(target.resolve(), mcp, {})
     result = new_project(
@@ -448,6 +449,7 @@ def update_repository(
         root, packs_only=packs_only, personal=personal, add_packs=packs, add_skills=skills
     )
     selection = Selection.from_manifest(manifest).change(packs, skills, remove_packs, remove_skills)
+    require_compatible(selection.packs, selection.skills, agents_dir)
     if personal or manifest.get("profile") == PERSONAL:
         home = (home or Path.home()).expanduser().resolve()
         return _update_personal(

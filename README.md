@@ -226,6 +226,9 @@ pin by editing its `version` and `publishedAt` (and each asset's `sha256`), in t
 as the guide's commands. The Azure CLI is the exception: Homebrew and Microsoft's packages
 install the current release.
 
+- `browse`, Stagehand's CLI for the `stagehand` pack, needs Node 22.18 or later. The portable
+  settings and the setup script's shell profile block set `BROWSERBASE_TELEMETRY_DISABLED=1` and
+  `BROWSE_DISABLE_UPDATE_CHECK=1`, so it sends no telemetry and doesn't look for updates.
 - `typescript-language-server` 6 needs Node 22.22 or later; 5.3 is the newest that runs on Node
   20, which is past its end of life. TypeScript 7 is the native compiler and has no `tsserver`,
   so the language server needs TypeScript 6.
@@ -628,6 +631,16 @@ it can't tell which ones belonged to that pack.
 A skill can belong to several packs; it's linked once. A skill lives in `.agents/packs/` exactly
 when some pack lists it, and integrity says which `git mv` to run when that changes.
 
+Two packs can exclude each other (`"excludes": [...]` on either one; it holds both ways, and the
+two share no skill). `new`, `check` and `update` refuse a selection that would bring both into a
+repository, through the packs or an individual skill from either, before changing anything, and
+`globals --list` shows each pack's exclusions. `playwright` and `stagehand` exclude each other,
+so a repository has one browser stack; switch in one command:
+
+```bash
+repo-template update /path/to/repo --pack stagehand --remove-pack playwright
+```
+
 ### MCP servers: global and per pack
 
 GitHub is a global server for Claude Code and Codex, using
@@ -643,7 +656,7 @@ is not loaded automatically. A clean standards check verifies configuration, not
 See [machine authentication](HOW_TO_UPDATE_MACHINE_AND_ITS_REPOS.md#github-mcp-authentication).
 
 `.agents/mcp-servers.json` defines each MCP server once: what it runs (a pinned `npx`/`uvx`
-package or a URL), for which clients, which of its tools are denied, and why it's here. A
+package, a server this repository holds, or a URL), for which clients, which of its tools are denied, and why it's here. A
 **global** server is installed on every machine by `globals`; a **pack** server comes with a
 pack (`"mcp": [...]` in `.agents/skill-packs.json`, optionally with extra `--flag` values).
 
@@ -651,7 +664,8 @@ The catalog refuses what it can't vouch for:
 
 - a command other than `npx` or `uvx`, and args that don't run the pinned package first
   (`npx -y package@version`, `uvx --from package==version <tool>`): no `--package`, `--with`
-  or `--index` that would run something else;
+  or `--index` that would run something else. The one other command is `repo-template-mcp`,
+  with a single argument: a folder in `servers/` holding a `pyproject.toml` and `uv.lock`;
 - a pin less than one day old without a `pinException` giving the reason: `globals --check`
   reports it, `globals` and `update` don't install that server, and `--upstream` says when an
   exception can go;
@@ -707,6 +721,24 @@ capability (`--caps=vision,pdf,devtools,network,storage,testing,config`); its
 `playwright` entry, Codex's `[mcp_servers.playwright]` table and the `playwright-cli` skill
 link), leaving any you changed by hand.
 
+A server this repository holds lives in `servers/NAME`, a uv project with its own lockfile, and
+runs as `repo-template-mcp NAME`: a command installed beside `repo-template` that runs
+`uv run --locked` in that folder of the standards checkout `~/.agents` links to. A committed
+`.mcp.json` names only the command and the server, never a path on one machine; the lockfile is
+the pin, and its `exclude-newer` keeps the cooldown. `codex.env_vars` lists the variables Codex
+passes through from the machine's environment (Claude Code passes its whole environment), so
+the values stay on the machine.
+
+The `stagehand` pack runs Stagehand self-hosted. Its `stagehand` server is
+`servers/stagehand-mcp`: Stagehand's act, extract and observe, with navigation, snapshots and
+screenshots, on a headless local Chrome with a fresh profile, or the Chrome at
+`STAGEHAND_CDP_URL`, answered by the OpenAI-compatible model at `STAGEHAND_MODEL_BASE_URL`
+(`STAGEHAND_MODEL`, and `STAGEHAND_MODEL_API_KEY` if it needs one), each set on the machine.
+It has no Browserbase code path, and a Chrome it launches can't resolve browserbase.com.
+Without a model, navigation, snapshots and screenshots still work, and the model tools say
+what to set. `stagehand-docs` searches Stagehand's docs, with its feedback tool denied. Run
+its tests with `uv run --project servers/stagehand-mcp pytest servers/stagehand-mcp`.
+
 ### Selective Superpowers guidance
 
 `review-feedback` handles incoming findings in `dev-workflows`; `skill-evaluation` compares
@@ -758,6 +790,7 @@ itself.
 | `security` | Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. Cloudflare security-audit adds coverage tracking and independent finding verification; runs only when explicitly invoked. | `secure-code-guardian`, `security-audit`, `security-reviewer` |
 | `spring-boot` | Spring Boot 3 services: REST controllers, Spring Security 6, Spring Data JPA and WebFlux. | `spring-boot-engineer` |
 | `sre` | Reliability: SLOs, incidents, feature instrumentation, bounded metrics, logs, tracing, alert/runbook verification, and chaos experiments. | `chaos-engineer`, `monitoring-expert`, `observability-and-instrumentation`, `sre-engineer` |
+| `stagehand` | Stagehand browser automation, self-hosted on your own Chrome and model: Stagehand v4 code (act, extract, observe), this repository's stagehand MCP server, and the browse CLI. Excludes the playwright pack. | `stagehand`, `stagehand-browse` |
 | `typescript` | TypeScript repositories (deep-module boundaries, shoehorn test data) | `migrate-to-shoehorn`, `setup-ts-deep-modules`, `typescript-pro` |
 | `vision` | Computer vision in Python: OpenCV, and Meta SAM 3 segmentation. | `opencv-python`, `sam3` |
 
@@ -901,6 +934,8 @@ itself.
 | `spring-boot-engineer` | pack `spring-boot` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/spring-boot-engineer) | MIT |  |
 | `sql-pro` | pack `databases` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sql-pro) | MIT |  |
 | `sre-engineer` | pack `sre` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/sre-engineer) | MIT |  |
+| `stagehand` | pack `stagehand` | this repository | MIT | derived from [browserbase/stagehand](https://github.com/browserbase/stagehand/tree/5a5b48acfadf637f2243233745fc5fc277b89b34/packages/docs/v4) |
+| `stagehand-browse` | pack `stagehand` | this repository | MIT | derived from [browserbase/stagehand](https://github.com/browserbase/stagehand/tree/bc45be1ab9bcc196c2519b3f09b7b6a40ac60404/packages/cli/skills/browse) |
 | `supply-chain-risk-auditor` | global | [trailofbits/skills](https://github.com/trailofbits/skills/tree/123037ec8aed26f0d86327cc39137ee5043e5deb/plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor) | CC-BY-SA-4.0 |  |
 | `tdd` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/tdd); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/test-driven-development) |
 | `teach` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/teach) | MIT | runs only as `/teach` |
@@ -938,6 +973,8 @@ itself.
 | `playwright` | pack `playwright` | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser for the playwright pack, with every optional capability (coordinate clicks, PDF, devtools tracing and video, network routing, storage and cookies, test assertions, config). Pinned, with a fresh profile each session (--isolated), headless, and output written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. browser_run_code_unsafe stays denied: it runs code in the server's own process. |
 | `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
 | `shadcn` | pack `react` | claude, codex | `npx shadcn@4.22.1` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
+| `stagehand` | pack `stagehand` | claude, codex | `repo-template-mcp stagehand-mcp` |  | This repository's own self-hosted Stagehand server: act, extract and observe, with navigation, snapshots and screenshots, on a headless local Chrome with a fresh profile (or your Chrome over STAGEHAND_CDP_URL), answered by your OpenAI-compatible model (STAGEHAND_MODEL_BASE_URL, STAGEHAND_MODEL). It has no Browserbase code path, and a Chrome it launches can't resolve browserbase.com. The first start installs its locked dependencies. |
+| `stagehand-docs` | pack `stagehand` | claude, codex | https://docs.stagehand.dev/mcp | `submit_feedback` | Searches and reads the Stagehand docs (two read-only tools); its feedback tool is denied. The docs cover Browserbase features this template doesn't use. |
 <!-- <<< repo-template catalog -->
 
 Claude Code plugins (skill-creator, GitHub, hookify, and others) are enabled through the
@@ -1154,6 +1191,7 @@ uv run pytest
 uv run ruff check .
 uv run mypy src
 uv run repo-template --help
+uv run --project servers/stagehand-mcp pytest servers/stagehand-mcp   # needs Chrome for its live test
 ```
 
 CI runs the tests on Linux, and on macOS under its `/bin/bash` 3.2 and BSD tools, which is what
