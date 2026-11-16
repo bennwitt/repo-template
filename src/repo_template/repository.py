@@ -224,7 +224,6 @@ def create_repository(
     if plan:
         apply_project_mcp(result.root, plan, result, check=False)
     _sync_codex(result.root, mcp, result, check=False)
-    _sync_machine_servers(result.root, mcp, result, check=False, claude=claude, home=home)
     if mcp:
         result.errors.extend(mcp.errors)
     sync_project_packs(
@@ -239,6 +238,8 @@ def create_repository(
                 result.errors.append(done.err.strip() or "git init failed")
             else:
                 _reconcile_hooks(result.root, result, runner, check=False)
+    # after git init: Claude Code keys a local-scope server by the checkout's Git root
+    _sync_machine_servers(result.root, mcp, result, check=False, claude=claude, home=home)
     if lock:
         _reconcile_lock(result.root, result, runner, check=False)
     return result
