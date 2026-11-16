@@ -474,6 +474,10 @@ Apply only after reviewing the provider; use `--remove-plugin` to restore manage
 assets, then reconcile affected repositories with `check`/`update`. Customized content is kept.
 Optional write-capable services require `--allow-write-mcp langsmith` or `azure-write` on this
 machine; remove that grant with `--revoke-write-mcp`. Client authentication stays machine-owned.
+`--allow-write-mcp playwright-unsafe` is a pack server: after granting or revoking it, run
+`repo-template update .` in each repository with the playwright pack. It goes to Claude Code's
+local scope and the ignored `.codex/config.toml` only, and Claude Code asks before each
+`browser_run_code_unsafe` call, which runs code in the server's process with your permissions.
 
 Updates are ad hoc. The CLI needs no maintenance App; the optional manually dispatched workflow
 needs the scoped App and branch settings described in the guide. Optional native

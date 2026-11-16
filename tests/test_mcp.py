@@ -1406,7 +1406,8 @@ def test_playwright_is_its_packs_server_with_every_capability() -> None:
 
     assert playwright.scope == "pack"
     users = [pack for pack, used in refs.items() if any(name == "playwright" for name, _ in used)]
-    assert users == ["playwright"] and refs["playwright"] == [("playwright", {})]
+    assert users == ["playwright"]
+    assert refs["playwright"] == [("playwright", {}), ("playwright-unsafe", {})]
     assert {"--isolated", "--headless", "--no-webmcp", PLAYWRIGHT_CAPS} <= set(playwright.args)
     assert playwright.deny == ("browser_run_code_unsafe",)  # it runs code in the server process
     assert "playwright-cli" in load_skill_packs(ROOT / ".agents")["playwright"]

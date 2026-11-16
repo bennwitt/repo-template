@@ -291,5 +291,8 @@ automatic application with `--upgrade --auto --dry-run --catalog-only`.
 Vendored skills remain the default. Preview a client-qualified `--plugin CLIENT:ID` with
 `globals --check`; explicit write-capable integrations also need `--allow-write-mcp` on this
 machine. Reconcile affected repositories through normal `check`/`update` after provider changes.
+`playwright-unsafe` is such a grant for the playwright pack: grant it only on the user's explicit
+request, since its `browser_run_code_unsafe` runs code in the server's process; `update` then
+adds it to that machine's local client config only, never to `.mcp.json`.
 Keep customized assets and treat unverifiable plugin components as review-required. Use temporary
 homes for fixture validation; native installation on the real machine needs user authorization.

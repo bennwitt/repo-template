@@ -55,6 +55,7 @@ from repo_template.scaffold import (
     update_project,
 )
 from repo_template.selection import Selection, require_compatible, require_skills
+from repo_template.settings import read_state
 from repo_template.standards import load_skill_packs, sync_project_packs, unknown_packs
 
 AGENTS_DIR = Path.home() / ".agents"
@@ -141,9 +142,11 @@ def _mcp(
     manifest: dict[str, Any],
     *,
     always: bool = False,
+    home: Path | None = None,
 ) -> _Mcp | None:
     """None for a repository with no packs and no MCP records, which needs no MCP catalog (CI
-    has no ~/.agents); `always` for one whose records live elsewhere (personal)."""
+    has no ~/.agents); `always` for one whose records live elsewhere (personal). `home` is the
+    machine whose grants decide which optional servers the packs bring."""
     if not always and not packs and not recorded_mcp(manifest) and not kept_mcp(manifest):
         return None
     servers = load_mcp_servers(agents_dir)
@@ -152,7 +155,7 @@ def _mcp(
     owned = manifest.get("project_owned", [])
     errors: list[str] = []
     wanted = for_packs(known, servers, pack_servers(agents_dir, servers))
-    wanted = filter_servers(agents_dir, Path.home(), wanted)
+    wanted = filter_servers(agents_dir, home or Path.home(), wanted)
     return _Mcp(
         usable(wanted, datetime.now(UTC), errors),
         {item for item in owned if isinstance(item, str)} if isinstance(owned, list) else set(),
@@ -163,9 +166,12 @@ def _mcp(
 
 
 def _plan_claude(root: Path, mcp: _Mcp | None, manifest: dict[str, Any]) -> McpPlan | None:
+    """The committed .mcp.json: the packs' servers, except the optional ones this machine is
+    granted, which go to its own local scope (_sync_machine_servers)."""
     if mcp is None:
         return None
-    return plan_project_mcp(root, mcp.servers, manifest, owned=mcp.owned, removals=mcp.removals)
+    team = {name: server for name, server in mcp.servers.items() if not server.opt_in}
+    return plan_project_mcp(root, team, manifest, owned=mcp.owned, removals=mcp.removals)
 
 
 def _sync_codex(
@@ -195,12 +201,16 @@ def create_repository(
     skills: Sequence[str] = (),
     runner: Runner = SUBPROCESS,
     agents_dir: Path = AGENTS_DIR,
+    claude: ClaudeMcp | None = None,
+    home: Path | None = None,
 ) -> Result:
-    """Render the baseline into an empty directory, then initialize Git and the lockfile."""
+    """Render the baseline into an empty directory, then initialize Git and the lockfile.
+    `claude` and `home`: where a granted optional server goes (this machine's by default)."""
     _require_known_packs(packs, agents_dir)
     require_skills(skills, agents_dir)
     require_compatible(packs, skills, agents_dir)
-    mcp = _mcp(target.resolve(), list(packs), agents_dir, {})
+    home = (home or Path.home()).expanduser().resolve()
+    mcp = _mcp(target.resolve(), list(packs), agents_dir, {}, home=home)
     plan = _plan_claude(target.resolve(), mcp, {})
     result = new_project(
         target,
@@ -228,6 +238,8 @@ def create_repository(
                 result.errors.append(done.err.strip() or "git init failed")
             else:
                 _reconcile_hooks(result.root, result, runner, check=False)
+    # after git init: Claude Code keys a local-scope server by the checkout's Git root
+    _sync_machine_servers(result.root, mcp, result, check=False, claude=claude, home=home)
     if lock:
         _reconcile_lock(result.root, result, runner, check=False)
     return result
@@ -331,6 +343,44 @@ def _links_under_tracked_folders(root: Path, index: Index, agents_dir: Path) -> 
     return found
 
 
+def _local_record(home: Path, root: Path) -> bool:
+    """Whether repo-template recorded Claude Code local-scope servers for this checkout."""
+    try:
+        record = read_state(home).get(f"{CLAUDE_STATE}:local:{root}")
+    except ValueError:
+        return True  # unreadable: the sync reports it
+    return isinstance(record, dict) and any(record.get(key) for key in ("owned", "kept"))
+
+
+def _sync_machine_servers(
+    root: Path,
+    mcp: _Mcp | None,
+    result: Result,
+    *,
+    check: bool,
+    claude: ClaudeMcp | None,
+    home: Path,
+) -> None:
+    """A team repository's optional pack servers that this machine is granted
+    (`globals --allow-write-mcp`), in Claude Code's local scope for this checkout, never in
+    the committed .mcp.json. Revoking the grant, or dropping the pack, removes them on the next
+    run; a repository that never had one isn't touched."""
+    if mcp is None:
+        return
+    machine = {name: server for name, server in mcp.servers.items() if server.opt_in}
+    if not machine and not _local_record(home, root):
+        return
+    _sync_claude_local(
+        root,
+        replace(mcp, servers=machine),
+        result,
+        check=check,
+        claude=claude,
+        home=home,
+        fresh=False,
+    )
+
+
 def _update_personal(
     root: Path,
     manifest: dict[str, Any],
@@ -355,7 +405,7 @@ def _update_personal(
             f"sparse-checkout disable` first)"
         )
     wanted = selection.packs
-    mcp = _mcp(root, wanted, agents_dir, manifest, always=True)
+    mcp = _mcp(root, wanted, agents_dir, manifest, always=True, home=home)
     assert mcp is not None
     tracked = tracked_paths(root)
     links: set[Path] = set()
@@ -467,7 +517,8 @@ def update_repository(
         )
     packs_only = packs_only or manifest.get("profile") == PACKS_ONLY
     wanted = selection.packs
-    mcp = _mcp(root.resolve(), wanted, agents_dir, manifest)
+    home = (home or Path.home()).expanduser().resolve()
+    mcp = _mcp(root.resolve(), wanted, agents_dir, manifest, home=home)
     plan = _plan_claude(root.resolve(), mcp, manifest)
     first = Result(root.resolve())
     if plan:  # .mcp.json first: the manifest written next records only what was written
@@ -486,6 +537,7 @@ def update_repository(
     if mcp:
         result.errors.extend(mcp.errors)
     _sync_codex(result.root, mcp, result, check=check)
+    _sync_machine_servers(result.root, mcp, result, check=check, claude=claude, home=home)
     sync_project_packs(
         result.root, wanted, result, check=check, agents_dir=agents_dir, skills=selection.skills
     )

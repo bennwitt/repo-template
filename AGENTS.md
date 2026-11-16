@@ -19,7 +19,8 @@ hook: after a push, a read-only `claude -p` fills in the pull request's descript
 `claude mcp add-json --scope user` and into `~/.codex/config.toml`, and `update` writes a
 repository's pack MCP servers (`.mcp.json`, and an ignored `.codex/config.toml`; for a personal
 repository Claude Code's local scope instead of `.mcp.json`, plus `.git/repo-template.json` and a
-block in `.git/info/exclude`).
+block in `.git/info/exclude`; an optional pack server this machine is granted goes only to the
+local scope and the ignored Codex file).
 `globals --upstream` (read-only: GitHub, npm and PyPI) and `globals --upgrade` (skills, and MCP
 server re-pins) use the network; `--upgrade` records the files it vendors (skills and license
 copies) with `git add -N` and leaves committing to you. Explicit `globals --plugin` selection

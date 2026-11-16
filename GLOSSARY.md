@@ -216,3 +216,5 @@ for floating executable dependencies.
 **Machine capability grant**:
 Explicit machine-local authorization to configure an optional write-capable MCP integration.
 It stores integration names and evidence, never credentials or client approval/trust settings.
+For an optional pack server (`playwright-unsafe`), the grant lets `update` add it to that
+machine's own client config in repositories with the pack, never to committed files.

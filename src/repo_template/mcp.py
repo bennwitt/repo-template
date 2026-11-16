@@ -76,6 +76,7 @@ SERVER_KEYS = {
     "bearerTokenEnv",
     "optIn",
     "access",
+    "allow",
 }
 GITHUB_READONLY_URL = "https://api.githubcopilot.com/mcp/readonly"
 GITHUB_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
@@ -116,6 +117,7 @@ class Server:
     bearer_token_env: str | None = None
     opt_in: bool = False
     access: Literal["read", "write"] = "read"
+    allow: tuple[str, ...] = ()  # tools other servers deny that this opt-in server exists to allow
 
 
 def _fail(path: Path, where: str, message: str) -> ValueError:
@@ -271,8 +273,8 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     opt_in = raw.get("optIn", False)
     if access not in {"read", "write"} or not isinstance(opt_in, bool):
         raise _fail(path, name, "access is read or write; optIn is boolean")
-    if access == "write" and (not opt_in or scope != "global"):
-        raise _fail(path, name, "write-capable MCP requires global scope and explicit optIn")
+    if access == "write" and not opt_in:
+        raise _fail(path, name, "write-capable MCP requires explicit optIn")
     bearer_env = raw.get("bearerTokenEnv")
     optional_bearer = (
         name != "github"
@@ -364,7 +366,14 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     deny = raw.get("deny", [])
     if not _strings(deny) or not all(TOOL_NAME.fullmatch(tool) for tool in deny):
         raise _fail(path, name, "'deny' lists tool names")
-    for tool in deny:
+    allow = raw.get("allow", [])
+    if not _strings(allow) or not all(TOOL_NAME.fullmatch(tool) for tool in allow):
+        raise _fail(path, name, "'allow' lists tool names")
+    if allow and not (opt_in and access == "write"):
+        raise _fail(path, name, "only an optIn, write-capable server may 'allow' a tool")
+    if set(allow) & set(deny):
+        raise _fail(path, name, f"{sorted(set(allow) & set(deny))} both allowed and denied")
+    for tool in [*deny, *allow]:
         if len(f"mcp__{name}__{tool}") > MAX_TOOL_NAME:
             raise _fail(path, name, f"mcp__{name}__{tool} is longer than {MAX_TOOL_NAME}")
     codex = raw.get("codex", {})
@@ -407,6 +416,7 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         bearer_token_env=bearer_env,
         opt_in=opt_in,
         access=access,
+        allow=tuple(allow),
     )
 
 
@@ -621,5 +631,17 @@ def digest(value: Any) -> str:
 
 def deny_rules(servers: Mapping[str, Server]) -> set[str]:
     """The Claude Code permission rules that keep every server's denied tools out: one glob per
-    tool, so it also covers the tool under any server or plugin name."""
-    return {f"mcp__*__{tool}" for server in servers.values() for tool in server.deny}
+    tool, so it also covers the tool under any server or plugin name. A tool an opt-in server
+    allows is denied server by server instead, since a glob would deny it there too."""
+    allowed = {tool for server in servers.values() for tool in server.allow}
+    return {
+        f"mcp__{name}__{tool}" if tool in allowed else f"mcp__*__{tool}"
+        for name, server in servers.items()
+        for tool in server.deny
+    }
+
+
+def ask_rules(servers: Mapping[str, Server]) -> set[str]:
+    """The Claude Code rules that make it ask before each call of a tool an opt-in server
+    allows, even where a broader allow rule would let it run."""
+    return {f"mcp__{name}__{tool}" for name, server in servers.items() for tool in server.allow}

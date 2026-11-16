@@ -690,7 +690,9 @@ The catalog refuses what it can't vouch for:
 - A pinned `npx` server runs with `npm_config_before` set to its pin's date and an npm cache of
   its own, so the one-day cooldown covers its dependencies on a first install too.
 - A denied tool is denied in both clients: as `mcp__*__<tool>` in the portable settings (the
-  catalog check fails if one is missing) and as `disabled_tools` in Codex.
+  catalog check fails if one is missing) and as `disabled_tools` in Codex. A tool an optional
+  server `allow`s is denied server by server instead (`mcp__<server>__<tool>`), since a glob
+  would deny it there too, and the optional server's call is a portable `permissions.ask` rule.
 - repo-template owns each entry by name and by a digest of what it wrote, recorded in
   `~/.repo-template/globals-state.json` for global servers (and, under
   `claude_mcp:local:<checkout>`, a personal repository's) and under `mcp_servers` in a
@@ -720,6 +722,26 @@ capability (`--caps=vision,pdf,devtools,network,storage,testing,config`); its
 `globals` removes the global copies an earlier release installed (Claude Code's user-scope
 `playwright` entry, Codex's `[mcp_servers.playwright]` table and the `playwright-cli` skill
 link), leaving any you changed by hand.
+
+A pack can offer an optional, write-capable server (`"optIn": true, "access": "write"`) that
+reaches a repository only on a machine granted it. The playwright pack's `playwright-unsafe` is
+the same pinned server with `browser_run_code_unsafe` allowed, which runs code in the server's
+own process, so it can do anything this machine's user can:
+
+```bash
+repo-template globals --allow-write-mcp playwright-unsafe    # this machine only
+repo-template update /path/to/repo                           # each repository with the pack
+repo-template globals --revoke-write-mcp playwright-unsafe   # then update each one again
+```
+
+`update` writes it to Claude Code's local scope for that checkout and to the ignored
+`.codex/config.toml`, never to the committed `.mcp.json` or the manifest, so nobody else's
+checkout changes; it records the entry in `~/.repo-template/globals-state.json` and removes it
+once the grant or the pack is gone. Claude Code asks before every `browser_run_code_unsafe` call;
+in Codex its own approval policy applies. It runs a browser of its own beside the `playwright`
+server's, so browse in `playwright-unsafe` when run-code needs to see the page. `globals` never
+installs it on its own, and stagehand repositories, which can't have the playwright pack, never
+get it.
 
 A server this repository holds lives in `servers/NAME`, a uv project with its own lockfile, and
 runs as `repo-template-mcp NAME`: a command installed beside `repo-template` that runs
@@ -971,6 +993,7 @@ itself.
 | `langsmith` | global | claude, codex | https://api.smith.langchain.com/mcp |  | Optional authenticated LangSmith workspace integration. Complete OAuth in the client; this template stores no credentials. |
 | `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |
 | `playwright` | pack `playwright` | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser for the playwright pack, with every optional capability (coordinate clicks, PDF, devtools tracing and video, network routing, storage and cookies, test assertions, config). Pinned, with a fresh profile each session (--isolated), headless, and output written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. browser_run_code_unsafe stays denied: it runs code in the server's own process. |
+| `playwright-unsafe` | pack `playwright` | claude, codex | `npx @playwright/mcp@0.0.83` |  | Optional: the playwright pack's server with browser_run_code_unsafe allowed, which runs code in the server's own process, so it can do anything this machine's user can. Only in repositories with the playwright pack, on a machine granted it (globals --allow-write-mcp playwright-unsafe), and only in Claude Code's local scope and the ignored .codex/config.toml, never the committed .mcp.json. Claude Code asks before each call. It runs its own browser beside the playwright server's: browse in it for run-code to see the page. |
 | `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
 | `shadcn` | pack `react` | claude, codex | `npx shadcn@4.22.1` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
 | `stagehand` | pack `stagehand` | claude, codex | `repo-template-mcp stagehand-mcp` |  | This repository's own self-hosted Stagehand server: act, extract and observe, with navigation, snapshots and screenshots, on a headless local Chrome with a fresh profile (or your Chrome over STAGEHAND_CDP_URL), answered by your OpenAI-compatible model (STAGEHAND_MODEL_BASE_URL, STAGEHAND_MODEL). It has no Browserbase code path, and a Chrome it launches can't resolve browserbase.com. The first start installs its locked dependencies. |
@@ -1235,7 +1258,8 @@ Reviewed exceptions, local adaptations, executable changes and removals remain f
 Vendored assets remain the default. Explicit client-qualified `--plugin` / `--remove-plugin`
 selection uses native client commands; confirmed plugin assets suppress managed duplicates after
 normal project reconciliation. Write-capable integrations additionally require machine-local
-`--allow-write-mcp`; pack selection alone never grants writes.
+`--allow-write-mcp`; pack selection alone never grants writes, and a granted pack server stays in
+this machine's own client config.
 
 Read [maintenance and activation](docs/maintenance.md) for options, cache semantics, provider
 verification, GitHub App setup and rollback. The [optional native LangChain example](examples/mcp/langchain/README.md)
