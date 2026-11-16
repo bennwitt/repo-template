@@ -37,8 +37,10 @@ CURRENT = [doc for doc in DOCS if doc != "CHANGELOG.md" and not doc.startswith("
 SCRIPT = ROOT / "setup-machine.sh"
 FLAG = re.compile(r"(?<![\w-])--[a-z][a-z-]*")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
-# Flags the docs name for other tools: npm and uv, and the MCP server args the catalog refuses.
+# Flags the docs name for other tools: npm and uv, the MCP server args the catalog refuses, and
+# the Playwright MCP server's --caps.
 OTHER_TOOLS = {"--before", "--locked", "--flag", "--index", "--namespace", "--package"} | {
+    "--caps",
     "--read-only",
     "--subscription",
     "--transport",

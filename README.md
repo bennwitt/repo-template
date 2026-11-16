@@ -698,7 +698,14 @@ The catalog refuses what it can't vouch for:
   defined (renamed, or not pulled yet) neither file changes.
 
 The `playwright` server replaces the `playwright` plugin, which the portable settings now turn
-off: the plugin runs `@playwright/mcp@latest` with a persistent profile.
+off: the plugin runs `@playwright/mcp@latest` with a persistent profile. The server and the
+`playwright-cli` skill belong to the `playwright` pack, not the globals, so a repository chooses
+Playwright: `repo-template update . --pack playwright`. The server runs with every optional
+capability (`--caps=vision,pdf,devtools,network,storage,testing,config`); its
+`browser_run_code_unsafe` tool, which runs code in the server's own process, stays denied.
+`globals` removes the global copies an earlier release installed (Claude Code's user-scope
+`playwright` entry, Codex's `[mcp_servers.playwright]` table and the `playwright-cli` skill
+link), leaving any you changed by hand.
 
 ### Selective Superpowers guidance
 
@@ -746,7 +753,7 @@ itself.
 | `ml-engineering` | Machine-learning engineering: training pipelines and experiment tracking, fine-tuning with LoRA or QLoRA, RAG systems, and prompt design and evaluation. | `fine-tuning-expert`, `ml-pipeline`, `prompt-engineer`, `rag-architect` |
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
 | `performance` | Measured browser, service, database and memory performance: matched baselines, profiling, experiment records and honest source-only audits. Uses available tools; ships no MCP server. | `performance-optimization` |
-| `playwright` | Playwright end-to-end tests: best practices and reading traces. | `playwright-best-practices`, `playwright-expert`, `playwright-trace` |
+| `playwright` | Playwright, complete: drive a real browser through the Playwright MCP server (every optional capability) or the playwright-cli skill, and write, debug and read traces of end-to-end tests. | `playwright-best-practices`, `playwright-cli`, `playwright-expert`, `playwright-trace` |
 | `react` | React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs. | `frontend-design`, `react-expert`, `react-native-expert`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
 | `security` | Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. Cloudflare security-audit adds coverage tracking and independent finding verification; runs only when explicitly invoked. | `secure-code-guardian`, `security-audit`, `security-reviewer` |
 | `spring-boot` | Spring Boot 3 services: REST controllers, Spring Security 6, Spring Data JPA and WebFlux. | `spring-boot-engineer` |
@@ -861,7 +868,7 @@ itself.
 | `openwebui` | pack `openwebui` | this repository | MIT |  |
 | `performance-optimization` | pack `performance` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/performance-optimization) |
 | `playwright-best-practices` | pack `playwright` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices) | MIT | description overridden |
-| `playwright-cli` | global | [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli/tree/b85c7a736bb473bf55b584e54a09ffa698d6d871/skills/playwright-cli) | Apache-2.0 |  |
+| `playwright-cli` | pack `playwright` | [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli/tree/b85c7a736bb473bf55b584e54a09ffa698d6d871/skills/playwright-cli) | Apache-2.0 |  |
 | `playwright-expert` | pack `playwright` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/playwright-expert) | MIT |  |
 | `playwright-trace` | pack `playwright` | [microsoft/playwright](https://github.com/microsoft/playwright/tree/cfe490d941f992655948eee8fd4fd94e1c4234bf/packages/playwright-core/src/tools/skills/playwright-trace) | Apache-2.0 |  |
 | `ponytail` | pack `dev-workflows` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail/tree/09c434ab73ca43761c5d8b0c5d341926c2fba710/skills/ponytail) | MIT | description, disable-model-invocation overridden; runs only as `/ponytail` |
@@ -928,14 +935,14 @@ itself.
 | `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |
 | `langsmith` | global | claude, codex | https://api.smith.langchain.com/mcp |  | Optional authenticated LangSmith workspace integration. Complete OAuth in the client; this template stores no credentials. |
 | `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |
-| `playwright` | global | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser. Pinned, with a fresh profile each session (--isolated), headless, and snapshots written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. |
+| `playwright` | pack `playwright` | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser for the playwright pack, with every optional capability (coordinate clicks, PDF, devtools tracing and video, network routing, storage and cookies, test assertions, config). Pinned, with a fresh profile each session (--isolated), headless, and output written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. browser_run_code_unsafe stays denied: it runs code in the server's own process. |
 | `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |
 | `shadcn` | pack `react` | claude, codex | `npx shadcn@4.22.1` |  | Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself). |
 <!-- <<< repo-template catalog -->
 
 Claude Code plugins (skill-creator, GitHub, hookify, and others) are enabled through the
 portable settings in `.agents/claude-settings.json` rather than vendored here; the `playwright`
-plugin is off, replaced by the pinned `playwright` MCP server.
+plugin is off, replaced by the `playwright` pack's pinned MCP server.
 
 ### Skill receipts
 
