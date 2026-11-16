@@ -638,7 +638,8 @@ case ":$PATH:" in
 esac
 export AI_DEV_STANDARDS="$dir"
 
-# 4. The shell profile: AI_DEV_STANDARDS, and on a Mac the Keychain's GitHub token if it has one.
+# 4. The shell profile: AI_DEV_STANDARDS, the browse CLI's telemetry and update check off, and on
+# a Mac the Keychain's GitHub token if it has one.
 # Written before anything optional, so a failure later can't leave it out.
 
 shell_name=$(basename "${SHELL:-}")
@@ -669,14 +670,18 @@ write_profile() {
   profile=$(profile_file)
   if [ "$shell_name" = fish ]; then
     block="$PROFILE_START
-set -gx AI_DEV_STANDARDS \"$dir\""
+set -gx AI_DEV_STANDARDS \"$dir\"
+set -gx BROWSERBASE_TELEMETRY_DISABLED 1
+set -gx BROWSE_DISABLE_UPDATE_CHECK 1"
     if token_in_keychain; then
       block="$block
 set -gx GITHUB_PERSONAL_ACCESS_TOKEN (security find-generic-password -a \$USER -s github-pat -w 2>/dev/null)"
     fi
   else
     block="$PROFILE_START
-export AI_DEV_STANDARDS=\"$dir\""
+export AI_DEV_STANDARDS=\"$dir\"
+export BROWSERBASE_TELEMETRY_DISABLED=1
+export BROWSE_DISABLE_UPDATE_CHECK=1"
     if token_in_keychain; then
       block="$block
 export GITHUB_PERSONAL_ACCESS_TOKEN=\"\$(security find-generic-password -a \"\$USER\" -s github-pat -w 2>/dev/null)\""
@@ -759,6 +764,14 @@ if [ "$run_tools" = 1 ]; then
       note "run codex once, then this script again, so Codex gets its MCP servers"
     else
       warn "Codex's pin couldn't be read from $dir/.agents/machine-tools.json (above): not installed"
+    fi
+  fi
+  if have npm && confirm "Install Stagehand's browse CLI (a global npm package), for the stagehand pack?" n; then
+    if packages=$(pin "$dir" npm browse); then
+      # shellcheck disable=SC2086 # one argument per word
+      optional "Installing the browse CLI" npm install -g --ignore-scripts $packages
+    else
+      warn "browse's pin couldn't be read from $dir/.agents/machine-tools.json (above): not installed"
     fi
   fi
   if confirm "Set up the Azure CLI and azd, for the azure and foundry packs?" n; then

@@ -135,6 +135,39 @@
       "source": "https://ui.shadcn.com/docs/mcp",
       "why": "Searches and views items in the project's shadcn registries, and gives the command that adds one (it installs nothing itself)."
     },
+    "stagehand": {
+      "scope": "pack",
+      "command": "repo-template-mcp",
+      "args": [
+        "stagehand-mcp"
+      ],
+      "codex": {
+        "startup_timeout_sec": 120,
+        "tool_timeout_sec": 180,
+        "env_vars": [
+          "STAGEHAND_MODEL_BASE_URL",
+          "STAGEHAND_MODEL",
+          "STAGEHAND_MODEL_API_KEY",
+          "STAGEHAND_MODEL_TIMEOUT",
+          "STAGEHAND_CDP_URL",
+          "STAGEHAND_CHROME_PATH",
+          "STAGEHAND_HEADED",
+          "STAGEHAND_ALLOWED_DOMAINS",
+          "STAGEHAND_BLOCKED_DOMAINS"
+        ]
+      },
+      "source": "servers/stagehand-mcp",
+      "why": "This repository's own self-hosted Stagehand server: act, extract and observe, with navigation, snapshots and screenshots, on a headless local Chrome with a fresh profile (or your Chrome over STAGEHAND_CDP_URL), answered by your OpenAI-compatible model (STAGEHAND_MODEL_BASE_URL, STAGEHAND_MODEL). It has no Browserbase code path, and a Chrome it launches can't resolve browserbase.com. The first start installs its locked dependencies."
+    },
+    "stagehand-docs": {
+      "scope": "pack",
+      "url": "https://docs.stagehand.dev/mcp",
+      "deny": [
+        "submit_feedback"
+      ],
+      "source": "https://docs.stagehand.dev",
+      "why": "Searches and reads the Stagehand docs (two read-only tools); its feedback tool is denied. The docs cover Browserbase features this template doesn't use."
+    },
     "azure-write": {
       "scope": "global",
       "command": "uvx",

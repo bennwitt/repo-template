@@ -165,6 +165,54 @@ def load_skill_packs(agents_dir: Path) -> dict[str, list[str]]:
     return packs
 
 
+def load_pack_exclusions(agents_dir: Path) -> dict[str, set[str]]:
+    """Each pack's mutually exclusive packs, from the "excludes" lists in skill-packs.json. An
+    exclusion holds both ways, whichever pack declares it; two packs that exclude each other
+    share no skill, so no selection can bring one in through the other."""
+    path = agents_dir / SKILL_PACKS_NAME
+    packs = load_skill_packs(agents_dir)
+    if not packs:
+        return {}
+    raw = json.loads(path.read_text())
+    found: dict[str, set[str]] = {}
+    for name, definition in raw.items():
+        excludes = definition.get("excludes", []) if isinstance(definition, dict) else []
+        if not isinstance(excludes, list) or not all(isinstance(item, str) for item in excludes):
+            raise ValueError(f"{path}: pack {name!r}: 'excludes' lists pack names")
+        for other in excludes:
+            if other == name or other not in packs:
+                raise ValueError(f"{path}: pack {name!r} excludes {other!r}, not another pack")
+            shared = sorted(set(packs[name]) & set(packs[other]))
+            if shared:
+                raise ValueError(
+                    f"{path}: packs {name!r} and {other!r} exclude each other but share {shared}"
+                )
+            found.setdefault(name, set()).add(other)
+            found.setdefault(other, set()).add(name)
+    return found
+
+
+def exclusion_conflicts(packs: Sequence[str], skills: Sequence[str], agents_dir: Path) -> list[str]:
+    """Why this selection can't stand: for each pair of mutually exclusive packs, the packs or
+    individual skills that would bring both into one repository."""
+    exclusions = load_pack_exclusions(agents_dir)
+    definitions = load_skill_packs(agents_dir) if exclusions else {}
+
+    def uses(pack: str) -> list[str]:
+        found = [f"pack {pack}"] if pack in packs else []
+        return found + [f"skill {name}" for name in sorted(set(skills) & set(definitions[pack]))]
+
+    conflicts = []
+    for first in sorted(exclusions):
+        for second in sorted(exclusions[first]):
+            if first < second and uses(first) and uses(second):
+                conflicts.append(
+                    f"packs {first} and {second} exclude each other, and this selection has "
+                    f"{', '.join(uses(first))} and {', '.join(uses(second))}"
+                )
+    return conflicts
+
+
 def load_skill_overrides(agents_dir: Path) -> dict[str, dict[str, str | bool]]:
     """Read <agents_dir>/skill-overrides.json: {"skill": {"why": ..., "frontmatter": {...}}}."""
     path = agents_dir / SKILL_OVERRIDES_NAME

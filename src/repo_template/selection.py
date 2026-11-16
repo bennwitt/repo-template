@@ -50,6 +50,15 @@ class Selection:
         )
 
 
+def require_compatible(packs: Sequence[str], skills: Sequence[str], agents_dir: Path) -> None:
+    """Refuse a selection that brings two mutually exclusive packs into one repository."""
+    from repo_template.standards import exclusion_conflicts
+
+    conflicts = exclusion_conflicts(packs, skills, agents_dir)
+    if conflicts:
+        raise ValueError("; ".join(conflicts) + "; keep one side (--remove-pack, --remove-skill)")
+
+
 def require_skills(skills: Sequence[str], agents_dir: Path) -> None:
     for name in _names(list(skills), "skills"):
         if (agents_dir / "packs" / name / "SKILL.md").is_file():

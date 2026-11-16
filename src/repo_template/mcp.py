@@ -45,9 +45,11 @@ NOT_SECRET = {  # names that look secret but only choose something, with the val
 }  # fmt: skip
 FLAG = re.compile(r"--[a-z0-9][a-z0-9-]*")
 UV_PINNED = re.compile(r"[A-Za-z0-9._-]+(?:\[[A-Za-z0-9,._-]+\])?")  # a package, extras allowed
-PACK_KEYS = {"description", "skills", "mcp", "plugins"}
+PACK_KEYS = {"description", "skills", "mcp", "plugins", "excludes"}
 REF_KEYS = {"server", "args"}
 REGISTRY = {"npx": "npm", "uvx": "pypi"}
+LAUNCHER = "repo-template-mcp"  # runs a server the standards repository holds (repo_template.serve)
+SERVERS_DIR = "servers"  # beside .agents: one uv project, with its lockfile, per server
 CACHE = "{cache}"  # in args: the machine's repo-template cache folder
 FORBIDDEN_ARGS = {
     "--dangerously-disable-elicitation",
@@ -77,7 +79,7 @@ SERVER_KEYS = {
 }
 GITHUB_READONLY_URL = "https://api.githubcopilot.com/mcp/readonly"
 GITHUB_TOKEN_ENV = "GITHUB_PERSONAL_ACCESS_TOKEN"
-CODEX_KEYS = {"startup_timeout_sec", "tool_timeout_sec", "enabled_tools"}
+CODEX_KEYS = {"startup_timeout_sec", "tool_timeout_sec", "enabled_tools", "env_vars"}
 PIN_KEYS = {"registry", "package", "version", "publishedAt", "pinException"}
 CLIENTS = {"claude", "codex"}
 MAX_TOOL_NAME = 64  # Claude Code's limit on mcp__<server>__<tool>
@@ -106,6 +108,7 @@ class Server:
     startup_timeout_sec: float | None = None
     tool_timeout_sec: float | None = None
     enabled_tools: tuple[str, ...] | None = None
+    env_vars: tuple[str, ...] = ()  # names Codex passes through from the machine's environment
     source: str = ""
     why: str = ""
     pack_args: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
@@ -237,6 +240,18 @@ def runs_pin(command: str, args: Sequence[str], pin: Pin) -> bool:
     return False
 
 
+def _check_launcher(path: Path, name: str, args: list[str], pin: Pin | None) -> None:
+    """A repo-template-mcp server names one folder in servers/, a uv project whose lockfile
+    pins it; nothing else goes on its command line."""
+    if pin is not None:
+        raise _fail(path, name, f"a {LAUNCHER} server is pinned by its uv.lock, not a 'pin'")
+    if len(args) != 1 or not SERVER_NAME.fullmatch(args[0]):
+        raise _fail(path, name, f"a {LAUNCHER} server's args are [the server's folder name]")
+    folder = path.parent.parent / SERVERS_DIR / args[0]
+    if not (folder / "pyproject.toml").is_file() or not (folder / "uv.lock").is_file():
+        raise _fail(path, name, f"{folder} needs a pyproject.toml and a uv.lock")
+
+
 def _server(path: Path, name: str, raw: Any) -> Server:
     if not SERVER_NAME.fullmatch(name):
         raise _fail(path, name, "a server name is lowercase letters, digits and hyphens")
@@ -298,8 +313,13 @@ def _server(path: Path, name: str, raw: Any) -> Server:
             raise _fail(path, name, "'url' is an https:// address")
         if "@" in parts.netloc or parts.query or parts.fragment:
             raise _fail(path, name, "'url' carries no credentials, query or fragment")
-    if command is not None and command not in REGISTRY:
-        raise _fail(path, name, f"'command' is {' or '.join(sorted(REGISTRY))}, running a pin")
+    if command is not None and command not in REGISTRY and command != LAUNCHER:
+        raise _fail(
+            path,
+            name,
+            f"'command' is {' or '.join(sorted(REGISTRY))}, running a pin, or {LAUNCHER}, "
+            f"running a server in {SERVERS_DIR}/",
+        )
     _check_args(path, name, list(args or []))
     for value in (url or "", command or ""):
         _check_arg(path, name, value)
@@ -321,7 +341,9 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     if url is not None and env:
         raise _fail(path, name, "a url server has no 'env'")
     pin = _pin(path, name, raw.get("pin"))
-    if command is not None:
+    if command == LAUNCHER:
+        _check_launcher(path, name, list(args), pin)
+    elif command is not None:
         if pin is None:
             raise _fail(path, name, f"a {command} server needs a 'pin'")
         if pin.registry != REGISTRY[command]:
@@ -357,6 +379,11 @@ def _server(path: Path, name: str, raw: Any) -> Server:
     enabled = codex.get("enabled_tools")
     if enabled is not None and not _strings(enabled):
         raise _fail(path, name, "'codex.enabled_tools' lists tool names")
+    passed = codex.get("env_vars", [])
+    if not _strings(passed) or not all(ENV_NAME.fullmatch(key) for key in passed):
+        raise _fail(path, name, "'codex.env_vars' lists upper-case variable names")
+    if passed and command is None:
+        raise _fail(path, name, "'codex.env_vars' is for a command server")
     for key in ("source", "why"):
         if not isinstance(raw.get(key), str) or not raw[key].strip():
             raise _fail(path, name, f"'{key}' says where it comes from and why it's here")
@@ -373,6 +400,7 @@ def _server(path: Path, name: str, raw: Any) -> Server:
         startup_timeout_sec=timeouts["startup_timeout_sec"],
         tool_timeout_sec=timeouts["tool_timeout_sec"],
         enabled_tools=tuple(enabled) if enabled is not None else None,
+        env_vars=tuple(passed),
         source=raw["source"],
         why=raw["why"],
         pack_flags=tuple(pack_flags),
@@ -540,6 +568,8 @@ def codex_value(server: Server, cache: str) -> dict[str, Any]:
             value[key] = seconds
     if server.enabled_tools is not None:
         value["enabled_tools"] = list(server.enabled_tools)
+    if server.env_vars:
+        value["env_vars"] = list(server.env_vars)
     if server.deny:
         value["disabled_tools"] = sorted(server.deny)
     env = _env(server, cache)

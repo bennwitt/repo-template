@@ -9,7 +9,7 @@ from pathlib import Path
 from repo_template.resolve import visible
 from repo_template.selection import Selection
 from repo_template.skillfile import read_fields
-from repo_template.standards import load_skill_packs
+from repo_template.standards import load_pack_exclusions, load_skill_packs
 
 
 @dataclass(frozen=True)
@@ -21,6 +21,7 @@ class Entry:
     packs: tuple[str, ...] = ()
     mcp: tuple[str, ...] = ()
     global_skill: bool = False
+    excludes: tuple[str, ...] = ()
 
     @property
     def key(self) -> str:
@@ -29,6 +30,7 @@ class Entry:
 
 def entries(agents: Path) -> list[Entry]:
     definitions = load_skill_packs(agents)
+    exclusions = load_pack_exclusions(agents)
     source = agents / "skill-packs.json"
     raw = json.loads(source.read_text()) if source.is_file() else {}
     result: list[Entry] = []
@@ -37,7 +39,16 @@ def entries(agents: Path) -> list[Entry]:
         mcp = tuple(
             item if isinstance(item, str) else item["server"] for item in info.get("mcp", [])
         )
-        result.append(Entry("pack", name, str(info.get("description", "")), tuple(skills), mcp=mcp))
+        result.append(
+            Entry(
+                "pack",
+                name,
+                str(info.get("description", "")),
+                tuple(skills),
+                mcp=mcp,
+                excludes=tuple(sorted(exclusions.get(name, ()))),
+            )
+        )
     for folder, global_skill in (("packs", False), ("skills", True)):
         directory = agents / folder
         if not directory.is_dir():
@@ -71,6 +82,7 @@ def detail(entry: Entry, selection: Selection) -> str:
             "skills: "
             + ", ".join(entry.skills)
             + ("; MCP: " + ", ".join(entry.mcp) if entry.mcp else "")
+            + ("; excludes: " + ", ".join(entry.excludes) if entry.excludes else "")
         )
     if entry.global_skill:
         return "global; installed by globals"

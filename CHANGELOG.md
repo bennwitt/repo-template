@@ -38,6 +38,25 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Add the self-hosted `stagehand` pack, for Stagehand browser automation with no Browserbase
+  account: the `stagehand` skill (Stagehand v4 code with act, extract and observe on your own
+  Chrome and an OpenAI-compatible model you host, through a model callback), `stagehand-browse`
+  (Stagehand's `browse` CLI on a local Chrome or one reached over CDP), the `stagehand-docs`
+  MCP server, and `stagehand`, this repository's own MCP server in `servers/stagehand-mcp`. Set
+  `STAGEHAND_MODEL_BASE_URL` and `STAGEHAND_MODEL` on the machine for its model tools.
+- Packs can exclude each other (`"excludes"` in `skill-packs.json`): `new`, `check` and
+  `update` refuse a selection that brings both into one repository, before changing anything,
+  and `globals --list` shows the exclusions. `playwright` and `stagehand` exclude each other.
+- MCP servers this repository holds run as `repo-template-mcp NAME`, a command installed with
+  the CLI: `uv run --locked` in `servers/NAME` of the standards checkout, so a committed
+  `.mcp.json` has no machine path. `codex.env_vars` names the variables Codex passes through.
+- `setup-machine.sh` offers the `browse` CLI at its pin (0.11.3), and its profile block turns
+  off the CLI's telemetry and update check (`BROWSERBASE_TELEMETRY_DISABLED`,
+  `BROWSE_DISABLE_UPDATE_CHECK`), which the portable settings also set. The MCP development
+  baseline tracks the Python `stagehand` 4.4.0 pin.
+- 0.7.0: the generated `docs/agents/workflow.md` (a seed file) gains a browser automation row:
+  the playwright or stagehand pack (they exclude each other). Existing repositories keep their copy.
+
 - Modernize the existing updater with a complete inventory, atomic local freshness evidence,
   source filtering, force/max-age controls, JSON reports, dry runs and explicit automatic admission.
   Default freshness is 24 hours; all executable pin checks share a one-day cooldown. Offline

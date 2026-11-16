@@ -93,6 +93,12 @@ A named group of catalog skills, defined in `.agents/skill-packs.json` and kept 
 selected individually. Pack skills are not installed globally.
 _Avoid_: skill bundle, plugin
 
+**Exclusive packs**:
+Two packs that exclude each other (`"excludes"` on either one in `.agents/skill-packs.json`):
+no repository may have both, through the packs or an individual skill from either.
+`playwright` and `stagehand` are exclusive, so a repository has one browser stack.
+_Avoid_: conflicting packs
+
 **Individual selection**:
 A repository skill chosen with `--skill`, recorded in the manifest's `individual_skills`.
 It supplies that skill and its supporting files, without sibling skills or pack MCP servers.
@@ -116,6 +122,11 @@ Upstream skill revisions don't wait; they are reviewed and scanned instead.
 **MCP catalog**:
 `.agents/mcp-servers.json`: each MCP server once, with what it runs, its pin, its denied tools
 and why. A global server is installed on every machine; a pack server comes with a pack.
+
+**Repository server**:
+An MCP server this repository holds in `servers/NAME`, a uv project pinned by its own lockfile,
+and run as `repo-template-mcp NAME` from the standards checkout `~/.agents` links to.
+_Avoid_: local server, custom server
 
 **Tool pins**:
 `.agents/machine-tools.json`: the CLIs the skills and plugins drive on each machine, each pinned

@@ -295,6 +295,20 @@
       "sre-engineer"
     ]
   },
+  "stagehand": {
+    "description": "Stagehand browser automation, self-hosted on your own Chrome and model: Stagehand v4 code (act, extract, observe), this repository's stagehand MCP server, and the browse CLI. Excludes the playwright pack.",
+    "skills": [
+      "stagehand",
+      "stagehand-browse"
+    ],
+    "mcp": [
+      "stagehand",
+      "stagehand-docs"
+    ],
+    "excludes": [
+      "playwright"
+    ]
+  },
   "typescript": {
     "description": "TypeScript repositories (deep-module boundaries, shoehorn test data)",
     "skills": [

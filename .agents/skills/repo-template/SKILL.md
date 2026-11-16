@@ -43,8 +43,9 @@ Read the profile: `grep -h '"profile"' <repo>/.repo-template.json <repo>/.git/re
        `repo-template globals`, or remove the pack from `skill_packs` if it was renamed or
        dropped.
      - A `repo-template: error:` line means the command couldn't run at all: `--pack` named an
-       unknown pack, the manifest doesn't parse, or the manifest was written by a newer version
-       (pull the standards repository).
+       unknown pack, the selection has two packs that exclude each other (ask which to keep,
+       then add `--remove-pack` for the other), the manifest doesn't parse, or the manifest was
+       written by a newer version (pull the standards repository).
    - Exit 2: go to step 3.
 3. **Resolve every preserved file** (each `!` line), by case:
    - **A managed file that differs** (CI workflow, Dependabot config, PR template, pre-commit
@@ -197,6 +198,12 @@ and an agent-invocation budget. Full audits need Node.js and subagents. Target e
 the skill's OS-enforced sandbox and artifact-promotion controls; the pack does not install them.
 Missing controls leave affected findings as `needs_validation`. Reports default outside the
 target at `~/security-audit-skill/<repo-name>/run-<N>`.
+
+`playwright` and `stagehand` exclude each other, so a repository has one browser stack: choose
+`playwright` for Playwright tests and the Playwright MCP, `stagehand` for Stagehand code or
+plain-language browser automation. Stagehand is self-hosted, with no Browserbase account; its
+MCP server's model tools need `STAGEHAND_MODEL_BASE_URL` and `STAGEHAND_MODEL` set on the
+machine, and say so when they're missing.
 
 ## New repositories
 

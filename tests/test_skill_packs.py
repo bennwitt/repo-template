@@ -436,3 +436,99 @@ def test_links_from_before_the_move_go_when_their_pack_is_dropped(tmp_path: Path
 
     assert ".claude/skills/lc-one" in result.removed and ".agents/skills/lc-one" in result.removed
     assert os.listdir(root / ".claude/skills") == os.listdir(root / ".agents/skills") == []
+
+
+def _exclusive_catalog(root: Path, *, both_sides: bool = True) -> Path:
+    """The two-pack catalog plus a "pw" pack with its own skill; "lc" and "pw" exclude each
+    other (declared on both packs, or on "pw" alone)."""
+    agents = _catalog(root)
+    skill = agents / "packs/pw-one"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: pw-one\ndescription: x\n---\n")
+    packs = json.loads((agents / "skill-packs.json").read_text())
+    packs["pw"] = {"description": "Browser", "skills": ["pw-one"], "excludes": ["lc"]}
+    if both_sides:
+        packs["lc"]["excludes"] = ["pw"]
+    (agents / "skill-packs.json").write_text(json.dumps(packs))
+    return agents
+
+
+@pytest.mark.parametrize("both_sides", [True, False])
+def test_exclusive_packs_are_refused_together_before_anything_changes(
+    tmp_path: Path, both_sides: bool
+) -> None:
+    agents = _exclusive_catalog(tmp_path / "standards", both_sides=both_sides)
+    root = _repository(tmp_path / "service")
+    update_repository(root, hooks=False, lock=False, packs=["lc"], agents_dir=agents)
+    before = (root / ".repo-template.json").read_text()
+
+    with pytest.raises(
+        ValueError, match=r"packs lc and pw exclude each other.*pack lc and pack pw"
+    ):
+        update_repository(root, hooks=False, lock=False, packs=["pw"], agents_dir=agents)
+    with pytest.raises(ValueError, match=r"pack lc and skill pw-one"):
+        update_repository(root, hooks=False, lock=False, skills=["pw-one"], agents_dir=agents)
+    assert (root / ".repo-template.json").read_text() == before
+    assert not (root / ".claude/skills/pw-one").exists()
+
+
+def test_one_command_can_swap_an_exclusive_pack(tmp_path: Path) -> None:
+    agents = _exclusive_catalog(tmp_path / "standards")
+    root = _repository(tmp_path / "service")
+    update_repository(root, hooks=False, lock=False, packs=["lc"], agents_dir=agents)
+
+    update_repository(
+        root, hooks=False, lock=False, packs=["pw"], remove_packs=["lc"], agents_dir=agents
+    )
+
+    assert skill_packs(root) == ["pw"]
+    assert (root / ".claude/skills/pw-one").is_symlink()
+    assert not (root / ".claude/skills/lc-one").exists()
+
+
+def test_new_repository_refuses_exclusive_packs(tmp_path: Path) -> None:
+    agents = _exclusive_catalog(tmp_path / "standards")
+    target = tmp_path / "fresh"
+
+    with pytest.raises(ValueError, match="exclude each other"):
+        create_repository(
+            target, name="fresh", description="x", python_version="3.12", git=False,
+            lock=False, packs=["lc", "pw"], agents_dir=agents,
+        )  # fmt: skip
+    assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda packs: packs["pw"].update(skills=["pw-one", "lc-one"]), "share"),
+        (lambda packs: packs["pw"].update(excludes=["nope"]), "not another pack"),
+        (lambda packs: packs["pw"].update(excludes=["pw"]), "not another pack"),
+        (lambda packs: packs["pw"].update(excludes="lc"), "lists pack names"),
+    ],
+)
+def test_a_bad_exclusion_is_a_catalog_error(tmp_path: Path, change, message: str) -> None:
+    agents = _exclusive_catalog(tmp_path / "standards")
+    packs = json.loads((agents / "skill-packs.json").read_text())
+    change(packs)
+    (agents / "skill-packs.json").write_text(json.dumps(packs))
+    root = _repository(tmp_path / "service")
+
+    with pytest.raises(ValueError, match=message):
+        update_repository(root, hooks=False, lock=False, packs=["lc"], agents_dir=agents)
+
+
+def test_the_catalog_listing_names_each_packs_exclusions(tmp_path: Path, capsys) -> None:
+    from repo_template.catalog_view import show_catalog
+    from repo_template.selection import Selection
+
+    agents = _exclusive_catalog(tmp_path / "standards", both_sides=False)
+
+    show_catalog(agents, "packs", Selection(), json_output=False)
+    text = capsys.readouterr().out
+    show_catalog(agents, "packs", Selection(), json_output=True)
+    listed = json.loads(capsys.readouterr().out)["entries"]
+
+    assert "skills: lc-one, lc-two; excludes: pw" in text
+    assert "skills: pw-one; excludes: lc" in text
+    assert {e["name"]: e["excludes"] for e in listed} == {"lc": ["pw"], "pw": ["lc"]}

@@ -15,8 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_fixture_direct_dependencies_match_development_baseline() -> None:
     pins = load_development(ROOT / ".agents")
     python_fixtures = []
-    for project in ["python", "langchain", "legacy-langchain"]:
-        path = ROOT / "examples/mcp" / project
+    examples = ("python", "langchain", "legacy-langchain")
+    projects = [ROOT / "examples/mcp" / name for name in examples]
+    for path in [*projects, ROOT / "servers/stagehand-mcp"]:  # the repository's own server too
         py = tomllib.loads((path / "pyproject.toml").read_text())
         dependencies = {re.sub(r"\[.*?\]", "", dep) for dep in py["project"]["dependencies"]}
         lock = tomllib.loads((path / "uv.lock").read_text())

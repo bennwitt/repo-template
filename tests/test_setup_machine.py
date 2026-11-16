@@ -85,6 +85,7 @@ AZD = (  # azd itself, as its release ships it; `version` also notes its update 
     '[ "$1" != version ] || echo "azd version 1.2.3 (commit abc)"\n'
 )
 PINS = {  # package, version, published
+    "browse": ("browse", "0.11.3", "2026-10-20T20:52:25Z"),
     "codex": ("@openai/codex", "0.1.0", "2026-09-20T23:30:00Z"),
     "playwright-cli": ("@playwright/cli", "0.1.2", "2026-09-02T10:00:00Z"),
     "pyright": ("pyright", "1.1.4", "2026-09-09T20:42:01Z"),
@@ -233,6 +234,9 @@ def test_a_first_install_clones_installs_and_applies_then_a_second_run_changes_n
     ]
     profile = (home / ".zshrc").read_text()
     assert f'export AI_DEV_STANDARDS="{target}"' in profile
+    assert (
+        "export BROWSERBASE_TELEMETRY_DISABLED=1\nexport BROWSE_DISABLE_UPDATE_CHECK=1" in profile
+    )
 
     _git(machine["origin"], "commit", "-q", "--allow-empty", "-m", "newer standards")
     (home / "calls.log").unlink()
@@ -597,12 +601,13 @@ def test_the_tools_install_at_their_pins_and_azd_only_with_its_checksum(
 
     code, shown = _converse(
         machine,
-        [("language servers", "y"), ("Codex CLI", "y"), ("Azure CLI and azd", "y")],
+        [("language servers", "y"), ("Codex CLI", "y"), ("browse CLI", "y"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
     )  # fmt: skip
 
     assert code == 0, shown
-    npm, codex, download, *rest = _tool_calls(home)
+    npm, codex, browse, download, *rest = _tool_calls(home)
     assert npm == (  # dependencies too: none newer than the end of the newest pin's day
         "npm install -g --ignore-scripts --before=2026-09-10T00:00:00Z "
         "typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.4 @playwright/cli@0.1.2"
@@ -610,6 +615,7 @@ def test_the_tools_install_at_their_pins_and_azd_only_with_its_checksum(
     assert codex == (
         "npm install -g --ignore-scripts --before=2026-09-21T00:00:00Z @openai/codex@0.1.0"
     )
+    assert browse == "npm install -g --ignore-scripts --before=2026-10-21T00:00:00Z browse@0.11.3"
     assert download.startswith("curl -fsSL -o ") and download.endswith(
         " https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_1.2.3/"
         "azd-linux-amd64.tar.gz"
@@ -627,7 +633,8 @@ def test_an_azd_download_that_doesnt_match_its_pin_isnt_installed(
 
     code, shown = _converse(
         machine,
-        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "n"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
     )  # fmt: skip
 
@@ -710,7 +717,8 @@ def test_an_azd_that_isnt_the_pin_is_replaced(machine: dict[str, Path]) -> None:
 
     code, shown = _converse(
         machine,
-        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "n"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
         PATH=f"{machine['stubs']}:{home}/.local/bin:/usr/bin:/bin",
     )  # fmt: skip
@@ -732,7 +740,8 @@ def test_another_azd_first_on_path_is_named_and_the_pin_installed(
 
     code, shown = _converse(
         machine,
-        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "n"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
     )  # fmt: skip
 
@@ -751,7 +760,8 @@ def test_an_azd_that_cant_be_written_isnt_reported_as_installed(
     try:
         code, shown = _converse(
             machine,
-            [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+            [("language servers", "n"), ("Codex CLI", "n"), ("browse CLI", "n"),
+             ("Azure CLI and azd", "y")],
             "--dir", str(target), "--no-globals",
         )  # fmt: skip
     finally:
@@ -770,7 +780,8 @@ def test_python_never_imports_from_the_folder_it_runs_in(machine: dict[str, Path
     _check(machine, "--offline", NPM_LS="{}")
     _converse(
         machine,
-        [("language servers", "y"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "y"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
     )  # fmt: skip
 
@@ -785,7 +796,8 @@ def test_another_azd_is_left_alone_when_nothing_replaces_it(machine: dict[str, P
 
     code, shown = _converse(
         machine,
-        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "n"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
     )  # fmt: skip
 
@@ -803,7 +815,8 @@ def test_a_checkout_that_pins_no_azd_leaves_azd_as_it_is(machine: dict[str, Path
 
     code, shown = _converse(
         machine,
-        [("language servers", "n"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "n"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals",
     )  # fmt: skip
 
@@ -893,7 +906,8 @@ def test_a_uv_that_cant_run_python_is_reported_not_taken_for_no_pins(
     checked = _check(machine, "--offline", NPM_LS="{}", UV_RUN_FAILS="1")
     code, shown = _converse(
         machine,
-        [("language servers", "y"), ("Codex CLI", "n"), ("Azure CLI and azd", "y")],
+        [("language servers", "y"), ("Codex CLI", "n"), ("browse CLI", "n"),
+         ("Azure CLI and azd", "y")],
         "--dir", str(target), "--no-globals", UV_RUN_FAILS="1",
     )  # fmt: skip
 

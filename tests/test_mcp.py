@@ -1283,3 +1283,97 @@ def test_shipped_github_replaces_plugin_for_both_clients() -> None:
     assert server.bearer_token_env == GITHUB["bearerTokenEnv"]
     settings = json.loads((ROOT / ".agents/claude-settings.json").read_text())
     assert settings["portable"]["enabledPlugins"]["github@claude-plugins-official"] is False
+
+
+LAUNCHED = {
+    "scope": "pack",
+    "command": "repo-template-mcp",
+    "args": ["browser-mcp"],
+    "codex": {"env_vars": ["BROWSER_MODEL_URL", "BROWSER_MODEL_API_KEY"]},
+    "source": "servers/browser-mcp",
+    "why": "w",
+}
+
+
+def _server_folder(root: Path, name: str = "browser-mcp") -> Path:
+    folder = root / "servers" / name
+    folder.mkdir(parents=True)
+    (folder / "pyproject.toml").write_text('[project]\nname = "x"\n')
+    (folder / "uv.lock").write_text("version = 1\n")
+    return folder
+
+
+def test_a_server_the_repository_holds_runs_by_name_with_no_machine_path(tmp_path: Path) -> None:
+    _server_folder(tmp_path)
+    servers = load_mcp_servers(_agents(tmp_path, {"browser": LAUNCHED}))
+
+    entry = claude_entry(servers["browser"], CACHE)
+    value = codex_value(servers["browser"], CACHE)
+
+    assert entry == {"type": "stdio", "command": "repo-template-mcp", "args": ["browser-mcp"]}
+    assert value["env_vars"] == ["BROWSER_MODEL_URL", "BROWSER_MODEL_API_KEY"]
+    assert tomllib.loads(codex_toml("browser", value))["mcp_servers"]["browser"] == value
+    assert str(tmp_path) not in json.dumps([entry, value])
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"pin": NPX["pin"]}, "pinned by its uv.lock, not a 'pin'"),
+        ({"args": ["browser-mcp", "--port", "80"]}, r"args are \[the server's folder name\]"),
+        ({"args": ["../escape"]}, r"args are \[the server's folder name\]"),
+        ({"args": ["absent-mcp"]}, "absent-mcp needs a pyproject.toml and a uv.lock"),
+        ({"command": "node"}, "or repo-template-mcp, running a server in servers/"),
+        ({"codex": {"env_vars": ["lower"]}}, "upper-case variable names"),
+    ],
+)
+def test_a_launched_server_is_refused_unless_it_names_a_locked_folder(
+    tmp_path: Path, change: dict[str, Any], message: str
+) -> None:
+    _server_folder(tmp_path)
+    agents = _agents(tmp_path, {"browser": {**LAUNCHED, **change}})
+
+    with pytest.raises(ValueError, match=message):
+        load_mcp_servers(agents)
+
+
+def test_env_vars_belong_to_command_servers(tmp_path: Path) -> None:
+    agents = _agents(tmp_path, {"docs": {**URL, "codex": {"env_vars": ["X"]}}})
+
+    with pytest.raises(ValueError, match="'codex.env_vars' is for a command server"):
+        load_mcp_servers(agents)
+
+
+def test_a_stagehand_repository_gets_both_stagehand_servers_and_no_playwright() -> None:
+    servers = load_mcp_servers(ROOT / ".agents")
+    used = for_packs(["stagehand"], servers, pack_servers(ROOT / ".agents", servers))
+
+    assert sorted(used) == ["stagehand", "stagehand-docs"]
+    assert used["stagehand"].command == "repo-template-mcp"
+    assert used["stagehand-docs"].deny == ("submit_feedback",)
+    assert "STAGEHAND_MODEL_API_KEY" in used["stagehand"].env_vars
+    assert not used["stagehand"].env and not used["stagehand"].args[1:]  # no values, no flags
+
+
+def test_the_launcher_runs_the_locked_server_from_the_linked_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from repo_template import serve
+
+    folder = _server_folder(tmp_path / "standards")
+    (tmp_path / "standards/.agents").mkdir()
+    (tmp_path / "home").mkdir()
+    (tmp_path / "home/.agents").symlink_to(tmp_path / "standards/.agents")
+    ran: list[list[str]] = []
+    monkeypatch.setattr(serve.shutil, "which", lambda name: f"/bin/{name}")
+    monkeypatch.setattr(serve.os, "execv", lambda path, args: ran.append(args))
+
+    assert serve.main(["browser-mcp"], agents=tmp_path / "home/.agents") == 0
+    assert ran == [[
+        "/bin/uv", "run", "--project", str(folder), "--locked", "--no-dev", "--quiet",
+        "browser-mcp",
+    ]]  # fmt: skip
+    assert serve.main(["absent-mcp"], agents=tmp_path / "home/.agents") == 1
+    assert "no server 'absent-mcp'" in capsys.readouterr().err
+    assert serve.main(["../x"], agents=tmp_path / "home/.agents") == 2
+    assert serve.main([], agents=tmp_path / "home/.agents") == 2
