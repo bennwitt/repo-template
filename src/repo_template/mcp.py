@@ -247,7 +247,7 @@ def _check_launcher(path: Path, name: str, args: list[str], pin: Pin | None) -> 
         raise _fail(path, name, f"a {LAUNCHER} server is pinned by its uv.lock, not a 'pin'")
     if len(args) != 1 or not SERVER_NAME.fullmatch(args[0]):
         raise _fail(path, name, f"a {LAUNCHER} server's args are [the server's folder name]")
-    folder = path.parent.parent / SERVERS_DIR / args[0]
+    folder = path.resolve().parent.parent / SERVERS_DIR / args[0]  # through ~/.agents
     if not (folder / "pyproject.toml").is_file() or not (folder / "uv.lock").is_file():
         raise _fail(path, name, f"{folder} needs a pyproject.toml and a uv.lock")
 
