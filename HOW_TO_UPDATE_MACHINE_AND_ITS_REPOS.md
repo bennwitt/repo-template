@@ -18,7 +18,7 @@ installs `uv` if it's missing.
 | Git | `xcode-select --install` | your package manager, e.g. `sudo apt install git` |
 | Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash`, then run `claude` once to sign in ([setup](https://docs.claude.com/en/docs/claude-code/setup)) | the same |
 | Node 24 LTS | [nvm](https://github.com/nvm-sh/nvm): `nvm install 24`, or `brew install node@24` (then add `$(brew --prefix node@24)/bin` to `PATH`) | nvm: `nvm install 24` |
-| Google Chrome, for the `playwright` MCP server's browser | [google.com/chrome](https://www.google.com/chrome/), or `brew install --cask google-chrome` | Google's `.deb` or `.rpm` |
+| Google Chrome, for the `playwright` pack's MCP server | [google.com/chrome](https://www.google.com/chrome/), or `brew install --cask google-chrome` | Google's `.deb` or `.rpm` |
 
 Use nvm or Homebrew for Node: with the nodejs.org installer, `npm install -g` needs `sudo`.
 
@@ -62,7 +62,7 @@ Use nvm or Homebrew for Node: with the nodejs.org installer, `npm install -g` ne
 3. **Check it worked.** Open a new terminal, then:
    ```bash
    bash "$AI_DEV_STANDARDS/setup-machine.sh" --check   # each part: ok, or ! and what to do
-   claude mcp list                                    # playwright and huggingface: connected
+   claude mcp list                                    # huggingface: connected (github too, once its token is set)
    ```
    `--check` changes nothing and exits 1 while a `!` line is left (`--offline` skips asking
    GitHub whether the checkout is current). Restart Claude Code (and Codex) so they pick up the
@@ -81,7 +81,7 @@ releases that old too.
 
 | Tool | For | macOS | Linux |
 | --- | --- | --- | --- |
-| Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill | `npm install -g --ignore-scripts --before=2026-09-29T00:00:00Z typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
+| Language servers, Playwright CLI | the `typescript-lsp` and `pyright-lsp` plugins; the `playwright-cli` skill (`playwright` pack) | `npm install -g --ignore-scripts --before=2026-09-29T00:00:00Z typescript-language-server@5.3.0 typescript@6.0.3 pyright@1.1.414 @playwright/cli@0.1.22`, then `playwright-cli install-browser chromium` | the same |
 | Azure CLI (`az`) | the `azure` and `foundry` packs | `brew install azure-cli` | Microsoft's packages: [install the Azure CLI on Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux) |
 | Azure Developer CLI (`azd`) 1.36.0 | the same packs | from [its release](https://github.com/Azure/azure-dev/releases): `azd-darwin-arm64.zip` (Apple silicon) or `azd-darwin-amd64.zip` | from the same release: `azd-linux-amd64.tar.gz` or `azd-linux-arm64.tar.gz` |
 | GitHub token | the global GitHub MCP | a fine-grained, read-only token in the Keychain (the script stores it and reads it from your profile) | a file only you can read, sourced by your profile (below) |
@@ -169,6 +169,15 @@ repo-template check ~/code/service-a ~/code/web-b ~/code/tool-c
 Or ask Claude Code to "update every repository on this machine": the `repo-template` skill finds
 the adopted ones, checks them together, and updates each by its kind (on a branch, with a commit,
 for the templated ones), then asks you about each push.
+
+**Playwright is a pack now.** The `playwright` MCP server and the `playwright-cli` skill used to
+be global; `globals` removes those global copies. A repository that drives a browser with them
+adds the pack (with `--personal` for a personal repository):
+
+```bash
+repo-template check . --pack playwright
+repo-template update . --pack playwright
+```
 
 ### 2.1 Update a templated repository
 
@@ -385,7 +394,7 @@ Later runs need no flag: `repo-template update .`
 | `Git wouldn't ignore this link` | run `repo-template globals` (it writes the ignore lines into the file Git reads), or add `.claude/`, `.agents/` and `.codex/` to the repository's `.gitignore` |
 | exit 2 and `!` lines | a baseline file waiting for a decision: run `update` in a terminal; any other `!` line says its own fix (for `globals`, see the last row) |
 | Claude Code asks to approve MCP servers | they're from the repository's `.mcp.json`: approve the ones you want (a personal repository never asks) |
-| `playwright` isn't connected in `claude mcp list` | check `node --version` (22 or 24) and that `npx` is on the `PATH` Claude Code starts with, then restart Claude Code |
+| `playwright` isn't connected in `claude mcp list` (run in a repository with the `playwright` pack) | check `node --version` (22 or 24) and that `npx` is on the `PATH` Claude Code starts with, then restart Claude Code |
 | a browser tool fails with `Chromium distribution 'chrome' is not found` | install Google Chrome (section 1) |
 | Codex doesn't see a repository's servers | Codex reads `.codex/config.toml` only in a project you trust |
 | the pre-commit hook blocks a commit | it runs the checks: fix what it reports |
@@ -427,7 +436,7 @@ folder (`~/aiDevStandards`): macOS keeps the top of the disk read-only.
 5. **Apply the globals:** `repo-template globals --check` (what would change), then
    `repo-template globals`.
    - **What it does:** links `~/.agents` and the global skills, merges the portable settings
-     into `~/.claude/settings.json`, installs the global MCP servers (Claude Code: `playwright`
+     into `~/.claude/settings.json`, installs the global MCP servers (Claude Code: `github`
      and `huggingface`; Codex: those and `microsoft-learn`), and writes `.agents/`, `.claude/`,
      `.codex/`, `.playwright-cli/` and `.playwright-mcp/` into the file Git reads for ignores
      (`core.excludesFile` when set, else `$XDG_CONFIG_HOME/git/ignore`, else

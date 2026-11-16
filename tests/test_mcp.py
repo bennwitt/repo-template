@@ -36,6 +36,7 @@ from repo_template.model import Result
 from repo_template.repository import update_repository
 from repo_template.runner import Completed
 from repo_template.scaffold import new_project, read_manifest
+from repo_template.standards import load_skill_packs, sync_globals
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = "/home/u/.cache/repo-template"

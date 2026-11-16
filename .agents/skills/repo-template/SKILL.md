@@ -179,7 +179,10 @@ architecture and requirements skills overlap global ones. The pack also includes
 Ponytail, invoked explicitly with `/ponytail full` for the smallest complete implementation
 (`lite` presents the smaller option; `ultra` challenges scope). Say "stop ponytail" to end its
 session mode. Its plugin hooks and dashboard are not installed. `atlassian` needs an Atlassian
-MCP server the user connects and signs in to; the pack ships none.
+MCP server the user connects and signs in to; the pack ships none. Browser automation with
+Playwright comes only from the `playwright` pack: its MCP server (every optional capability;
+`browser_run_code_unsafe` denied) and the `playwright-cli` skill are no longer global, so add the
+pack to a repository that needs a browser.
 
 Eight Addy-derived skills complement the core Pocock workflow. Choose `delivery` for quality
 constraints, version-verified implementation and release readiness; `performance` for measured
