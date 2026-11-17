@@ -38,6 +38,15 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Add the `figma` pack. Its `figma` server is Figma's remote MCP server, read-only: Claude Code
+  denies its 15 write tools and Codex gets only the 19 read tools Figma documents. Each person
+  signs in once per client; nothing is stored, and a personal access token can't sign it in.
+  The optional `figma-write` server offers the write tools on a machine granted it
+  (`globals --allow-write-mcp figma-write`), in local config only, and Claude Code asks before
+  each write. Weave's run tools are denied everywhere, and the portable settings ask before
+  each write tool of Figma's own plugin when it is installed by hand. Its skills,
+  `figma-workspace` and `figma-implement-design`, cover Moore's Sandbox, Dev and Prod folders,
+  the library release, setup, design to code and Code Connect.
 - Add `playwright-unsafe`, an optional server in the playwright pack: the same pinned Playwright
   MCP server with `browser_run_code_unsafe` allowed. It reaches a repository only on a machine
   granted it (`globals --allow-write-mcp playwright-unsafe`), and then only that checkout's
