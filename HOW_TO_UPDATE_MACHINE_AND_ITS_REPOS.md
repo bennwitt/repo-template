@@ -116,6 +116,12 @@ releases that old too.
   ```
   The model must return JSON for a JSON schema (vLLM, Ollama and llama.cpp's server can). The
   script's profile block already turns off the `browse` CLI's telemetry and update check.
+- **Figma:** in a repository with the `figma` pack, sign in to Figma's server once per client:
+  `/mcp` in Claude Code (select `figma`, then authenticate in the browser), or
+  `codex mcp login figma`. A personal access token can't sign it in; keep `FIGMA_TOKEN` in your
+  shell profile, outside the script's block, for publishing Code Connect mappings
+  (`FIGMA_ACCESS_TOKEN="$FIGMA_TOKEN" npx figma connect publish`). It needs the Code Connect:
+  Write and File content: Read scopes, and lasts 90 days at most.
 - **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
   (authorize it in `/mcp`).
 
@@ -478,6 +484,10 @@ machine; remove that grant with `--revoke-write-mcp`. Client authentication stay
 `repo-template update .` in each repository with the playwright pack. It goes to Claude Code's
 local scope and the ignored `.codex/config.toml` only, and Claude Code asks before each
 `browser_run_code_unsafe` call, which runs code in the server's process with your permissions.
+`--allow-write-mcp figma-write` works the same way for the figma pack: it adds Figma's write
+tools (editing the canvas, creating files, uploading assets), Claude Code asks before each
+write, and you sign in to `figma-write` separately. Grant it only to people who write to the
+canvas.
 
 Updates are ad hoc. The CLI needs no maintenance App; the optional manually dispatched workflow
 needs the scoped App and branch settings described in the guide. Optional native

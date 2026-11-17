@@ -264,6 +264,29 @@ def test_the_shipped_unsafe_playwright_server_matches_the_safe_one() -> None:
     )
 
 
+def test_the_shipped_figma_servers_split_reads_from_writes() -> None:
+    servers = load_mcp_servers(ROOT / ".agents")
+    refs = pack_servers(ROOT / ".agents", servers)
+    read, write = servers["figma"], servers["figma-write"]
+    portable = json.loads((ROOT / ".agents/claude-settings.json").read_text())["portable"]
+    denied, asked = set(portable["permissions"]["deny"]), set(portable["permissions"]["ask"])
+    weave = {tool for tool in read.deny if tool.startswith("weave_")}
+
+    assert [name for name, _ in refs["figma"]] == ["figma", "figma-write"]
+    assert read.url == write.url == "https://mcp.figma.com/mcp"
+    assert (read.scope, read.opt_in, read.access) == ("pack", False, "read")
+    assert (write.scope, write.opt_in, write.access) == ("pack", True, "write")
+    assert set(read.deny) - weave == set(write.allow) and len(write.allow) == 15
+    assert set(write.deny) == weave and weave
+    assert read.enabled_tools is not None  # Codex gets an allowlist, so new tools stay off
+    assert not set(read.enabled_tools) & (set(write.allow) | weave)
+    for tool in write.allow:
+        assert f"mcp__figma__{tool}" in denied
+        assert f"mcp__figma-write__{tool}" in asked
+        assert f"mcp__plugin_figma_figma__{tool}" in asked  # Figma's plugin, installed by hand
+    assert {f"mcp__*__{tool}" for tool in weave} <= denied
+
+
 def test_a_personal_repository_gets_both_servers_locally_on_a_granted_machine(
     tmp_path: Path,
 ) -> None:

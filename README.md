@@ -761,6 +761,23 @@ Without a model, navigation, snapshots and screenshots still work, and the model
 what to set. `stagehand-docs` searches Stagehand's docs, with its feedback tool denied. Run
 its tests with `uv run --project servers/stagehand-mcp pytest servers/stagehand-mcp`.
 
+The `figma` pack connects Figma's own remote server, `https://mcp.figma.com/mcp`, which each
+person signs in to once per client: `/mcp` in Claude Code, `codex mcp login figma` in Codex.
+Nothing is stored, and a personal access token can't sign it in; `FIGMA_TOKEN` is for
+publishing Code Connect mappings. Its `figma` server reads: design context and code for a
+linked frame, variables, screenshots, outlines, library search and Code Connect maps. Claude
+Code denies its 15 write tools on that server, and Codex gets an allowlist of the 19 read tools
+Figma documents. Those write tools (`use_figma`, which edits the canvas through the Plugin API,
+and the tools that create files, turn web UI into layers, upload assets, generate images or
+save Code Connect mappings) are offered by the optional `figma-write`, which works like
+`playwright-unsafe`: `globals --allow-write-mcp figma-write`, then `update` in each repository
+with the pack, and Claude Code asks before every write. Weave's run tools are denied everywhere.
+If Figma's own plugin is installed by hand, Claude Code asks before each of its write tools
+too. The pack's skills are `figma-workspace` (Moore's Sandbox, Dev and Prod folders, the library
+release, and the one-time setup) and `figma-implement-design` (design to code with the read
+tools, and Code Connect). A Dev or Full seat gets 200 calls a day on Professional; View and
+Collab seats get 20 a month.
+
 ### Selective Superpowers guidance
 
 `review-feedback` handles incoming findings in `dev-workflows`; `skill-evaluation` compares
@@ -797,6 +814,7 @@ itself.
 | `delivery` | Quality constraints, version-verified implementation and release readiness. Complements the core spec, plan, implementation, testing and review workflows; readiness does not deploy. | `constraint-driven-development`, `shipping-and-launch`, `source-driven-development` |
 | `dev-workflows` | Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features, behavior-preserving simplification, and deprecation or schema migration. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked. Includes evidence-based handling of incoming review feedback. | `architecture-designer`, `code-reviewer`, `code-simplification`, `debugging-wizard`, `deprecation-and-migration`, `feature-forge`, `fullstack-guardian`, `ponytail`, `review-feedback`, `test-master`, `the-fool` |
 | `fastapi` | FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph. | `fastapi-expert`, `fastapi-services` |
+| `figma` | Figma for designers and developers: Figma's read-only MCP server, an optional write server for the canvas, and Moore's Figma space (Sandbox, Dev, Prod) and design-to-code workflow | `figma-implement-design`, `figma-workspace` |
 | `foundry` | Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools. | `azure-ai`, `azure-ai-projects-ts`, `foundry-langchain`, `microsoft-foundry` |
 | `golang` | Go services: goroutines and channels, interfaces and generics, gRPC or REST, testing and pprof. | `golang-pro` |
 | `gradio` | Building Gradio apps and calling Gradio apps through their API | `frontend-design`, `gradio`, `hf-gradio` |
@@ -865,6 +883,8 @@ itself.
 | `fastapi-services` | pack `fastapi` | this repository | MIT |  |
 | `fastmcp-server` | pack `mcp` | [PrefectHQ/fastmcp](https://github.com/PrefectHQ/fastmcp/tree/901575873111515457755df6872d7b0ccdf9407b/skills/fastmcp-server) | Apache-2.0 |  |
 | `feature-forge` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/feature-forge) | MIT |  |
+| `figma-implement-design` | pack `figma` | this repository | MIT |  |
+| `figma-workspace` | pack `figma` | this repository | MIT |  |
 | `find-skills` | global | [vercel-labs/skills](https://github.com/vercel-labs/skills/tree/773fb2c7bbf16781670a3520affc4abd0c6151ae/skills/find-skills) | MIT | description overridden |
 | `fine-tuning-expert` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fine-tuning-expert) | MIT |  |
 | `foundry-langchain` | pack `foundry` | this repository | MIT |  |
@@ -987,6 +1007,8 @@ itself.
 | `azure-write` | global | claude, codex | `uvx msmcp-azure@3.0.0` |  | Optional infrastructure-changing Azure and Foundry tools. Activate explicitly on this machine; client approvals remain unchanged. |
 | `docs-langchain` | pack `langchain` | claude, codex | https://docs.langchain.com/mcp | `submit_feedback` | Searches the LangChain, LangGraph and Deep Agents docs, current to the release, instead of what a model remembers. |
 | `fastmcp-docs` | pack `mcp` | claude, codex | https://gofastmcp.com/mcp | `submit_feedback` | Searches the FastMCP docs (two read-only tools); its feedback tool is denied. |
+| `figma` | pack `figma` | claude, codex | https://mcp.figma.com/mcp | `add_code_connect_map`, `create_generative_plugin`, `create_new_file`, `create_shader`, `generate_diagram`, `generate_figma_design`, `generate_image`, `generate_vector_illustration`, `html_to_figma`, `send_code_connect_mappings`, `send_code_to_figma`, `update_generative_plugin`, `update_shader`, `upload_assets`, `use_figma`, `weave_upload_asset`, `weave_run_tool`, `weave_cancel_tool_run`, `weave_run_model` | Figma's own remote server, read-only: design context and code for a linked frame, variables, screenshots, outlines, library search and Code Connect maps. Each person signs in to Figma in the client (/mcp in Claude Code, codex mcp login figma); nothing is stored, and a personal access token can't sign it in. Its write tools are denied here and offered by figma-write; Weave's run tools are denied everywhere. Codex gets only the read tools Figma documents. A Dev or Full seat gets 200 calls a day on Professional; View and Collab seats get 20 a month. |
+| `figma-write` | pack `figma` | claude, codex | https://mcp.figma.com/mcp | `weave_upload_asset`, `weave_run_tool`, `weave_cancel_tool_run`, `weave_run_model` | Optional: the same Figma server with its write tools: use_figma builds and edits frames, components and variables through the Plugin API; others turn web UI or HTML into layers, create files, upload assets, generate images, and save Code Connect mappings. It reaches a repository with the figma pack only on a machine granted it (globals --allow-write-mcp figma-write), in that checkout's Claude Code local scope and ignored Codex file, and Claude Code asks before every write. Sign in to it separately. Figma needs edit access to the file, and a Dev seat writes only to drafts; write in the Sandbox folder, since writing is in beta. |
 | `github` | global | claude, codex | https://api.githubcopilot.com/mcp/readonly |  | GitHub-hosted read-only repository, issue and pull-request tools for both clients. Authentication references a machine-owned GITHUB_PERSONAL_ACCESS_TOKEN; no token value is stored. Replaces the Claude GitHub plugin. The endpoint filters tools; use a least-privilege read-only token as well. |
 | `gradio-docs` | pack `gradio` | claude, codex | https://gradio-docs-mcp.hf.space/gradio_api/mcp/ |  | Searches and loads the Gradio docs for the gradio pack. |
 | `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |

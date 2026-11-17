@@ -208,6 +208,11 @@ plain-language browser automation. Stagehand is self-hosted, with no Browserbase
 MCP server's model tools need `STAGEHAND_MODEL_BASE_URL` and `STAGEHAND_MODEL` set on the
 machine, and say so when they're missing.
 
+The `figma` pack is for repositories that build from Figma designs. Its `figma` server is
+Figma's remote server, read-only; each person signs in once per client (`/mcp` in Claude Code,
+`codex mcp login figma`), and `FIGMA_TOKEN` can't sign it in. Its skills describe Moore's
+Figma space (Sandbox, Dev, Prod) and design-to-code with Code Connect.
+
 ## New repositories
 
 `repo-template new <name> --parent <dir> --description "<one line>"`, plus `--pack <name>` for
@@ -293,6 +298,7 @@ Vendored skills remain the default. Preview a client-qualified `--plugin CLIENT:
 machine. Reconcile affected repositories through normal `check`/`update` after provider changes.
 `playwright-unsafe` is such a grant for the playwright pack: grant it only on the user's explicit
 request, since its `browser_run_code_unsafe` runs code in the server's process; `update` then
-adds it to that machine's local client config only, never to `.mcp.json`.
+adds it to that machine's local client config only, never to `.mcp.json`. `figma-write` is the
+figma pack's grant, for Figma's write tools; grant it only on the user's explicit request too.
 Keep customized assets and treat unverifiable plugin components as review-required. Use temporary
 homes for fixture validation; native installation on the real machine needs user authorization.

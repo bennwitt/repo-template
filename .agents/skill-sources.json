@@ -862,6 +862,12 @@
         "path": "packages/cli/skills/browse",
         "commit": "bc45be1ab9bcc196c2519b3f09b7b6a40ac60404"
       }
+    },
+    "figma-implement-design": {
+      "license": "MIT"
+    },
+    "figma-workspace": {
+      "license": "MIT"
     }
   },
   "skills": {

@@ -119,6 +119,17 @@
       "fastapi-services"
     ]
   },
+  "figma": {
+    "description": "Figma for designers and developers: Figma's read-only MCP server, an optional write server for the canvas, and Moore's Figma space (Sandbox, Dev, Prod) and design-to-code workflow",
+    "skills": [
+      "figma-implement-design",
+      "figma-workspace"
+    ],
+    "mcp": [
+      "figma",
+      "figma-write"
+    ]
+  },
   "foundry": {
     "description": "Microsoft Foundry: agents, models, evaluation and the Foundry SDK, through the Azure MCP foundry tools.",
     "skills": [

@@ -70,6 +70,7 @@ Format only project-owned files, never recursively through installed skill symli
 | Verify versioned APIs | source-driven-development | delivery pack |
 | Measure performance | performance-optimization | performance pack |
 | Drive or test a browser | playwright-cli or stagehand-browse | playwright or stagehand pack |
+| Build UI from a Figma design | figma-implement-design | figma pack |
 | Instrument a feature | observability-and-instrumentation | sre pack |
 | Design retries and API compatibility | api-and-interface-design | api pack |
 | Assess release readiness | shipping-and-launch | delivery pack |
