@@ -38,6 +38,35 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Add six packs and extend two, for search and retrieval, local models, chat front ends,
+  prompts and agents:
+  - `retrieval`: BM25 tuning, hybrid search with rank fusion, reranking, ANN index selection
+    and vector quantization (claude-dev-suite), retrieval evaluation (`evaluate-rag` from
+    ai-evals-course and `rag-evaluation`), Timescale's `pgvector-semantic-search` and
+    `postgres-hybrid-text-search`, and `rag-architect`.
+  - `mongodb`: MongoDB's official `mongodb-schema-design`, `mongodb-query-optimizer` and
+    `mongodb-search-and-ai` (Atlas Search, Vector Search and hybrid search), with the
+    official `mongodb` MCP server pinned at 3.3.0 in its read-only mode, telemetry off.
+    The deployment comes from the machine's `MDB_MCP_CONNECTION_STRING`; nothing is stored.
+  - `librechat`: LibreChat's own `librechat-docs` skill, the `librechat` operator skill
+    (Compose, `librechat.yaml`, custom endpoints, MCP servers, SSO) and this repository's
+    `librechat-agents` (the `@librechat/agents` SDK, its deferred-tool search, LibreChat's
+    Skills API, and tool registries including the MCP Registry API).
+  - `prompt-optimization`: promptfoo's `promptfoo-evals`, GEPA's `gepa-optimize-anything`,
+    `dspy-fundamentals`, `dspy-evaluation-harness` and `dspy-gepa-optimizer` (intertwine),
+    `prompt-engineer`, and this repository's `reasoning-model-prompting` (System 1 instant
+    models versus System 2 reasoning models: what to scaffold, effort, and a sweep procedure).
+  - `agent-patterns`: `agent-architecture` (framework-neutral agent design, audit and
+    diagnosis; MIT, from github/awesome-copilot).
+  - `algorithms`: `complexity-analyzer` and `data-structure-selector` (a5c-ai/babysitter),
+    the latter with a description override.
+  - `databases` gains the two Timescale Postgres skills; `local-inference` gains `llama-cpp`
+    (magnus919: build, GGUF, llama-server, benchmarks, multi-GPU; its bundled launcher test
+    was reviewed and allowed) and this repository's `llama-app` (the Llama desktop app and
+    `llama serve` router mode, presets and the local OpenAI-compatible API).
+  The engineering workflow table routes retrieval design, prompt evaluation and agent
+  architecture to these packs.
+
 - Add the `figma` pack. Its `figma` server is Figma's remote MCP server, read-only: Claude Code
   denies its 15 write tools and Codex gets only the 19 read tools Figma documents. Each person
   signs in once per client; nothing is stored, and a personal access token can't sign it in.
@@ -221,6 +250,12 @@ Document the end-to-end update process for keeping the standards machine checkou
   `grilling`, `improve-codebase-architecture`, `microsoft-foundry`, `model-recipes`,
   `playwright-trace`, `research`, `wayfinder`.
 - MCP servers re-pinned to their newest release at least 7 days old: `shadcn`.
+- Skills added from upstream: `agent-architecture`, `ann-algorithms`, `bm25-tuning`,
+  `complexity-analyzer`, `data-structure-selector`, `dspy-evaluation-harness`, `dspy-fundamentals`,
+  `dspy-gepa-optimizer`, `evaluate-rag`, `gepa-optimize-anything`, `hybrid-search`, `librechat`,
+  `librechat-docs`, `llama-cpp`, `mongodb-query-optimizer`, `mongodb-schema-design`,
+  `mongodb-search-and-ai`, `pgvector-semantic-search`, `postgres-hybrid-text-search`,
+  `promptfoo-evals`, `rag-evaluation`, `reranking`, `vector-quantization`.
 
 ## 0.5.4 - 2026-10-14
 

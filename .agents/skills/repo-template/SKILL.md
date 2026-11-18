@@ -213,6 +213,16 @@ Figma's remote server, read-only; each person signs in once per client (`/mcp` i
 `codex mcp login figma`), and `FIGMA_TOKEN` can't sign it in. Its skills describe Moore's
 Figma space (Sandbox, Dev, Prod) and design-to-code with Code Connect.
 
+`retrieval` is for search over documents or records (BM25, vectors, hybrid fusion, reranking,
+index choice, evaluation); add `databases` too when it's Postgres with pgvector. `mongodb`
+brings MongoDB's skills and its official server in read-only mode, which reads
+`MDB_MCP_CONNECTION_STRING` from the machine. `librechat` is for a LibreChat deployment or
+code on `@librechat/agents`, as `openwebui` is for Open WebUI. `prompt-optimization` is for
+measuring or optimizing prompts (promptfoo, DSPy, GEPA) and choosing instant versus
+reasoning models; `agent-patterns` for designing or auditing an agent's architecture;
+`algorithms` for complexity analysis and data-structure choice. `local-inference` now covers
+llama.cpp operation and the Llama desktop app.
+
 ## New repositories
 
 `repo-template new <name> --parent <dir> --description "<one line>"`, plus `--pack <name>` for

@@ -71,6 +71,9 @@ Format only project-owned files, never recursively through installed skill symli
 | Measure performance | performance-optimization | performance pack |
 | Drive or test a browser | playwright-cli or stagehand-browse | playwright or stagehand pack |
 | Build UI from a Figma design | figma-implement-design | figma pack |
+| Design search or retrieval | hybrid-search, rag-architect | retrieval pack |
+| Evaluate or optimize prompts | promptfoo-evals, dspy-gepa-optimizer | prompt-optimization pack |
+| Design or audit an agent's architecture | agent-architecture | agent-patterns pack |
 | Instrument a feature | observability-and-instrumentation | sre pack |
 | Design retries and API compatibility | api-and-interface-design | api pack |
 | Assess release readiness | shipping-and-launch | delivery pack |

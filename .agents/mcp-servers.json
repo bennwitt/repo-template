@@ -280,6 +280,32 @@
       "source": "https://docs.stagehand.dev",
       "why": "Searches and reads the Stagehand docs (two read-only tools); its feedback tool is denied. The docs cover Browserbase features this template doesn't use."
     },
+    "mongodb": {
+      "scope": "pack",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server@3.3.0",
+        "--readOnly",
+        "--telemetry",
+        "disabled"
+      ],
+      "pin": {
+        "registry": "npm",
+        "package": "mongodb-mcp-server",
+        "version": "3.3.0",
+        "publishedAt": "2026-11-09T11:45:18.434Z"
+      },
+      "codex": {
+        "startup_timeout_sec": 60,
+        "env_vars": [
+          "MDB_MCP_CONNECTION_STRING",
+          "MDB_MCP_CONNECTION_STRINGS"
+        ]
+      },
+      "source": "https://github.com/mongodb-js/mongodb-mcp-server",
+      "why": "MongoDB's official server for the mongodb pack, pinned, in --readOnly mode: only its read, connect and metadata tools are registered, so it can list databases, collections, indexes and schemas, run find and aggregate, explain queries and inspect search indexes, and never create, update or delete. The deployment comes from the machine's MDB_MCP_CONNECTION_STRING (or the connect tool); no connection string is stored here, and telemetry is off. Atlas tools appear only when MDB_MCP_API_CLIENT_ID and MDB_MCP_API_CLIENT_SECRET are set on the machine."
+    },
     "azure-write": {
       "scope": "global",
       "command": "uvx",
