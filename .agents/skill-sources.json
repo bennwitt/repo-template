@@ -12,6 +12,14 @@
         "additions": "review"
       }
     },
+    "LibreChat-AI/docs": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 LibreChat",
+      "licenseFiles": {
+        "LICENSE": "5ee6463dee826517754e332444f0acb7b3d106a0"
+      },
+      "discover": "none"
+    },
     "PrefectHQ/fastmcp": {
       "license": "Apache-2.0",
       "copyright": "Not stated upstream (the LICENSE has no copyright line)",
@@ -24,6 +32,22 @@
         "additions": "review"
       }
     },
+    "TerminalSkills/skills": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright 2025 Terminal Skills",
+      "licenseFiles": {
+        "LICENSE": "b785cf08b4c694cccf7994445328cf6b4bc16dad"
+      },
+      "discover": "none"
+    },
+    "a5c-ai/babysitter": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 A5C AI",
+      "licenseFiles": {
+        "LICENSE.md": "426ec9628c6bed8d6a5bc2c576b21c1f0c610ea7"
+      },
+      "discover": "none"
+    },
     "addyosmani/agent-skills": {
       "license": "MIT",
       "copyright": "Copyright (c) 2025 Addy Osmani",
@@ -35,6 +59,14 @@
         "updates": "auto",
         "additions": "review"
       }
+    },
+    "ai-evals-course/evals-skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
     },
     "anthropics/skills": {
       "license": "See each skill",
@@ -57,6 +89,14 @@
         "updates": "auto",
         "additions": "review"
       }
+    },
+    "claude-dev-suite/claude-dev-suite": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2024-2026 Dev-Suite Contributors",
+      "licenseFiles": {
+        "LICENSE": "86e7cdb906a0a443d3455ececabc680276a6e530"
+      },
+      "discover": "none"
     },
     "cloudflare/security-audit-skill": {
       "license": "MIT",
@@ -106,6 +146,14 @@
         "additions": "review"
       }
     },
+    "gepa-ai/gepa": {
+      "license": "MIT",
+      "copyright": "Copyright \u00a9 2025 Lakshya A Agrawal",
+      "licenseFiles": {
+        "LICENSE": "a2d71aed19ccc43d94b9c3afe6430da9b2277f32"
+      },
+      "discover": "none"
+    },
     "getsentry/skills": {
       "license": "Apache-2.0",
       "copyright": "Copyright 2025 Functional Software, Inc. dba Sentry",
@@ -154,6 +202,14 @@
         "additions": "review"
       }
     },
+    "intertwine/dspy-agent-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Bryan Young",
+      "licenseFiles": {
+        "LICENSE": "0a963071f444d8f8f0b284af99f9f4e9e0ccc279"
+      },
+      "discover": "none"
+    },
     "jeffallan/claude-skills": {
       "license": "MIT",
       "copyright": "Copyright (c) 2025",
@@ -177,6 +233,27 @@
         "updates": "auto",
         "additions": "review"
       }
+    },
+    "langchain-ai/langsmith-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) LangChain, Inc.",
+      "licenseFiles": {
+        "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+      },
+      "discover": "all",
+      "stability": "preview",
+      "admission": {
+        "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "magnus919/agent-skills": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Magnus Hedemark",
+      "licenseFiles": {
+        "LICENSE.md": "9745e19f4b20d77c134964ae1bf0af0ace5c4db7"
+      },
+      "discover": "none"
     },
     "mattpocock/skills": {
       "license": "MIT",
@@ -251,6 +328,14 @@
         "additions": "review"
       }
     },
+    "mongodb/agent-skills": {
+      "license": "Apache-2.0",
+      "copyright": "Not stated upstream (its LICENSE has no copyright line)",
+      "licenseFiles": {
+        "LICENSE": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      "discover": "none"
+    },
     "obra/superpowers": {
       "license": "MIT",
       "copyright": "Copyright (c) 2025 Jesse Vincent",
@@ -262,6 +347,23 @@
         "updates": "auto",
         "additions": "review"
       }
+    },
+    "promptfoo/promptfoo": {
+      "license": "MIT",
+      "copyright": "Copyright (c) Promptfoo 2025",
+      "licenseFiles": {
+        "LICENSE": "af3fa111d9303b3041d225fb851534e50a4bbec2"
+      },
+      "discover": "none"
+    },
+    "timescale/pg-aiguide": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright 2025 Timescale, Inc., d/b/a Tiger Data",
+      "licenseFiles": {
+        "LICENSE": "3e8ba72f69be5744b50a6347ec62253112c066b8",
+        "NOTICE": "94c179c123f73104c6b0798586cc5381c8fc8c77"
+      },
+      "discover": "none"
     },
     "trailofbits/skills": {
       "license": "CC-BY-SA-4.0",
@@ -318,19 +420,6 @@
         "LICENSE": "5e6620780bdc6b10758bc814e621981705080bbe"
       },
       "discover": "none",
-      "admission": {
-        "updates": "auto",
-        "additions": "review"
-      }
-    },
-    "langchain-ai/langsmith-skills": {
-      "license": "MIT",
-      "copyright": "Copyright (c) LangChain, Inc.",
-      "licenseFiles": {
-        "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
-      },
-      "discover": "all",
-      "stability": "preview",
       "admission": {
         "updates": "auto",
         "additions": "review"
@@ -406,11 +495,122 @@
         "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
       }
     },
+    "diagnosing-bugs": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/diagnosing-bugs",
+        "commit": "49dd158d1076134a641b33efb035946536778336"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/systematic-debugging/root-cause-tracing.md",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+          "additionalPaths": [
+            "skills/systematic-debugging/condition-based-waiting.md",
+            "skills/systematic-debugging/defense-in-depth.md"
+          ]
+        }
+      ]
+    },
     "fastapi-services": {
+      "license": "MIT"
+    },
+    "figma-implement-design": {
+      "license": "MIT"
+    },
+    "figma-workspace": {
       "license": "MIT"
     },
     "foundry-langchain": {
       "license": "MIT"
+    },
+    "github-issues": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright GitHub, Inc.",
+        "licenseFiles": {
+          "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
+        },
+        "source": "github/awesome-copilot",
+        "path": "skills/github-issues",
+        "commit": "edbecfa9099c4addae1f500cca1ac067204b30fd"
+      }
+    },
+    "github-workflow": {
+      "license": "MIT"
+    },
+    "implement": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/implement",
+        "commit": "49dd158d1076134a641b33efb035946536778336"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/executing-plans",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+          "additionalPaths": [
+            "skills/subagent-driven-development/references/resuming.md",
+            "skills/verification-before-completion"
+          ]
+        }
+      ]
+    },
+    "implement-spec": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/implement-spec",
+        "commit": "c612defa9e5cf9372262d0279eb124993ba77b71"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/subagent-driven-development",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+          "additionalPaths": [
+            "skills/executing-plans",
+            "skills/verification-before-completion",
+            "skills/using-git-worktrees",
+            "skills/finishing-a-development-branch"
+          ]
+        }
+      ]
     },
     "knowledge-graph-extraction": {
       "license": "MIT",
@@ -425,11 +625,108 @@
         "commit": "ef99c70e2e6d5e4f5e227ee6745df32bcac72fdc"
       }
     },
+    "langsmith-dataset": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-dataset",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-evaluator": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-evaluator",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-experiment-diagnosis": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-experiment-diagnosis",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-online-eval-engineering": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-online-eval-engineering",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "langsmith-trace": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) LangChain, Inc.",
+        "licenseFiles": {
+          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
+        },
+        "source": "langchain-ai/langsmith-skills",
+        "path": "config/skills/langsmith-trace",
+        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+      }
+    },
+    "librechat-agents": {
+      "license": "MIT"
+    },
+    "llama-app": {
+      "license": "MIT"
+    },
     "local-model-serving": {
       "license": "MIT"
     },
+    "mcp-developer": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "jeffallan/claude-skills",
+        "path": "skills/mcp-developer",
+        "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025",
+        "licenseFiles": {
+          "LICENSE": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d"
+        }
+      }
+    },
     "mcp-servers": {
       "license": "MIT"
+    },
+    "mcp-typescript-sdk-upgrade-to-v2": {
+      "license": "CC-BY-4.0",
+      "derivedFrom": {
+        "source": "modelcontextprotocol/typescript-sdk",
+        "path": "skills/mcp-typescript-sdk-upgrade-to-v2",
+        "commit": "1e608caeb5130b2ad0fa067c84b26a038c1c6e36",
+        "license": "CC-BY-4.0",
+        "copyright": "Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC.",
+        "licenseFiles": {
+          "LICENSE": "4a93985763241755401a10678395303de4e720ba"
+        }
+      }
     },
     "monitoring-expert": {
       "license": "MIT",
@@ -487,8 +784,37 @@
         ]
       }
     },
+    "python-mcp-server-generator": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "github/awesome-copilot",
+        "path": "skills/python-mcp-server-generator",
+        "commit": "f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8",
+        "license": "MIT",
+        "copyright": "Copyright GitHub, Inc.",
+        "licenseFiles": {
+          "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
+        }
+      }
+    },
+    "reasoning-model-prompting": {
+      "license": "MIT"
+    },
     "repo-template": {
       "license": "MIT"
+    },
+    "review-feedback": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Jesse Vincent",
+        "licenseFiles": {
+          "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+        },
+        "source": "obra/superpowers",
+        "path": "skills/receiving-code-review",
+        "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+      }
     },
     "sam3": {
       "license": "MIT"
@@ -551,84 +877,6 @@
         }
       ]
     },
-    "source-driven-development": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) 2025 Addy Osmani",
-        "licenseFiles": {
-          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
-        },
-        "source": "addyosmani/agent-skills",
-        "path": "skills/source-driven-development",
-        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
-      }
-    },
-    "web-interface-guidelines": {
-      "license": "MIT",
-      "derivedFrom": {
-        "source": "vercel-labs/web-interface-guidelines",
-        "path": "command.md",
-        "license": "MIT",
-        "copyright": "Copyright (c) 2025 Vercel Labs",
-        "licenseFiles": {
-          "LICENSE": "b3575a3c1358eac4b9ee36a4c851872d81417760"
-        },
-        "commit": "434b7f91364665f2f733b310ec54809bf8f37937"
-      }
-    },
-    "mcp-developer": {
-      "license": "MIT",
-      "derivedFrom": {
-        "source": "jeffallan/claude-skills",
-        "path": "skills/mcp-developer",
-        "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
-        "license": "MIT",
-        "copyright": "Copyright (c) 2025",
-        "licenseFiles": {
-          "LICENSE": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d"
-        }
-      }
-    },
-    "python-mcp-server-generator": {
-      "license": "MIT",
-      "derivedFrom": {
-        "source": "github/awesome-copilot",
-        "path": "skills/python-mcp-server-generator",
-        "commit": "f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8",
-        "license": "MIT",
-        "copyright": "Copyright GitHub, Inc.",
-        "licenseFiles": {
-          "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
-        }
-      }
-    },
-    "mcp-typescript-sdk-upgrade-to-v2": {
-      "license": "CC-BY-4.0",
-      "derivedFrom": {
-        "source": "modelcontextprotocol/typescript-sdk",
-        "path": "skills/mcp-typescript-sdk-upgrade-to-v2",
-        "commit": "1e608caeb5130b2ad0fa067c84b26a038c1c6e36",
-        "license": "CC-BY-4.0",
-        "copyright": "Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC.",
-        "licenseFiles": {
-          "LICENSE": "4a93985763241755401a10678395303de4e720ba"
-        }
-      }
-    },
-    "review-feedback": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) 2025 Jesse Vincent",
-        "licenseFiles": {
-          "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
-        },
-        "source": "obra/superpowers",
-        "path": "skills/receiving-code-review",
-        "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
-      }
-    },
     "skill-evaluation": {
       "license": "MIT",
       "derivedFrom": {
@@ -642,199 +890,17 @@
         "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
       }
     },
-    "implement": {
+    "source-driven-development": {
       "license": "MIT",
       "derivedFrom": {
         "license": "MIT",
-        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "copyright": "Copyright (c) 2025 Addy Osmani",
         "licenseFiles": {
-          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+          "LICENSE": "d67778ada6b9cda6227e9130da182c13e73c8b2e"
         },
-        "source": "mattpocock/skills",
-        "path": "skills/engineering/implement",
-        "commit": "49dd158d1076134a641b33efb035946536778336"
-      },
-      "additionalSources": [
-        {
-          "license": "MIT",
-          "copyright": "Copyright (c) 2025 Jesse Vincent",
-          "licenseFiles": {
-            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
-          },
-          "source": "obra/superpowers",
-          "path": "skills/executing-plans",
-          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
-          "additionalPaths": [
-            "skills/subagent-driven-development/references/resuming.md",
-            "skills/verification-before-completion"
-          ]
-        }
-      ]
-    },
-    "implement-spec": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) 2026 Matt Pocock",
-        "licenseFiles": {
-          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
-        },
-        "source": "mattpocock/skills",
-        "path": "skills/engineering/implement-spec",
-        "commit": "c612defa9e5cf9372262d0279eb124993ba77b71"
-      },
-      "additionalSources": [
-        {
-          "license": "MIT",
-          "copyright": "Copyright (c) 2025 Jesse Vincent",
-          "licenseFiles": {
-            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
-          },
-          "source": "obra/superpowers",
-          "path": "skills/subagent-driven-development",
-          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
-          "additionalPaths": [
-            "skills/executing-plans",
-            "skills/verification-before-completion",
-            "skills/using-git-worktrees",
-            "skills/finishing-a-development-branch"
-          ]
-        }
-      ]
-    },
-    "diagnosing-bugs": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) 2026 Matt Pocock",
-        "licenseFiles": {
-          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
-        },
-        "source": "mattpocock/skills",
-        "path": "skills/engineering/diagnosing-bugs",
-        "commit": "49dd158d1076134a641b33efb035946536778336"
-      },
-      "additionalSources": [
-        {
-          "license": "MIT",
-          "copyright": "Copyright (c) 2025 Jesse Vincent",
-          "licenseFiles": {
-            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
-          },
-          "source": "obra/superpowers",
-          "path": "skills/systematic-debugging/root-cause-tracing.md",
-          "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
-          "additionalPaths": [
-            "skills/systematic-debugging/condition-based-waiting.md",
-            "skills/systematic-debugging/defense-in-depth.md"
-          ]
-        }
-      ]
-    },
-    "tdd": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) 2026 Matt Pocock",
-        "licenseFiles": {
-          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
-        },
-        "source": "mattpocock/skills",
-        "path": "skills/engineering/tdd",
-        "commit": "49dd158d1076134a641b33efb035946536778336"
-      },
-      "additionalSources": [
-        {
-          "license": "MIT",
-          "copyright": "Copyright (c) 2025 Jesse Vincent",
-          "licenseFiles": {
-            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
-          },
-          "source": "obra/superpowers",
-          "path": "skills/test-driven-development",
-          "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
-        }
-      ]
-    },
-    "github-workflow": {
-      "license": "MIT"
-    },
-    "github-issues": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright GitHub, Inc.",
-        "licenseFiles": {
-          "LICENSE": "89bc5e962c9944cdb050887062afdaaf89be504a"
-        },
-        "source": "github/awesome-copilot",
-        "path": "skills/github-issues",
-        "commit": "edbecfa9099c4addae1f500cca1ac067204b30fd"
-      }
-    },
-    "langsmith-trace": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) LangChain, Inc.",
-        "licenseFiles": {
-          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
-        },
-        "source": "langchain-ai/langsmith-skills",
-        "path": "config/skills/langsmith-trace",
-        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
-      }
-    },
-    "langsmith-dataset": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) LangChain, Inc.",
-        "licenseFiles": {
-          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
-        },
-        "source": "langchain-ai/langsmith-skills",
-        "path": "config/skills/langsmith-dataset",
-        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
-      }
-    },
-    "langsmith-evaluator": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) LangChain, Inc.",
-        "licenseFiles": {
-          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
-        },
-        "source": "langchain-ai/langsmith-skills",
-        "path": "config/skills/langsmith-evaluator",
-        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
-      }
-    },
-    "langsmith-experiment-diagnosis": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) LangChain, Inc.",
-        "licenseFiles": {
-          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
-        },
-        "source": "langchain-ai/langsmith-skills",
-        "path": "config/skills/langsmith-experiment-diagnosis",
-        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
-      }
-    },
-    "langsmith-online-eval-engineering": {
-      "license": "MIT",
-      "derivedFrom": {
-        "license": "MIT",
-        "copyright": "Copyright (c) LangChain, Inc.",
-        "licenseFiles": {
-          "LICENSE": "3957738673765912ca83a0048f833e095d61e087"
-        },
-        "source": "langchain-ai/langsmith-skills",
-        "path": "config/skills/langsmith-online-eval-engineering",
-        "commit": "13c168b28dbc3a7679e8f0358160063ad3329694"
+        "source": "addyosmani/agent-skills",
+        "path": "skills/source-driven-development",
+        "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d"
       }
     },
     "stagehand": {
@@ -863,14 +929,64 @@
         "commit": "bc45be1ab9bcc196c2519b3f09b7b6a40ac60404"
       }
     },
-    "figma-implement-design": {
-      "license": "MIT"
+    "tdd": {
+      "license": "MIT",
+      "derivedFrom": {
+        "license": "MIT",
+        "copyright": "Copyright (c) 2026 Matt Pocock",
+        "licenseFiles": {
+          "LICENSE": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+        },
+        "source": "mattpocock/skills",
+        "path": "skills/engineering/tdd",
+        "commit": "49dd158d1076134a641b33efb035946536778336"
+      },
+      "additionalSources": [
+        {
+          "license": "MIT",
+          "copyright": "Copyright (c) 2025 Jesse Vincent",
+          "licenseFiles": {
+            "LICENSE": "abf0390320aa14406af7a520b9b0739fdda9bf08"
+          },
+          "source": "obra/superpowers",
+          "path": "skills/test-driven-development",
+          "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+        }
+      ]
     },
-    "figma-workspace": {
-      "license": "MIT"
+    "web-interface-guidelines": {
+      "license": "MIT",
+      "derivedFrom": {
+        "source": "vercel-labs/web-interface-guidelines",
+        "path": "command.md",
+        "license": "MIT",
+        "copyright": "Copyright (c) 2025 Vercel Labs",
+        "licenseFiles": {
+          "LICENSE": "b3575a3c1358eac4b9ee36a4c851872d81417760"
+        },
+        "commit": "434b7f91364665f2f733b310ec54809bf8f37937"
+      }
     }
   },
   "skills": {
+    "agent-architecture": {
+      "commit": "a255a193d1318e5a9ca3e9e575897f9a7845c099",
+      "tree": "e4b52228dba72342c2457ec73303abb523c30adc",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Stanislav Bankovskii",
+      "last_synced_at": "2026-11-18T19:07:48.345Z",
+      "last_validated_at": "2026-11-18T19:07:48.345Z",
+      "validation_ref": "a255a193d1318e5a9ca3e9e575897f9a7845c099",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "ann-algorithms": {
+      "commit": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "tree": "f13838f4d546bf7598073cb7529bee9bd0144a4b",
+      "last_synced_at": "2026-11-18T19:05:22.339Z",
+      "last_validated_at": "2026-11-18T19:05:22.339Z",
+      "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "api-designer": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "a6acfe7813cdbf078353690e6ab488c8433459ee"
@@ -945,6 +1061,14 @@
       "commit": "5aa6e04819634ca4945ef57d6aa059eb4f5944e7",
       "tree": "23c61eed8d0009d712d71904e21e3c4e0df4d6d0"
     },
+    "bm25-tuning": {
+      "commit": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "tree": "74aad706db21de93085734239427460b3646c31a",
+      "last_synced_at": "2026-11-18T19:05:06.440Z",
+      "last_validated_at": "2026-11-18T19:05:06.440Z",
+      "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "chaos-engineer": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "ac205303ca70da616d06b9429ec729ac49a2e590"
@@ -968,6 +1092,22 @@
     "codebase-design": {
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
       "tree": "07ba1cd60efc12d0d3a083005c1d9651cf15e39a"
+    },
+    "complexity-analyzer": {
+      "commit": "feb68abe397acc14f32b34984975c48fedba2b33",
+      "tree": "a10c6caa5d3f3189cb2f523af62afca5a4a08f8b",
+      "last_synced_at": "2026-11-18T19:05:40.430Z",
+      "last_validated_at": "2026-11-18T19:05:40.430Z",
+      "validation_ref": "feb68abe397acc14f32b34984975c48fedba2b33",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "data-structure-selector": {
+      "commit": "feb68abe397acc14f32b34984975c48fedba2b33",
+      "tree": "d49461953d7e4add983fc3c9528e59c81fb74bd9",
+      "last_synced_at": "2026-11-18T19:05:45.676Z",
+      "last_validated_at": "2026-11-18T19:05:45.676Z",
+      "validation_ref": "feb68abe397acc14f32b34984975c48fedba2b33",
+      "validation_scope": "integrity-and-skill-scan"
     },
     "database-optimizer": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
@@ -1013,6 +1153,30 @@
       "commit": "d80fa0f4ebe0c5714af0adf8670336065233ecc6",
       "tree": "ea30ee454ba264543dbe40737973b1a5afb9f0e6"
     },
+    "dspy-evaluation-harness": {
+      "commit": "623dca091e43c9c6485ffff066f60639354ec591",
+      "tree": "d80d72c5d0ba92d19fe43c37a8ba417c43cc4f1b",
+      "last_synced_at": "2026-11-18T19:06:30.913Z",
+      "last_validated_at": "2026-11-18T19:06:30.913Z",
+      "validation_ref": "623dca091e43c9c6485ffff066f60639354ec591",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "dspy-fundamentals": {
+      "commit": "623dca091e43c9c6485ffff066f60639354ec591",
+      "tree": "a545ace760cd002e4176ac09181840edb5788e05",
+      "last_synced_at": "2026-11-18T19:06:26.160Z",
+      "last_validated_at": "2026-11-18T19:06:26.160Z",
+      "validation_ref": "623dca091e43c9c6485ffff066f60639354ec591",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "dspy-gepa-optimizer": {
+      "commit": "623dca091e43c9c6485ffff066f60639354ec591",
+      "tree": "fe71700a9fef0b53f16dbe2ae87829b8bbe87e63",
+      "last_synced_at": "2026-11-18T19:06:36.073Z",
+      "last_validated_at": "2026-11-18T19:06:36.073Z",
+      "validation_ref": "623dca091e43c9c6485ffff066f60639354ec591",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "ecosystem-primer": {
       "commit": "9feb8147562f0f186b081b343e5ccaf53e9e7a18",
       "tree": "179ffaf610a29cc8cd9b257ae923d6ebecd1e372"
@@ -1024,6 +1188,14 @@
     "eval-engineering": {
       "commit": "fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7",
       "tree": "171e0b69b291d65553bdcb89f59f085e22770e09"
+    },
+    "evaluate-rag": {
+      "commit": "80d5f7b0127c7572ed9e9339937adbfd7240ffeb",
+      "tree": "4dfe667786997541b3330fb47566160cef2bde2f",
+      "last_synced_at": "2026-11-18T19:05:32.796Z",
+      "last_validated_at": "2026-11-18T19:05:32.796Z",
+      "validation_ref": "80d5f7b0127c7572ed9e9339937adbfd7240ffeb",
+      "validation_scope": "integrity-and-skill-scan"
     },
     "fastapi": {
       "commit": "7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4",
@@ -1072,6 +1244,14 @@
         }
       }
     },
+    "gepa-optimize-anything": {
+      "commit": "ce5b0d6e3d6af6c6dbec6de2c54536bbb961d309",
+      "tree": "002d6559d5e6bbae65a8af522d4a2961b8075473",
+      "last_synced_at": "2026-11-18T19:06:19.193Z",
+      "last_validated_at": "2026-11-18T19:06:19.193Z",
+      "validation_ref": "ce5b0d6e3d6af6c6dbec6de2c54536bbb961d309",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "git-guardrails-claude-code": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "ceed97af09633b300826d0ca0b1464c527ec9a35"
@@ -1119,6 +1299,14 @@
     "huggingface-local-models": {
       "commit": "c3ff942be3e07116b475253f0a8fc4f54682c1a8",
       "tree": "89782df299cf7514502688a9f5f174a875e9927d"
+    },
+    "hybrid-search": {
+      "commit": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "tree": "b518ddc28f4f9904fefcf80b272c880fe1bbb2cd",
+      "last_synced_at": "2026-11-18T19:05:10.576Z",
+      "last_validated_at": "2026-11-18T19:05:10.576Z",
+      "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "validation_scope": "integrity-and-skill-scan"
     },
     "improve-codebase-architecture": {
       "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
@@ -1176,6 +1364,36 @@
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "34ee23b80703c9624ba327bc63bf3d0e9d949722"
     },
+    "librechat": {
+      "commit": "42289059901710441bfa8081c08c3a9f36b93f9c",
+      "tree": "c519bdb1be2c149f6698377be42b850c156ce989",
+      "last_synced_at": "2026-11-18T19:06:00.668Z",
+      "last_validated_at": "2026-11-18T19:06:00.668Z",
+      "validation_ref": "42289059901710441bfa8081c08c3a9f36b93f9c",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "librechat-docs": {
+      "commit": "9594a7a7158e6fee41d9f319a1ed59037eab5552",
+      "tree": "59a2363f2376db3d6d1e996abd888484c3618a92",
+      "last_synced_at": "2026-11-18T19:05:52.958Z",
+      "last_validated_at": "2026-11-18T19:05:52.958Z",
+      "validation_ref": "9594a7a7158e6fee41d9f319a1ed59037eab5552",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "llama-cpp": {
+      "commit": "3d56c09c5218b066a735925fbfce8d97851bb992",
+      "tree": "9e4960f80921e3445e8576b55bd2164bf0ef4370",
+      "last_synced_at": "2026-11-18T19:08:12.031Z",
+      "last_validated_at": "2026-11-18T19:08:12.031Z",
+      "validation_ref": "3d56c09c5218b066a735925fbfce8d97851bb992",
+      "validation_scope": "integrity-and-skill-scan",
+      "allowFindings": {
+        "reason": "reviewed scripts/test_llama_batch.py and llama_batch.py: unit tests over a bounded local launcher, no network, HF_TOKEN stripped; pytest here runs tests/ only",
+        "counts": {
+          "high": 1
+        }
+      }
+    },
     "loop-me": {
       "commit": "321658273cb1d20b76026717d027d505790106d4",
       "tree": "a0dfdc3562686d920900973b50289b36e2f7eafe"
@@ -1200,6 +1418,38 @@
       "commit": "eca54bd1d937e778a939c240a2ed966fbcb12f85",
       "tree": "2e3cd1170ca35d4834503bd1f8cc8a718492256b"
     },
+    "mongodb-query-optimizer": {
+      "commit": "4946a8d3ca032c01c5d2374c558e2fcbbfcefeca",
+      "tree": "7b5ec105516753f90387868bfca9bfcf1499e15b",
+      "last_synced_at": "2026-11-18T19:04:37.224Z",
+      "last_validated_at": "2026-11-18T19:04:37.224Z",
+      "validation_ref": "4946a8d3ca032c01c5d2374c558e2fcbbfcefeca",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "mongodb-schema-design": {
+      "commit": "4946a8d3ca032c01c5d2374c558e2fcbbfcefeca",
+      "tree": "1519cc933bd8c62eafaa691b06a2d4648090b99c",
+      "last_synced_at": "2026-11-18T19:04:30.775Z",
+      "last_validated_at": "2026-11-18T19:04:30.775Z",
+      "validation_ref": "4946a8d3ca032c01c5d2374c558e2fcbbfcefeca",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "mongodb-search-and-ai": {
+      "commit": "4946a8d3ca032c01c5d2374c558e2fcbbfcefeca",
+      "tree": "a0ba7321ab5b5e578a38a513f40aa326f0639ec3",
+      "last_synced_at": "2026-11-18T19:04:46.162Z",
+      "last_validated_at": "2026-11-18T19:04:46.162Z",
+      "validation_ref": "4946a8d3ca032c01c5d2374c558e2fcbbfcefeca",
+      "validation_scope": "integrity-and-skill-scan"
+    },
+    "pgvector-semantic-search": {
+      "commit": "1aef6e452b97fae580d57677a807fd0d601ddc7b",
+      "tree": "41a0880d9505d691cca83a1ccaae5f0476d11922",
+      "last_synced_at": "2026-11-18T18:59:27.537Z",
+      "last_validated_at": "2026-11-18T18:59:27.537Z",
+      "validation_ref": "1aef6e452b97fae580d57677a807fd0d601ddc7b",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "playwright-best-practices": {
       "commit": "283d5cbc5d11aac1abda058b16ad22c317d54dc0",
       "tree": "b4620eb2cfc6b58173cda800b7c7578190dfd632"
@@ -1222,6 +1472,14 @@
       "commit": "09c434ab73ca43761c5d8b0c5d341926c2fba710",
       "tree": "e8d3fa76e7ff9223a784dbd4bcfc9ff46b3fa55d"
     },
+    "postgres-hybrid-text-search": {
+      "commit": "1aef6e452b97fae580d57677a807fd0d601ddc7b",
+      "tree": "2040849d191560e32eea2810e46cf34fcb12ad89",
+      "last_synced_at": "2026-11-18T19:04:12.086Z",
+      "last_validated_at": "2026-11-18T19:04:12.086Z",
+      "validation_ref": "1aef6e452b97fae580d57677a807fd0d601ddc7b",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "postgres-pro": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "cece71e4474f39cb47793c7b84834fdee236a3e6"
@@ -1240,6 +1498,14 @@
         }
       }
     },
+    "promptfoo-evals": {
+      "commit": "0d4978bace531463ebf200800f396fab9db4c21a",
+      "tree": "281b816e526e5b659ad60e4c624342ade7bfafc4",
+      "last_synced_at": "2026-11-18T19:06:08.567Z",
+      "last_validated_at": "2026-11-18T19:06:08.567Z",
+      "validation_ref": "0d4978bace531463ebf200800f396fab9db4c21a",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "property-based-testing": {
       "commit": "123037ec8aed26f0d86327cc39137ee5043e5deb",
       "tree": "cf5e77d684180c80a2f3aa228c53d04b1fa1ba77",
@@ -1253,6 +1519,14 @@
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "1b87e6ab5c3a604dd86f8b2206d2b39e2cf406c6"
     },
+    "rag-evaluation": {
+      "commit": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "tree": "0516eddfad181be27dbd0ec3f82204cf5ee9ad6f",
+      "last_synced_at": "2026-11-18T19:05:18.501Z",
+      "last_validated_at": "2026-11-18T19:05:18.501Z",
+      "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "validation_scope": "integrity-and-skill-scan"
+    },
     "react-expert": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "be511b42f21056772c6437dd6be3c51a54dfd30e"
@@ -1260,6 +1534,14 @@
     "react-native-expert": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "64bc758e8ea54df7e52b5333d3450e6fec58dd84"
+    },
+    "reranking": {
+      "commit": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "tree": "6d49708612ecba048d58478cd6fa4ed4e29bfd34",
+      "last_synced_at": "2026-11-18T19:05:14.533Z",
+      "last_validated_at": "2026-11-18T19:05:14.533Z",
+      "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "validation_scope": "integrity-and-skill-scan"
     },
     "research": {
       "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
@@ -1374,6 +1656,14 @@
     "uv": {
       "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",
       "tree": "bca0368b210d4b3ce04b4895829afe0dbc6949a8"
+    },
+    "vector-quantization": {
+      "commit": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "tree": "04172c94d4e8d6b0efe1f037e6b7dff1c0eb217b",
+      "last_synced_at": "2026-11-18T19:05:26.277Z",
+      "last_validated_at": "2026-11-18T19:05:26.277Z",
+      "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
+      "validation_scope": "integrity-and-skill-scan"
     },
     "vercel-composition-patterns": {
       "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",

@@ -1095,6 +1095,213 @@
       "skillFolderHash": "37fa5210e2055784b68cacd05d3509fd3cb1e2e2",
       "installedAt": "2026-11-02T21:48:43.954606+00:00",
       "updatedAt": "2026-11-02T21:48:43.954606+00:00"
+    },
+    "pgvector-semantic-search": {
+      "source": "timescale/pg-aiguide",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/timescale/pg-aiguide.git",
+      "skillPath": "skills/pgvector-semantic-search/SKILL.md",
+      "skillFolderHash": "41a0880d9505d691cca83a1ccaae5f0476d11922",
+      "installedAt": "2026-11-18T18:59:27.537Z",
+      "updatedAt": "2026-11-18T18:59:27.537Z"
+    },
+    "postgres-hybrid-text-search": {
+      "source": "timescale/pg-aiguide",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/timescale/pg-aiguide.git",
+      "skillPath": "skills/postgres-hybrid-text-search/SKILL.md",
+      "skillFolderHash": "2040849d191560e32eea2810e46cf34fcb12ad89",
+      "installedAt": "2026-11-18T19:04:12.086Z",
+      "updatedAt": "2026-11-18T19:04:12.086Z"
+    },
+    "mongodb-schema-design": {
+      "source": "mongodb/agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mongodb/agent-skills.git",
+      "skillPath": "skills/mongodb-schema-design/SKILL.md",
+      "skillFolderHash": "1519cc933bd8c62eafaa691b06a2d4648090b99c",
+      "installedAt": "2026-11-18T19:04:30.775Z",
+      "updatedAt": "2026-11-18T19:04:30.775Z"
+    },
+    "mongodb-query-optimizer": {
+      "source": "mongodb/agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mongodb/agent-skills.git",
+      "skillPath": "skills/mongodb-query-optimizer/SKILL.md",
+      "skillFolderHash": "7b5ec105516753f90387868bfca9bfcf1499e15b",
+      "installedAt": "2026-11-18T19:04:37.224Z",
+      "updatedAt": "2026-11-18T19:04:37.224Z"
+    },
+    "mongodb-search-and-ai": {
+      "source": "mongodb/agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mongodb/agent-skills.git",
+      "skillPath": "skills/mongodb-search-and-ai/SKILL.md",
+      "skillFolderHash": "a0ba7321ab5b5e578a38a513f40aa326f0639ec3",
+      "installedAt": "2026-11-18T19:04:46.162Z",
+      "updatedAt": "2026-11-18T19:04:46.162Z"
+    },
+    "bm25-tuning": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/claude-dev-suite/claude-dev-suite.git",
+      "skillPath": "skills/retrieval/bm25-tuning/SKILL.md",
+      "skillFolderHash": "74aad706db21de93085734239427460b3646c31a",
+      "installedAt": "2026-11-18T19:05:06.440Z",
+      "updatedAt": "2026-11-18T19:05:06.440Z"
+    },
+    "hybrid-search": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/claude-dev-suite/claude-dev-suite.git",
+      "skillPath": "skills/rag/hybrid-search/SKILL.md",
+      "skillFolderHash": "b518ddc28f4f9904fefcf80b272c880fe1bbb2cd",
+      "installedAt": "2026-11-18T19:05:10.576Z",
+      "updatedAt": "2026-11-18T19:05:10.576Z"
+    },
+    "reranking": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/claude-dev-suite/claude-dev-suite.git",
+      "skillPath": "skills/rag/reranking/SKILL.md",
+      "skillFolderHash": "6d49708612ecba048d58478cd6fa4ed4e29bfd34",
+      "installedAt": "2026-11-18T19:05:14.533Z",
+      "updatedAt": "2026-11-18T19:05:14.533Z"
+    },
+    "rag-evaluation": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/claude-dev-suite/claude-dev-suite.git",
+      "skillPath": "skills/rag/rag-evaluation/SKILL.md",
+      "skillFolderHash": "0516eddfad181be27dbd0ec3f82204cf5ee9ad6f",
+      "installedAt": "2026-11-18T19:05:18.501Z",
+      "updatedAt": "2026-11-18T19:05:18.501Z"
+    },
+    "ann-algorithms": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/claude-dev-suite/claude-dev-suite.git",
+      "skillPath": "skills/vector-stores/ann-algorithms/SKILL.md",
+      "skillFolderHash": "f13838f4d546bf7598073cb7529bee9bd0144a4b",
+      "installedAt": "2026-11-18T19:05:22.339Z",
+      "updatedAt": "2026-11-18T19:05:22.339Z"
+    },
+    "vector-quantization": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/claude-dev-suite/claude-dev-suite.git",
+      "skillPath": "skills/vector-stores/vector-quantization/SKILL.md",
+      "skillFolderHash": "04172c94d4e8d6b0efe1f037e6b7dff1c0eb217b",
+      "installedAt": "2026-11-18T19:05:26.277Z",
+      "updatedAt": "2026-11-18T19:05:26.277Z"
+    },
+    "evaluate-rag": {
+      "source": "ai-evals-course/evals-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/ai-evals-course/evals-skills.git",
+      "skillPath": "skills/evaluate-rag/SKILL.md",
+      "skillFolderHash": "4dfe667786997541b3330fb47566160cef2bde2f",
+      "installedAt": "2026-11-18T19:05:32.796Z",
+      "updatedAt": "2026-11-18T19:05:32.796Z"
+    },
+    "complexity-analyzer": {
+      "source": "a5c-ai/babysitter",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/a5c-ai/babysitter.git",
+      "skillPath": "library/specializations/algorithms-optimization/skills/complexity-analyzer/SKILL.md",
+      "skillFolderHash": "a10c6caa5d3f3189cb2f523af62afca5a4a08f8b",
+      "installedAt": "2026-11-18T19:05:40.430Z",
+      "updatedAt": "2026-11-18T19:05:40.430Z"
+    },
+    "data-structure-selector": {
+      "source": "a5c-ai/babysitter",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/a5c-ai/babysitter.git",
+      "skillPath": "library/specializations/algorithms-optimization/skills/data-structure-selector/SKILL.md",
+      "skillFolderHash": "d49461953d7e4add983fc3c9528e59c81fb74bd9",
+      "installedAt": "2026-11-18T19:05:45.676Z",
+      "updatedAt": "2026-11-18T19:05:45.676Z"
+    },
+    "librechat-docs": {
+      "source": "LibreChat-AI/docs",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/LibreChat-AI/docs.git",
+      "skillPath": "public/.well-known/agent-skills/librechat-docs/SKILL.md",
+      "skillFolderHash": "59a2363f2376db3d6d1e996abd888484c3618a92",
+      "installedAt": "2026-11-18T19:05:52.958Z",
+      "updatedAt": "2026-11-18T19:05:52.958Z"
+    },
+    "librechat": {
+      "source": "TerminalSkills/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/TerminalSkills/skills.git",
+      "skillPath": "skills/librechat/SKILL.md",
+      "skillFolderHash": "c519bdb1be2c149f6698377be42b850c156ce989",
+      "installedAt": "2026-11-18T19:06:00.668Z",
+      "updatedAt": "2026-11-18T19:06:00.668Z"
+    },
+    "promptfoo-evals": {
+      "source": "promptfoo/promptfoo",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/promptfoo/promptfoo.git",
+      "skillPath": ".claude/skills/promptfoo-evals/SKILL.md",
+      "skillFolderHash": "281b816e526e5b659ad60e4c624342ade7bfafc4",
+      "installedAt": "2026-11-18T19:06:08.567Z",
+      "updatedAt": "2026-11-18T19:06:08.567Z"
+    },
+    "gepa-optimize-anything": {
+      "source": "gepa-ai/gepa",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/gepa-ai/gepa.git",
+      "skillPath": ".claude/skills/gepa-optimize-anything/SKILL.md",
+      "skillFolderHash": "002d6559d5e6bbae65a8af522d4a2961b8075473",
+      "installedAt": "2026-11-18T19:06:19.193Z",
+      "updatedAt": "2026-11-18T19:06:19.193Z"
+    },
+    "dspy-fundamentals": {
+      "source": "intertwine/dspy-agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/intertwine/dspy-agent-skills.git",
+      "skillPath": "skills/dspy-fundamentals/SKILL.md",
+      "skillFolderHash": "a545ace760cd002e4176ac09181840edb5788e05",
+      "installedAt": "2026-11-18T19:06:26.160Z",
+      "updatedAt": "2026-11-18T19:06:26.160Z"
+    },
+    "dspy-evaluation-harness": {
+      "source": "intertwine/dspy-agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/intertwine/dspy-agent-skills.git",
+      "skillPath": "skills/dspy-evaluation-harness/SKILL.md",
+      "skillFolderHash": "d80d72c5d0ba92d19fe43c37a8ba417c43cc4f1b",
+      "installedAt": "2026-11-18T19:06:30.913Z",
+      "updatedAt": "2026-11-18T19:06:30.913Z"
+    },
+    "dspy-gepa-optimizer": {
+      "source": "intertwine/dspy-agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/intertwine/dspy-agent-skills.git",
+      "skillPath": "skills/dspy-gepa-optimizer/SKILL.md",
+      "skillFolderHash": "fe71700a9fef0b53f16dbe2ae87829b8bbe87e63",
+      "installedAt": "2026-11-18T19:06:36.073Z",
+      "updatedAt": "2026-11-18T19:06:36.073Z"
+    },
+    "agent-architecture": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/github/awesome-copilot.git",
+      "skillPath": "skills/agent-architecture/SKILL.md",
+      "skillFolderHash": "e4b52228dba72342c2457ec73303abb523c30adc",
+      "installedAt": "2026-11-18T19:07:48.345Z",
+      "updatedAt": "2026-11-18T19:07:48.345Z"
+    },
+    "llama-cpp": {
+      "source": "magnus919/agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/magnus919/agent-skills.git",
+      "skillPath": "llama-cpp/SKILL.md",
+      "skillFolderHash": "9e4960f80921e3445e8576b55bd2164bf0ef4370",
+      "installedAt": "2026-11-18T19:08:12.031Z",
+      "updatedAt": "2026-11-18T19:08:12.031Z"
     }
   },
   "dismissed": {

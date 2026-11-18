@@ -15,6 +15,19 @@
       "langsmith-mcp@langchain-plugins"
     ]
   },
+  "agent-patterns": {
+    "description": "Framework-neutral agent design: workflow versus agent, the core patterns, requirements discovery, and auditing an existing agent's architecture.",
+    "skills": [
+      "agent-architecture"
+    ]
+  },
+  "algorithms": {
+    "description": "Algorithms and data structures: Big-O analysis of code, lowering complexity, and choosing a data structure for the operations needed.",
+    "skills": [
+      "complexity-analyzer",
+      "data-structure-selector"
+    ]
+  },
   "api": {
     "description": "API contracts, compatibility and retry/idempotency semantics, REST/OpenAPI resources, and GraphQL schemas, resolvers and federation.",
     "skills": [
@@ -81,11 +94,13 @@
     ]
   },
   "databases": {
-    "description": "PostgreSQL and SQL: writing and reviewing queries, schema and index design, execution plans and tuning.",
+    "description": "PostgreSQL and SQL: writing and reviewing queries, schema and index design, execution plans and tuning, pgvector indexes and hybrid text search.",
     "skills": [
       "database-optimizer",
       "postgres-pro",
-      "sql-pro"
+      "sql-pro",
+      "pgvector-semantic-search",
+      "postgres-hybrid-text-search"
     ]
   },
   "delivery": {
@@ -214,6 +229,14 @@
       "langchain-mcp@langchain-plugins"
     ]
   },
+  "librechat": {
+    "description": "LibreChat as the chat front end: librechat.yaml, custom endpoints, MCP servers, agents and deployment; the @librechat/agents SDK and tool registries.",
+    "skills": [
+      "librechat-docs",
+      "librechat",
+      "librechat-agents"
+    ]
+  },
   "local-inference": {
     "description": "Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer.",
     "skills": [
@@ -222,7 +245,9 @@
       "local-model-serving",
       "model-recipes",
       "muse-glimmer",
-      "vllm-bench-serve"
+      "vllm-bench-serve",
+      "llama-cpp",
+      "llama-app"
     ]
   },
   "mcp": {
@@ -245,6 +270,19 @@
       "ml-pipeline",
       "prompt-engineer",
       "rag-architect"
+    ]
+  },
+  "mongodb": {
+    "description": "MongoDB: schema design patterns, query and index optimization, Atlas Search, Atlas Vector Search and hybrid search, with the official MCP server in read-only mode.",
+    "skills": [
+      "mongodb-schema-design",
+      "mongodb-query-optimizer",
+      "mongodb-search-and-ai"
+    ],
+    "mcp": [
+      {
+        "server": "mongodb"
+      }
     ]
   },
   "openwebui": {
@@ -273,6 +311,18 @@
       "playwright-unsafe"
     ]
   },
+  "prompt-optimization": {
+    "description": "Prompt evaluation and optimization: promptfoo evals, DSPy programs, metrics and GEPA, GEPA for any text artifact, and prompting reasoning versus instant models.",
+    "skills": [
+      "prompt-engineer",
+      "reasoning-model-prompting",
+      "promptfoo-evals",
+      "gepa-optimize-anything",
+      "dspy-fundamentals",
+      "dspy-evaluation-harness",
+      "dspy-gepa-optimizer"
+    ]
+  },
   "react": {
     "description": "React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs.",
     "skills": [
@@ -286,6 +336,21 @@
     ],
     "mcp": [
       "shadcn"
+    ]
+  },
+  "retrieval": {
+    "description": "Search and retrieval: BM25 and lexical tuning, semantic and hybrid search with rank fusion, reranking, ANN index selection and quantization, pgvector, and retrieval evaluation.",
+    "skills": [
+      "bm25-tuning",
+      "hybrid-search",
+      "reranking",
+      "ann-algorithms",
+      "vector-quantization",
+      "rag-evaluation",
+      "evaluate-rag",
+      "pgvector-semantic-search",
+      "postgres-hybrid-text-search",
+      "rag-architect"
     ]
   },
   "security": {

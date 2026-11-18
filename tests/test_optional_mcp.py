@@ -305,3 +305,20 @@ def test_a_personal_repository_gets_both_servers_locally_on_a_granted_machine(
 
     assert sorted(claude.data) == ["browser", "browser-unsafe"]
     assert _status(root) == "" and not (root / ".mcp.json").exists()
+
+
+def test_the_shipped_mongodb_server_is_pinned_and_read_only() -> None:
+    servers = load_mcp_servers(ROOT / ".agents")
+    refs = pack_servers(ROOT / ".agents", servers)
+    raw = json.loads((ROOT / ".agents/mcp-servers.json").read_text())["servers"]["mongodb"]
+    mongodb = servers["mongodb"]
+
+    assert [name for name, _ in refs["mongodb"]] == ["mongodb"]
+    assert (mongodb.scope, mongodb.opt_in, mongodb.access) == ("pack", False, "read")
+    assert mongodb.command == "npx"
+    assert "--readOnly" in mongodb.args  # only read, connect and metadata tools are registered
+    assert mongodb.args[mongodb.args.index("--telemetry") + 1] == "disabled"
+    assert mongodb.pin is not None and mongodb.pin.package == "mongodb-mcp-server"
+    assert f"mongodb-mcp-server@{mongodb.pin.version}" in mongodb.args
+    assert "env" not in raw  # the connection string stays on the machine
+    assert "MDB_MCP_CONNECTION_STRING" in raw["codex"]["env_vars"]

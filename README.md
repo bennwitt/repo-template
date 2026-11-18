@@ -641,6 +641,19 @@ so a repository has one browser stack; switch in one command:
 repo-template update /path/to/repo --pack stagehand --remove-pack playwright
 ```
 
+Packs with no server are plain skill groups. `retrieval` covers search end to end: lexical
+(`bm25-tuning`), semantic and hybrid with rank fusion (`hybrid-search`, `reranking`), index
+choice and compression (`ann-algorithms`, `vector-quantization`), Postgres with pgvector and
+`pg_textsearch` (the two Timescale skills, shared with `databases`), and evaluation
+(`evaluate-rag`, `rag-evaluation`, with `rag-architect` for the overall design).
+`prompt-optimization` measures and improves prompts: `promptfoo-evals` for assertion-based
+evals in CI, the DSPy skills and `gepa-optimize-anything` for metric-driven optimization, and
+`reasoning-model-prompting` for choosing and prompting instant versus reasoning models.
+`agent-patterns` holds `agent-architecture`, a framework-neutral design and audit skill;
+`algorithms` holds Big-O analysis and data-structure choice; `librechat` is the LibreChat
+counterpart of `openwebui`, with LibreChat's own docs skill, an operator skill and
+`librechat-agents` for its SDK and tool registries.
+
 ### MCP servers: global and per pack
 
 GitHub is a global server for Claude Code and Codex, using
@@ -778,6 +791,16 @@ release, and the one-time setup) and `figma-implement-design` (design to code wi
 tools, and Code Connect). A Dev or Full seat gets 200 calls a day on Professional; View and
 Collab seats get 20 a month.
 
+The `mongodb` pack runs MongoDB's official server, `mongodb-mcp-server`, pinned and started
+in its read-only mode, so only its read, connect and metadata tools exist in the session: list
+databases, collections, indexes and schemas, `find`, `aggregate`, `count`, `explain`, and the
+search-index listings the `mongodb-search-and-ai` skill asks for; create, update and delete
+tools are never registered, and telemetry is off. The deployment comes from
+`MDB_MCP_CONNECTION_STRING` on the machine (Codex passes it through `codex.env_vars`), or
+from the `connect` tool in a session; the committed `.mcp.json` holds no connection string.
+Use a database user with read-only roles too: the flag is the server's guardrail, the role is
+the boundary.
+
 ### Selective Superpowers guidance
 
 `review-feedback` handles incoming findings in `dev-workflows`; `skill-evaluation` compares
@@ -806,11 +829,13 @@ itself.
 | Pack | What it's for | Skills |
 | --- | --- | --- |
 | `agent-evals` | Agent and skill evaluations: outcome-based comparisons, regression scenarios, controlled trials, Harbor verifiers and calibration. | `eval-engineering`, `langsmith-dataset`, `langsmith-evaluator`, `langsmith-experiment-diagnosis`, `langsmith-online-eval-engineering`, `langsmith-trace`, `skill-evaluation` |
+| `agent-patterns` | Framework-neutral agent design: workflow versus agent, the core patterns, requirements discovery, and auditing an existing agent's architecture. | `agent-architecture` |
+| `algorithms` | Algorithms and data structures: Big-O analysis of code, lowering complexity, and choosing a data structure for the operations needed. | `complexity-analyzer`, `data-structure-selector` |
 | `api` | API contracts, compatibility and retry/idempotency semantics, REST/OpenAPI resources, and GraphQL schemas, resolvers and federation. | `api-and-interface-design`, `api-designer`, `graphql-architect` |
 | `atlassian` | Jira and Confluence through an Atlassian MCP server. It needs a sign-in, so connect one yourself (such as the Atlassian plugin); the pack ships none. | `atlassian-mcp` |
 | `azure` | Azure: prepare, validate and deploy with azd, diagnostics, resource lookup, Storage, App Insights, Entra app registration and azure-identity. | `appinsights-instrumentation`, `azure-deploy`, `azure-diagnostics`, `azure-identity-py`, `azure-identity-ts`, `azure-prepare`, `azure-resource-lookup`, `azure-storage`, `azure-validate`, `entra-app-registration` |
 | `cli` | Command-line tools: subcommands and flags, interactive prompts, progress output and shell completion. | `cli-developer` |
-| `databases` | PostgreSQL and SQL: writing and reviewing queries, schema and index design, execution plans and tuning. | `database-optimizer`, `postgres-pro`, `sql-pro` |
+| `databases` | PostgreSQL and SQL: writing and reviewing queries, schema and index design, execution plans and tuning, pgvector indexes and hybrid text search. | `database-optimizer`, `pgvector-semantic-search`, `postgres-hybrid-text-search`, `postgres-pro`, `sql-pro` |
 | `delivery` | Quality constraints, version-verified implementation and release readiness. Complements the core spec, plan, implementation, testing and review workflows; readiness does not deploy. | `constraint-driven-development`, `shipping-and-launch`, `source-driven-development` |
 | `dev-workflows` | Optional workflows for code review, debugging, tests, architecture and ADRs, requirements, secure full-stack features, behavior-preserving simplification, and deprecation or schema migration. They overlap global skills, so add the pack only where requested. Ponytail runs only when explicitly invoked. Includes evidence-based handling of incoming review feedback. | `architecture-designer`, `code-reviewer`, `code-simplification`, `debugging-wizard`, `deprecation-and-migration`, `feature-forge`, `fullstack-guardian`, `ponytail`, `review-feedback`, `test-master`, `the-fool` |
 | `fastapi` | FastAPI services for agents: tests, lifespan, auth, CORS, Open WebUI tool servers, and an OpenAI-compatible chat endpoint in front of a graph. | `fastapi-expert`, `fastapi-services` |
@@ -820,13 +845,17 @@ itself.
 | `gradio` | Building Gradio apps and calling Gradio apps through their API | `frontend-design`, `gradio`, `hf-gradio` |
 | `knowledge-graph` | Extracting knowledge graphs from text | `knowledge-graph-extraction` |
 | `langchain` | LangChain, LangGraph, Deep Agents and LangSmith (langchain-ai/langchain-skills) | `deep-agents-core`, `deep-agents-memory`, `deep-agents-orchestration`, `deepagents-python-quickstart`, `deepagents-typescript-quickstart`, `ecosystem-primer`, `langchain-dependencies`, `langchain-fundamentals`, `langchain-middleware`, `langchain-python-quickstart`, `langchain-rag`, `langchain-typescript-quickstart`, `langgraph-cli`, `langgraph-fundamentals`, `langgraph-human-in-the-loop`, `langgraph-persistence`, `langgraph-python-quickstart`, `langgraph-typescript-quickstart`, `managed-deep-agents` |
-| `local-inference` | Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer. | `hf-mem`, `huggingface-local-models`, `local-model-serving`, `model-recipes`, `muse-glimmer`, `vllm-bench-serve` |
+| `librechat` | LibreChat as the chat front end: librechat.yaml, custom endpoints, MCP servers, agents and deployment; the @librechat/agents SDK and tool registries. | `librechat`, `librechat-agents`, `librechat-docs` |
+| `local-inference` | Local models on a workstation GPU: vLLM, llama.cpp and Ollama, recipes, memory sizing, benchmarks, and Meta Muse Glimmer. | `hf-mem`, `huggingface-local-models`, `llama-app`, `llama-cpp`, `local-model-serving`, `model-recipes`, `muse-glimmer`, `vllm-bench-serve` |
 | `mcp` | Develop Python and TypeScript MCP servers and clients: current protocol, FastMCP, official SDKs, migration, auth, real transports and compatibility tests. | `fastmcp-server`, `mcp-developer`, `mcp-servers`, `mcp-typescript-sdk-upgrade-to-v2`, `python-mcp-server-generator` |
 | `ml-engineering` | Machine-learning engineering: training pipelines and experiment tracking, fine-tuning with LoRA or QLoRA, RAG systems, and prompt design and evaluation. | `fine-tuning-expert`, `ml-pipeline`, `prompt-engineer`, `rag-architect` |
+| `mongodb` | MongoDB: schema design patterns, query and index optimization, Atlas Search, Atlas Vector Search and hybrid search, with the official MCP server in read-only mode. | `mongodb-query-optimizer`, `mongodb-schema-design`, `mongodb-search-and-ai` |
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
 | `performance` | Measured browser, service, database and memory performance: matched baselines, profiling, experiment records and honest source-only audits. Uses available tools; ships no MCP server. | `performance-optimization` |
 | `playwright` | Playwright, complete: drive a real browser through the Playwright MCP server (every optional capability) or the playwright-cli skill, and write, debug and read traces of end-to-end tests. | `playwright-best-practices`, `playwright-cli`, `playwright-expert`, `playwright-trace` |
+| `prompt-optimization` | Prompt evaluation and optimization: promptfoo evals, DSPy programs, metrics and GEPA, GEPA for any text artifact, and prompting reasoning versus instant models. | `dspy-evaluation-harness`, `dspy-fundamentals`, `dspy-gepa-optimizer`, `gepa-optimize-anything`, `prompt-engineer`, `promptfoo-evals`, `reasoning-model-prompting` |
 | `react` | React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs. | `frontend-design`, `react-expert`, `react-native-expert`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
+| `retrieval` | Search and retrieval: BM25 and lexical tuning, semantic and hybrid search with rank fusion, reranking, ANN index selection and quantization, pgvector, and retrieval evaluation. | `ann-algorithms`, `bm25-tuning`, `evaluate-rag`, `hybrid-search`, `pgvector-semantic-search`, `postgres-hybrid-text-search`, `rag-architect`, `rag-evaluation`, `reranking`, `vector-quantization` |
 | `security` | Secure coding and security review: authentication and authorization, input validation, the OWASP Top 10, and audit reports with remediation. Cloudflare security-audit adds coverage tracking and independent finding verification; runs only when explicitly invoked. | `secure-code-guardian`, `security-audit`, `security-reviewer` |
 | `spring-boot` | Spring Boot 3 services: REST controllers, Spring Security 6, Spring Data JPA and WebFlux. | `spring-boot-engineer` |
 | `sre` | Reliability: SLOs, incidents, feature instrumentation, bounded metrics, logs, tracing, alert/runbook verification, and chaos experiments. | `chaos-engineer`, `monitoring-expert`, `observability-and-instrumentation`, `sre-engineer` |
@@ -836,6 +865,8 @@ itself.
 
 | Skill | Where | Source | License | Notes |
 | --- | --- | --- | --- | --- |
+| `agent-architecture` | pack `agent-patterns` | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/a255a193d1318e5a9ca3e9e575897f9a7845c099/skills/agent-architecture) | MIT |  |
+| `ann-algorithms` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/vector-stores/ann-algorithms) | MIT |  |
 | `api-and-interface-design` | pack `api` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/api-and-interface-design) |
 | `api-designer` | pack `api` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/api-designer) | MIT |  |
 | `appinsights-instrumentation` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/appinsights-instrumentation) | MIT |  |
@@ -852,6 +883,7 @@ itself.
 | `azure-resource-lookup` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-resource-lookup) | MIT | description overridden |
 | `azure-storage` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-storage) | MIT | description overridden |
 | `azure-validate` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/azure-validate) | MIT | description overridden |
+| `bm25-tuning` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/retrieval/bm25-tuning) | MIT |  |
 | `chaos-engineer` | pack `sre` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/chaos-engineer) | MIT |  |
 | `claude-handoff` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/in-progress/claude-handoff) | MIT | runs only as `/claude-handoff` |
 | `cli-developer` | pack `cli` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/cli-developer) | MIT |  |
@@ -860,8 +892,10 @@ itself.
 | `code-reviewer` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/code-reviewer) | MIT |  |
 | `code-simplification` | pack `dev-workflows` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/code-simplification) |
 | `codebase-design` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/codebase-design) | MIT |  |
+| `complexity-analyzer` | pack `algorithms` | [a5c-ai/babysitter](https://github.com/a5c-ai/babysitter/tree/feb68abe397acc14f32b34984975c48fedba2b33/library/specializations/algorithms-optimization/skills/complexity-analyzer) | MIT |  |
 | `compose-gpu-serving` | global | this repository | MIT |  |
 | `constraint-driven-development` | pack `delivery` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/constraint-driven-development) |
+| `data-structure-selector` | pack `algorithms` | [a5c-ai/babysitter](https://github.com/a5c-ai/babysitter/tree/feb68abe397acc14f32b34984975c48fedba2b33/library/specializations/algorithms-optimization/skills/data-structure-selector) | MIT | description overridden |
 | `database-optimizer` | pack `databases` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/database-optimizer) | MIT |  |
 | `debugging-wizard` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/debugging-wizard) | MIT |  |
 | `deep-agents-core` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/d00eed0bf1b3debfb8e248f98037da7ad07a0972/config/skills/deep-agents-core) | MIT |  |
@@ -875,9 +909,13 @@ itself.
 | `docker-compose-patterns` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-compose-patterns) | Apache-2.0 | description overridden |
 | `docker-destructive-guardrails` | global | [docker/skills](https://github.com/docker/skills/tree/f79172733725e2fd236343ee7b963c446ed85d09/skills/docker-destructive-guardrails) | Apache-2.0 | description overridden |
 | `domain-modeling` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/domain-modeling) | MIT |  |
+| `dspy-evaluation-harness` | pack `prompt-optimization` | [intertwine/dspy-agent-skills](https://github.com/intertwine/dspy-agent-skills/tree/623dca091e43c9c6485ffff066f60639354ec591/skills/dspy-evaluation-harness) | MIT |  |
+| `dspy-fundamentals` | pack `prompt-optimization` | [intertwine/dspy-agent-skills](https://github.com/intertwine/dspy-agent-skills/tree/623dca091e43c9c6485ffff066f60639354ec591/skills/dspy-fundamentals) | MIT |  |
+| `dspy-gepa-optimizer` | pack `prompt-optimization` | [intertwine/dspy-agent-skills](https://github.com/intertwine/dspy-agent-skills/tree/623dca091e43c9c6485ffff066f60639354ec591/skills/dspy-gepa-optimizer) | MIT |  |
 | `ecosystem-primer` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/9feb8147562f0f186b081b343e5ccaf53e9e7a18/config/skills/ecosystem-primer) | MIT |  |
 | `entra-app-registration` | pack `azure` | [microsoft/azure-skills](https://github.com/microsoft/azure-skills/tree/5aa6e04819634ca4945ef57d6aa059eb4f5944e7/skills/entra-app-registration) | MIT | description overridden |
 | `eval-engineering` | pack `agent-evals` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/fc2010384ddb4f0ccc5317e25c82c246f7bc6bf7/config/skills/eval-engineering) | MIT |  |
+| `evaluate-rag` | pack `retrieval` | [ai-evals-course/evals-skills](https://github.com/ai-evals-course/evals-skills/tree/80d5f7b0127c7572ed9e9339937adbfd7240ffeb/skills/evaluate-rag) | Apache-2.0 |  |
 | `fastapi` | global | [fastapi/fastapi](https://github.com/fastapi/fastapi/tree/7a0a3f0b286c6c865cf4398ea0e957a87b8bffa4/fastapi/.agents/skills/fastapi) | MIT | description overridden |
 | `fastapi-expert` | pack `fastapi` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fastapi-expert) | MIT |  |
 | `fastapi-services` | pack `fastapi` | this repository | MIT |  |
@@ -890,6 +928,7 @@ itself.
 | `foundry-langchain` | pack `foundry` | this repository | MIT |  |
 | `frontend-design` | pack `gradio`, pack `openwebui`, pack `react` | [anthropics/skills](https://github.com/anthropics/skills/tree/dbd4588f9e1033efb41dad4bef2f7947c8993d44/skills/frontend-design) | Apache-2.0 |  |
 | `fullstack-guardian` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fullstack-guardian) | MIT |  |
+| `gepa-optimize-anything` | pack `prompt-optimization` | [gepa-ai/gepa](https://github.com/gepa-ai/gepa/tree/ce5b0d6e3d6af6c6dbec6de2c54536bbb961d309/.claude/skills/gepa-optimize-anything) | MIT |  |
 | `git-guardrails-claude-code` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) | MIT |  |
 | `github-actions-hardening` | global | [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/df566343b3a685e821f8ebe8ea70a2a8eb8b857b/skills/github-actions-hardening) | MIT | description overridden |
 | `github-issues` | global | this repository | MIT | derived from [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/edbecfa9099c4addae1f500cca1ac067204b30fd/skills/github-issues) |
@@ -904,6 +943,7 @@ itself.
 | `hf-gradio` | pack `gradio` | [gradio-app/gradio](https://github.com/gradio-app/gradio/tree/3cae4986c69fc851a4b18c340f7cbeb9dcdee410/.agents/skills/hf-gradio) | Apache-2.0 |  |
 | `hf-mem` | pack `local-inference` | [huggingface/skills](https://github.com/huggingface/skills/tree/c3ff942be3e07116b475253f0a8fc4f54682c1a8/skills/hf-mem) | Apache-2.0 |  |
 | `huggingface-local-models` | pack `local-inference` | [huggingface/skills](https://github.com/huggingface/skills/tree/c3ff942be3e07116b475253f0a8fc4f54682c1a8/skills/huggingface-local-models) | Apache-2.0 |  |
+| `hybrid-search` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/rag/hybrid-search) | MIT |  |
 | `implement` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/implement); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/executing-plans); runs only as `/implement` |
 | `implement-spec` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/c612defa9e5cf9372262d0279eb124993ba77b71/skills/engineering/implement-spec); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/subagent-driven-development); runs only as `/implement-spec` |
 | `improve-codebase-architecture` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/improve-codebase-architecture) | MIT | runs only as `/improve-codebase-architecture` |
@@ -926,6 +966,11 @@ itself.
 | `langsmith-online-eval-engineering` | pack `agent-evals` | this repository | MIT | derived from [langchain-ai/langsmith-skills](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-online-eval-engineering) |
 | `langsmith-trace` | pack `agent-evals` | this repository | MIT | derived from [langchain-ai/langsmith-skills](https://github.com/langchain-ai/langsmith-skills/tree/13c168b28dbc3a7679e8f0358160063ad3329694/config/skills/langsmith-trace) |
 | `legacy-modernizer` | global | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/legacy-modernizer) | MIT |  |
+| `librechat` | pack `librechat` | [TerminalSkills/skills](https://github.com/TerminalSkills/skills/tree/42289059901710441bfa8081c08c3a9f36b93f9c/skills/librechat) | Apache-2.0 |  |
+| `librechat-agents` | pack `librechat` | this repository | MIT |  |
+| `librechat-docs` | pack `librechat` | [LibreChat-AI/docs](https://github.com/LibreChat-AI/docs/tree/9594a7a7158e6fee41d9f319a1ed59037eab5552/public/.well-known/agent-skills/librechat-docs) | MIT |  |
+| `llama-app` | pack `local-inference` | this repository | MIT |  |
+| `llama-cpp` | pack `local-inference` | [magnus919/agent-skills](https://github.com/magnus919/agent-skills/tree/3d56c09c5218b066a735925fbfce8d97851bb992/llama-cpp) | MIT |  |
 | `local-model-serving` | pack `local-inference` | this repository | MIT |  |
 | `loop-me` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/loop-me) | MIT | runs only as `/loop-me` |
 | `managed-deep-agents` | pack `langchain` | [langchain-ai/langchain-skills](https://github.com/langchain-ai/langchain-skills/tree/16a992f09ab3ccfb642dd4f08d350d833d1990bf/config/skills/managed-deep-agents) | MIT |  |
@@ -936,27 +981,36 @@ itself.
 | `migrate-to-shoehorn` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/697d4ce9742da558fd1ba6697c8e9775e2e302dd/skills/misc/migrate-to-shoehorn) | MIT |  |
 | `ml-pipeline` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/ml-pipeline) | MIT |  |
 | `model-recipes` | pack `local-inference` | [vllm-project/vllm](https://github.com/vllm-project/vllm/tree/eca54bd1d937e778a939c240a2ed966fbcb12f85/.agents/skills/model-recipes) | Apache-2.0 |  |
+| `mongodb-query-optimizer` | pack `mongodb` | [mongodb/agent-skills](https://github.com/mongodb/agent-skills/tree/4946a8d3ca032c01c5d2374c558e2fcbbfcefeca/skills/mongodb-query-optimizer) | Apache-2.0 |  |
+| `mongodb-schema-design` | pack `mongodb` | [mongodb/agent-skills](https://github.com/mongodb/agent-skills/tree/4946a8d3ca032c01c5d2374c558e2fcbbfcefeca/skills/mongodb-schema-design) | Apache-2.0 |  |
+| `mongodb-search-and-ai` | pack `mongodb` | [mongodb/agent-skills](https://github.com/mongodb/agent-skills/tree/4946a8d3ca032c01c5d2374c558e2fcbbfcefeca/skills/mongodb-search-and-ai) | Apache-2.0 |  |
 | `monitoring-expert` | pack `sre` | this repository | MIT | derived from [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/monitoring-expert) |
 | `muse-glimmer` | pack `local-inference` | this repository | MIT |  |
 | `observability-and-instrumentation` | pack `sre` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/observability-and-instrumentation) |
 | `opencv-python` | pack `vision` | this repository | MIT |  |
 | `openwebui` | pack `openwebui` | this repository | MIT |  |
 | `performance-optimization` | pack `performance` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/performance-optimization) |
+| `pgvector-semantic-search` | pack `databases`, pack `retrieval` | [timescale/pg-aiguide](https://github.com/timescale/pg-aiguide/tree/1aef6e452b97fae580d57677a807fd0d601ddc7b/skills/pgvector-semantic-search) | Apache-2.0 |  |
 | `playwright-best-practices` | pack `playwright` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices) | MIT | description overridden |
 | `playwright-cli` | pack `playwright` | [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli/tree/b85c7a736bb473bf55b584e54a09ffa698d6d871/skills/playwright-cli) | Apache-2.0 |  |
 | `playwright-expert` | pack `playwright` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/playwright-expert) | MIT |  |
 | `playwright-trace` | pack `playwright` | [microsoft/playwright](https://github.com/microsoft/playwright/tree/cfe490d941f992655948eee8fd4fd94e1c4234bf/packages/playwright-core/src/tools/skills/playwright-trace) | Apache-2.0 |  |
 | `ponytail` | pack `dev-workflows` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail/tree/09c434ab73ca43761c5d8b0c5d341926c2fba710/skills/ponytail) | MIT | description, disable-model-invocation overridden; runs only as `/ponytail` |
+| `postgres-hybrid-text-search` | pack `databases`, pack `retrieval` | [timescale/pg-aiguide](https://github.com/timescale/pg-aiguide/tree/1aef6e452b97fae580d57677a807fd0d601ddc7b/skills/postgres-hybrid-text-search) | Apache-2.0 |  |
 | `postgres-pro` | pack `databases` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/postgres-pro) | MIT |  |
 | `pr` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/e484a8095543718ced436b9b49a8160ed4554000/skills/engineering/pr) | MIT |  |
-| `prompt-engineer` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/prompt-engineer) | MIT |  |
+| `prompt-engineer` | pack `ml-engineering`, pack `prompt-optimization` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/prompt-engineer) | MIT |  |
+| `promptfoo-evals` | pack `prompt-optimization` | [promptfoo/promptfoo](https://github.com/promptfoo/promptfoo/tree/0d4978bace531463ebf200800f396fab9db4c21a/.claude/skills/promptfoo-evals) | MIT |  |
 | `property-based-testing` | global | [trailofbits/skills](https://github.com/trailofbits/skills/tree/123037ec8aed26f0d86327cc39137ee5043e5deb/plugins/property-based-testing/skills/property-based-testing) | CC-BY-SA-4.0 | description overridden |
 | `prototype` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/engineering/prototype) | MIT |  |
 | `python-mcp-server-generator` | pack `mcp` | this repository | MIT | derived from [github/awesome-copilot](https://github.com/github/awesome-copilot/tree/f25421d3f1b8b3bb217f78a7c0567cf7ec117cd8/skills/python-mcp-server-generator) |
-| `rag-architect` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/rag-architect) | MIT |  |
+| `rag-architect` | pack `ml-engineering`, pack `retrieval` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/rag-architect) | MIT |  |
+| `rag-evaluation` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/rag/rag-evaluation) | MIT |  |
 | `react-expert` | pack `react` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-expert) | MIT |  |
 | `react-native-expert` | pack `react` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/react-native-expert) | MIT |  |
+| `reasoning-model-prompting` | pack `prompt-optimization` | this repository | MIT |  |
 | `repo-template` | global | this repository | MIT |  |
+| `reranking` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/rag/reranking) | MIT |  |
 | `research` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/research) | MIT |  |
 | `retro` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/a7d038f6bf7f01b516408e95e2fb56e0b338fa6f/skills/engineering/retro) | MIT | runs only as `/retro` |
 | `review-feedback` | pack `dev-workflows` | this repository | MIT | derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/receiving-code-review) |
@@ -989,6 +1043,7 @@ itself.
 | `triage` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/triage) | MIT | runs only as `/triage` |
 | `typescript-pro` | pack `typescript` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/typescript-pro) | MIT |  |
 | `uv` | global | [astral-sh/claude-code-plugins](https://github.com/astral-sh/claude-code-plugins/tree/f3ce88a7ba830f53afd6d944c1d0278ed318e142/plugins/astral/skills/uv) | MIT OR Apache-2.0 |  |
+| `vector-quantization` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/vector-stores/vector-quantization) | MIT |  |
 | `vercel-composition-patterns` | pack `react` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/composition-patterns) | MIT |  |
 | `vercel-react-best-practices` | pack `react` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/react-best-practices) | MIT | description overridden |
 | `vllm-bench-serve` | pack `local-inference` | [vllm-project/vllm-skills](https://github.com/vllm-project/vllm-skills/tree/c99623410c1531148ff9b39fe1dcb27efbf4bf23/plugins/vllm-skills/skills/vllm-bench-serve) | Apache-2.0 |  |
@@ -1014,6 +1069,7 @@ itself.
 | `huggingface` | global | claude, codex | https://huggingface.co/mcp |  | Finds and inspects models, datasets and Spaces on the Hub, anonymously (read-only). |
 | `langsmith` | global | claude, codex | https://api.smith.langchain.com/mcp |  | Optional authenticated LangSmith workspace integration. Complete OAuth in the client; this template stores no credentials. |
 | `microsoft-learn` | global | codex | https://learn.microsoft.com/api/mcp |  | Microsoft and Azure documentation for Codex; Claude Code has it from the microsoft-docs plugin. |
+| `mongodb` | pack `mongodb` | claude, codex | `npx mongodb-mcp-server@3.3.0` |  | MongoDB's official server for the mongodb pack, pinned, in --readOnly mode: only its read, connect and metadata tools are registered, so it can list databases, collections, indexes and schemas, run find and aggregate, explain queries and inspect search indexes, and never create, update or delete. The deployment comes from the machine's MDB_MCP_CONNECTION_STRING (or the connect tool); no connection string is stored here, and telemetry is off. Atlas tools appear only when MDB_MCP_API_CLIENT_ID and MDB_MCP_API_CLIENT_SECRET are set on the machine. |
 | `playwright` | pack `playwright` | claude, codex | `npx @playwright/mcp@0.0.83` | `browser_run_code_unsafe` | Drives a real browser for the playwright pack, with every optional capability (coordinate clicks, PDF, devtools tracing and video, network routing, storage and cookies, test assertions, config). Pinned, with a fresh profile each session (--isolated), headless, and output written outside the repository; replaces the playwright plugin, which runs @latest with a persistent profile. browser_run_code_unsafe stays denied: it runs code in the server's own process. |
 | `playwright-unsafe` | pack `playwright` | claude, codex | `npx @playwright/mcp@0.0.83` |  | Optional: the playwright pack's server with browser_run_code_unsafe allowed, which runs code in the server's own process, so it can do anything this machine's user can. Only in repositories with the playwright pack, on a machine granted it (globals --allow-write-mcp playwright-unsafe), and only in Claude Code's local scope and the ignored .codex/config.toml, never the committed .mcp.json. Claude Code asks before each call. It runs its own browser beside the playwright server's: browse in it for run-code to see the page. |
 | `reference-langchain` | pack `langchain` | claude, codex | https://reference.langchain.com/mcp |  | Looks up LangChain API symbols and their signatures. |

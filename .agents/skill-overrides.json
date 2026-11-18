@@ -6,7 +6,7 @@
     },
     "upstream": "187e0206cdff0e0af4324761a0eca8aed2fc5ab6",
     "base": {
-      "description": "description: \"Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/deployment-plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application — use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/deployment-plan.md from azure-prepare and validated status from azure-validate. WHEN: \\\"run azd up\\\", \\\"run azd deploy\\\", \\\"execute deployment\\\", \\\"push to production\\\", \\\"push to cloud\\\", \\\"go live\\\", \\\"ship it\\\", \\\"bicep deploy\\\", \\\"terraform apply\\\", \\\"publish to Azure\\\", \\\"launch on Azure\\\". DO NOT USE WHEN: \\\"create and deploy\\\", \\\"build and deploy\\\", \\\"create a new app\\\", \\\"set up infrastructure\\\", \\\"create and deploy to Azure using Terraform\\\" — use azure-prepare for these.\"\n"
+      "description": "description: \"Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/deployment-plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application \u2014 use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/deployment-plan.md from azure-prepare and validated status from azure-validate. WHEN: \\\"run azd up\\\", \\\"run azd deploy\\\", \\\"execute deployment\\\", \\\"push to production\\\", \\\"push to cloud\\\", \\\"go live\\\", \\\"ship it\\\", \\\"bicep deploy\\\", \\\"terraform apply\\\", \\\"publish to Azure\\\", \\\"launch on Azure\\\". DO NOT USE WHEN: \\\"create and deploy\\\", \\\"build and deploy\\\", \\\"create a new app\\\", \\\"set up infrastructure\\\", \\\"create and deploy to Azure using Terraform\\\" \u2014 use azure-prepare for these.\"\n"
     }
   },
   "azure-diagnostics": {
@@ -20,7 +20,7 @@
     }
   },
   "azure-prepare": {
-    "why": "Upstream is ~720 characters of trigger lists; keep the azd scope and the prepare → validate → deploy routing.",
+    "why": "Upstream is ~720 characters of trigger lists; keep the azd scope and the prepare \u2192 validate \u2192 deploy routing.",
     "frontmatter": {
       "description": "Prepare an Azure Developer CLI (azd) project: azure.yaml, Bicep or Terraform infrastructure, Dockerfiles and .azure/deployment-plan.md. Use when the user wants azd, the project has an azure.yaml, or asks to create and deploy a new app to Azure (azure-validate and azure-deploy follow). Not for deploys without azd."
     },
@@ -59,6 +59,16 @@
       "description": "description: \"Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment.\"\n"
     }
   },
+  "data-structure-selector": {
+    "why": "Upstream is one line with no triggers; say what it decides and when to use it.",
+    "frontmatter": {
+      "description": "Choose a data structure from the operations the code needs (lookups, ordered scans, inserts and deletes, priority, prefix or range queries) and their complexity, against the language's standard types. Use when picking or replacing a collection, map, tree, heap or trie, or when complexity-analyzer finds the structure is the bottleneck."
+    },
+    "upstream": "598ffa08b76c6525b3d56ff4d899b5a59b69f8c2",
+    "base": {
+      "description": "description: Select optimal data structure based on operation requirements\n"
+    }
+  },
   "docker-build-strategies": {
     "why": "Shorter, same triggers.",
     "frontmatter": {
@@ -70,7 +80,7 @@
     }
   },
   "docker-compose-patterns": {
-    "why": "Upstream adds 'even if the user just says…' trigger lists; keep the triggers, shorter.",
+    "why": "Upstream adds 'even if the user just says\u2026' trigger lists; keep the triggers, shorter.",
     "frontmatter": {
       "description": "Docker Compose files (compose.yaml and overrides): service definitions, health checks and depends_on ordering, volumes, networks, environment variables and development overrides. Use when creating, changing or debugging a Compose setup, wiring services together or adding a database to a stack."
     },
@@ -86,7 +96,7 @@
     },
     "upstream": "1586243aa99713b85a35e1e2e4a8a0d8f0b37eda",
     "base": {
-      "description": "description: Use this skill before running, or recommending, any Docker command that deletes, wipes, resets, or otherwise irreversibly changes state — even if the user just says to \"clean up\", \"clear the cache\", \"start fresh\", \"wipe everything\", \"nuke it\", \"reset\", \"force remove\", or \"tear down\" Docker resources. Covers generic Docker CLI destructive operations not owned by a more specific skill — `docker rm`, `docker rm -f`, `docker container prune`, `docker kill`, `docker system prune`, `docker rmi`/`docker image rm`, `docker image prune -a`, `docker network rm`, `docker network prune`, `docker builder prune`, `docker buildx rm`, `docker context rm`, and standalone (non-Compose) `docker volume rm`/`docker volume prune`. Also indexes destructive commands owned by other Docker skills (Compose, sandbox, Desktop). Core rule — state exactly what will be lost and get explicit confirmation first, except narrow, low-friction Tier 1 container cleanup.\n"
+      "description": "description: Use this skill before running, or recommending, any Docker command that deletes, wipes, resets, or otherwise irreversibly changes state \u2014 even if the user just says to \"clean up\", \"clear the cache\", \"start fresh\", \"wipe everything\", \"nuke it\", \"reset\", \"force remove\", or \"tear down\" Docker resources. Covers generic Docker CLI destructive operations not owned by a more specific skill \u2014 `docker rm`, `docker rm -f`, `docker container prune`, `docker kill`, `docker system prune`, `docker rmi`/`docker image rm`, `docker image prune -a`, `docker network rm`, `docker network prune`, `docker builder prune`, `docker buildx rm`, `docker context rm`, and standalone (non-Compose) `docker volume rm`/`docker volume prune`. Also indexes destructive commands owned by other Docker skills (Compose, sandbox, Desktop). Core rule \u2014 state exactly what will be lost and get explicit confirmation first, except narrow, low-friction Tier 1 container cleanup.\n"
     }
   },
   "entra-app-registration": {
@@ -126,7 +136,7 @@
     },
     "upstream": "61fa956e0ca6a0958ff6713b7b94ed22ecdc2e7e",
     "base": {
-      "description": "description: Security hardening reviewer for GitHub Actions workflow files (.github/workflows/*.yml). Reasons about the Actions threat model that pattern matchers and general code linters miss — untrusted-input script injection, privileged triggers running fork code, mutable action references, and over-scoped tokens. Use this skill when asked to review, audit, harden, or secure a GitHub Actions workflow, when writing a new workflow, or for any request like \"is this workflow safe?\", \"review my CI for security issues\", \"why is pull_request_target dangerous here?\", \"pin my actions\", or \"lock down GITHUB_TOKEN permissions\". Covers script injection via ${{ }} interpolation, pull_request_target / workflow_run privilege escalation, SHA-pinning of third-party actions, least-privilege permissions, GITHUB_ENV/GITHUB_OUTPUT injection, secret exposure, OIDC over long-lived credentials, and self-hosted runner exposure on public repositories.\n"
+      "description": "description: Security hardening reviewer for GitHub Actions workflow files (.github/workflows/*.yml). Reasons about the Actions threat model that pattern matchers and general code linters miss \u2014 untrusted-input script injection, privileged triggers running fork code, mutable action references, and over-scoped tokens. Use this skill when asked to review, audit, harden, or secure a GitHub Actions workflow, when writing a new workflow, or for any request like \"is this workflow safe?\", \"review my CI for security issues\", \"why is pull_request_target dangerous here?\", \"pin my actions\", or \"lock down GITHUB_TOKEN permissions\". Covers script injection via ${{ }} interpolation, pull_request_target / workflow_run privilege escalation, SHA-pinning of third-party actions, least-privilege permissions, GITHUB_ENV/GITHUB_OUTPUT injection, secret exposure, OIDC over long-lived credentials, and self-hosted runner exposure on public repositories.\n"
     }
   },
   "langchain-dependencies": {
@@ -210,7 +220,7 @@
     },
     "upstream": "1cc39d8d8cba5955bf9c8d7c9a2aef348722a55e",
     "base": {
-      "description": "description: \"Writes, reviews, and debugs property-based tests — Hypothesis, fast-check, proptest, jqwik, rapid, and Echidna or Medusa for Solidity invariants. Use whenever tests should cover a whole input domain instead of a hand-picked list of examples: encode/decode and serialize/deserialize pairs, parsers, canonicalizers and normalizers, validators, numeric and Decimal types, comparators and sort order, data structures, and smart-contract state invariants. Also use when adding cases to an existing @given, fast-check, or proptest suite, when judging whether existing property tests assert anything real, and when a generator has shrunk a counterexample and you need to tell a wrong property from a genuine bug. Not for coverage-guided binary fuzzing (libFuzzer, AFL), mutation-testing campaigns, static analysis, benchmarking, or end-to-end UI tests.\"\n"
+      "description": "description: \"Writes, reviews, and debugs property-based tests \u2014 Hypothesis, fast-check, proptest, jqwik, rapid, and Echidna or Medusa for Solidity invariants. Use whenever tests should cover a whole input domain instead of a hand-picked list of examples: encode/decode and serialize/deserialize pairs, parsers, canonicalizers and normalizers, validators, numeric and Decimal types, comparators and sort order, data structures, and smart-contract state invariants. Also use when adding cases to an existing @given, fast-check, or proptest suite, when judging whether existing property tests assert anything real, and when a generator has shrunk a counterexample and you need to tell a wrong property from a genuine bug. Not for coverage-guided binary fuzzing (libFuzzer, AFL), mutation-testing campaigns, static analysis, benchmarking, or end-to-end UI tests.\"\n"
     }
   },
   "security-audit": {

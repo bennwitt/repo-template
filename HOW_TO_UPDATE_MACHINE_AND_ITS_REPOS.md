@@ -122,6 +122,12 @@ releases that old too.
   shell profile, outside the script's block, for publishing Code Connect mappings
   (`FIGMA_ACCESS_TOKEN="$FIGMA_TOKEN" npx figma connect publish`). It needs the Code Connect:
   Write and File content: Read scopes, and lasts 90 days at most.
+- **MongoDB:** in a repository with the `mongodb` pack, the official server runs in read-only
+  mode and reaches the deployment named by `MDB_MCP_CONNECTION_STRING` (or several, as a JSON
+  object in `MDB_MCP_CONNECTION_STRINGS`). Set it in your shell profile, outside the script's
+  block, with a user that has read-only roles, then restart the client; without it, the
+  `connect` tool takes a connection string per session. Atlas tools need
+  `MDB_MCP_API_CLIENT_ID` and `MDB_MCP_API_CLIENT_SECRET` too.
 - **Plugins that need a sign-in:** greptile (`/greptile:login` in Claude Code) and atlassian
   (authorize it in `/mcp`).
 
