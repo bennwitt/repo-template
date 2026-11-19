@@ -312,3 +312,29 @@ adds it to that machine's local client config only, never to `.mcp.json`. `figma
 figma pack's grant, for Figma's write tools; grant it only on the user's explicit request too.
 Keep customized assets and treat unverifiable plugin components as review-required. Use temporary
 homes for fixture validation; native installation on the real machine needs user authorization.
+
+## UX and interface design
+
+Select `ux` for browser dashboards, management tools and other user interfaces, independent
+of the application framework. It combines `frontend-design`, `ui-ux-pro-max`, `impeccable`
+and `web-interface-guidelines`. Add it with the normal preview/apply workflow:
+
+```bash
+repo-template check . --pack ux
+repo-template update . --pack ux --no-input
+repo-template check .
+```
+
+Existing frontend packs and individual selections stay unchanged; add `ux` where the project
+needs this broader design workflow. For a focused addition, select either new skill individually.
+Use Impeccable to shape or critique the task flow, UI UX Pro Max for targeted pattern searches,
+frontend-design for visual implementation, and web-interface-guidelines for the final review.
+Scale the work to the task and preserve the application's existing architecture and live services.
+
+These are vendored skills, not native plugin installations. No hooks, browser extension or engine
+binary are installed by pack selection. Impeccable's launcher can download its checksum-pinned
+engine when invoked; its documented fallback works from existing project context. UI UX Pro Max
+uses a local Python search script: resolve it from the selected skill directory, rather than
+assuming a Claude plugin root. See docs/evaluations/ux.md in the standards checkout for pinned
+sources, admission findings, runtime details and verification limits. Restart the agent session
+if the newly selected skills do not appear.

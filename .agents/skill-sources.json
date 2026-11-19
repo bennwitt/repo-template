@@ -336,6 +336,18 @@
       },
       "discover": "none"
     },
+    "nextlevelbuilder/ui-ux-pro-max-skill": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2024 Next Level Builder",
+      "licenseFiles": {
+        "LICENSE": "1e71cbf26660f31903807d099fe902c098fc7e4c"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "review",
+        "additions": "review"
+      }
+    },
     "obra/superpowers": {
       "license": "MIT",
       "copyright": "Copyright (c) 2025 Jesse Vincent",
@@ -345,6 +357,19 @@
       "discover": "all",
       "admission": {
         "updates": "auto",
+        "additions": "review"
+      }
+    },
+    "pbakaus/impeccable": {
+      "license": "Apache-2.0",
+      "copyright": "Copyright 2025 Paul Bakaus",
+      "licenseFiles": {
+        "LICENSE": "bb3f6d23b1f8025514a62a12b51b47d73e3c9aa9",
+        "NOTICE.md": "03538a22d990f52223c976eba9d80dc1ff9e422f"
+      },
+      "discover": "none",
+      "admission": {
+        "updates": "review",
         "additions": "review"
       }
     },
@@ -1308,6 +1333,21 @@
       "validation_ref": "fd177d06f6bbb35c4474529e197a93fd24f5d16d",
       "validation_scope": "integrity-and-skill-scan"
     },
+    "impeccable": {
+      "commit": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+      "tree": "c4298d9d001a41c9c2a3797fddee509bc4dd7ba0",
+      "last_synced_at": "2026-11-19T13:51:32.514Z",
+      "last_validated_at": "2026-11-19T13:51:32.514Z",
+      "validation_ref": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+      "validation_scope": "integrity-and-skill-scan",
+      "ref": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+      "allowFindings": {
+        "reason": "Reviewed 2026-11-19: UI UX Pro Max findings are 19 bundled upstream test files, kept outside project testpaths; Impeccable findings are three JavaScript RegExp.exec calls, not code evaluation. Pinned inputs and scope documented in docs/evaluations/ux.md. No hooks or engine installed by this admission.",
+        "counts": {
+          "high": 3
+        }
+      }
+    },
     "improve-codebase-architecture": {
       "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
       "tree": "587147dd230da299cc5e84971cb0a33f6676f8a6"
@@ -1652,6 +1692,21 @@
     "typescript-pro": {
       "commit": "36f3fe8052da7c57083783268c6ea3265d075265",
       "tree": "749a0d4d18783570b071285606687f256d8ee17b"
+    },
+    "ui-ux-pro-max": {
+      "commit": "2de1134dc4d1cfe112934611ae5803ae17a1bd7e",
+      "tree": "2c985726a95617e914ec694aebf9e1e07eb9bca1",
+      "last_synced_at": "2026-11-19T13:50:34.256Z",
+      "last_validated_at": "2026-11-19T13:50:34.256Z",
+      "validation_ref": "2de1134dc4d1cfe112934611ae5803ae17a1bd7e",
+      "validation_scope": "integrity-and-skill-scan",
+      "ref": "2de1134dc4d1cfe112934611ae5803ae17a1bd7e",
+      "allowFindings": {
+        "reason": "Reviewed 2026-11-19: UI UX Pro Max findings are 19 bundled upstream test files, kept outside project testpaths; Impeccable findings are three JavaScript RegExp.exec calls, not code evaluation. Pinned inputs and scope documented in docs/evaluations/ux.md. No hooks or engine installed by this admission.",
+        "counts": {
+          "high": 19
+        }
+      }
     },
     "uv": {
       "commit": "f3ce88a7ba830f53afd6d944c1d0278ed318e142",

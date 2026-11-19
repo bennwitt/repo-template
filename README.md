@@ -423,6 +423,33 @@ my-service/
 └── .repo-template.json    # ownership manifest: commit it
 ```
 
+
+## UX and interface design
+
+Select `ux` for browser dashboards, management tools and other user interfaces, independent
+of the application framework. It combines `frontend-design`, `ui-ux-pro-max`, `impeccable`
+and `web-interface-guidelines`. Add it with the normal preview/apply workflow:
+
+```bash
+repo-template check . --pack ux
+repo-template update . --pack ux --no-input
+repo-template check .
+```
+
+Existing frontend packs and individual selections stay unchanged; add `ux` where the project
+needs this broader design workflow. For a focused addition, select either new skill individually.
+Use Impeccable to shape or critique the task flow, UI UX Pro Max for targeted pattern searches,
+frontend-design for visual implementation, and web-interface-guidelines for the final review.
+Scale the work to the task and preserve the application's existing architecture and live services.
+
+These are vendored skills, not native plugin installations. No hooks, browser extension or engine
+binary are installed by pack selection. Impeccable's launcher can download its checksum-pinned
+engine when invoked; its documented fallback works from existing project context. UI UX Pro Max
+uses a local Python search script: resolve it from the selected skill directory, rather than
+assuming a Claude plugin root. See docs/evaluations/ux.md in the standards checkout for pinned
+sources, admission findings, runtime details and verification limits. Restart the agent session
+if the newly selected skills do not appear.
+
 ## The skill catalog
 
 Global skills live in `.agents/skills/<name>/SKILL.md`, pack skills in
@@ -861,6 +888,7 @@ itself.
 | `sre` | Reliability: SLOs, incidents, feature instrumentation, bounded metrics, logs, tracing, alert/runbook verification, and chaos experiments. | `chaos-engineer`, `monitoring-expert`, `observability-and-instrumentation`, `sre-engineer` |
 | `stagehand` | Stagehand browser automation, self-hosted on your own Chrome and model: Stagehand v4 code (act, extract, observe), this repository's stagehand MCP server, and the browse CLI. Excludes the playwright pack. | `stagehand`, `stagehand-browse` |
 | `typescript` | TypeScript repositories (deep-module boundaries, shoehorn test data) | `migrate-to-shoehorn`, `setup-ts-deep-modules`, `typescript-pro` |
+| `ux` | Framework-neutral UX and interface design: task flows, hierarchy, accessibility, visual direction, searchable patterns and rendered review. | `frontend-design`, `impeccable`, `ui-ux-pro-max`, `web-interface-guidelines` |
 | `vision` | Computer vision in Python: OpenCV, and Meta SAM 3 segmentation. | `opencv-python`, `sam3` |
 
 | Skill | Where | Source | License | Notes |
@@ -926,7 +954,7 @@ itself.
 | `find-skills` | global | [vercel-labs/skills](https://github.com/vercel-labs/skills/tree/773fb2c7bbf16781670a3520affc4abd0c6151ae/skills/find-skills) | MIT | description overridden |
 | `fine-tuning-expert` | pack `ml-engineering` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fine-tuning-expert) | MIT |  |
 | `foundry-langchain` | pack `foundry` | this repository | MIT |  |
-| `frontend-design` | pack `gradio`, pack `openwebui`, pack `react` | [anthropics/skills](https://github.com/anthropics/skills/tree/dbd4588f9e1033efb41dad4bef2f7947c8993d44/skills/frontend-design) | Apache-2.0 |  |
+| `frontend-design` | pack `gradio`, pack `openwebui`, pack `react`, pack `ux` | [anthropics/skills](https://github.com/anthropics/skills/tree/dbd4588f9e1033efb41dad4bef2f7947c8993d44/skills/frontend-design) | Apache-2.0 |  |
 | `fullstack-guardian` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/fullstack-guardian) | MIT |  |
 | `gepa-optimize-anything` | pack `prompt-optimization` | [gepa-ai/gepa](https://github.com/gepa-ai/gepa/tree/ce5b0d6e3d6af6c6dbec6de2c54536bbb961d309/.claude/skills/gepa-optimize-anything) | MIT |  |
 | `git-guardrails-claude-code` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/misc/git-guardrails-claude-code) | MIT |  |
@@ -944,6 +972,7 @@ itself.
 | `hf-mem` | pack `local-inference` | [huggingface/skills](https://github.com/huggingface/skills/tree/c3ff942be3e07116b475253f0a8fc4f54682c1a8/skills/hf-mem) | Apache-2.0 |  |
 | `huggingface-local-models` | pack `local-inference` | [huggingface/skills](https://github.com/huggingface/skills/tree/c3ff942be3e07116b475253f0a8fc4f54682c1a8/skills/huggingface-local-models) | Apache-2.0 |  |
 | `hybrid-search` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/rag/hybrid-search) | MIT |  |
+| `impeccable` | pack `ux` | [pbakaus/impeccable](https://github.com/pbakaus/impeccable/tree/b49177d32788f2dc585c42831d845dacf1ebed2c/.agents/skills/impeccable) | Apache-2.0 | description overridden |
 | `implement` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/implement); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/executing-plans); runs only as `/implement` |
 | `implement-spec` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/c612defa9e5cf9372262d0279eb124993ba77b71/skills/engineering/implement-spec); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/subagent-driven-development); runs only as `/implement-spec` |
 | `improve-codebase-architecture` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/improve-codebase-architecture) | MIT | runs only as `/improve-codebase-architecture` |
@@ -1042,6 +1071,7 @@ itself.
 | `to-tickets` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/to-tickets) | MIT | runs only as `/to-tickets` |
 | `triage` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/triage) | MIT | runs only as `/triage` |
 | `typescript-pro` | pack `typescript` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/typescript-pro) | MIT |  |
+| `ui-ux-pro-max` | pack `ux` | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/2de1134dc4d1cfe112934611ae5803ae17a1bd7e/.claude/skills/ui-ux-pro-max) | MIT | description overridden |
 | `uv` | global | [astral-sh/claude-code-plugins](https://github.com/astral-sh/claude-code-plugins/tree/f3ce88a7ba830f53afd6d944c1d0278ed318e142/plugins/astral/skills/uv) | MIT OR Apache-2.0 |  |
 | `vector-quantization` | pack `retrieval` | [claude-dev-suite/claude-dev-suite](https://github.com/claude-dev-suite/claude-dev-suite/tree/fd177d06f6bbb35c4474529e197a93fd24f5d16d/skills/vector-stores/vector-quantization) | MIT |  |
 | `vercel-composition-patterns` | pack `react` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/composition-patterns) | MIT |  |
@@ -1049,7 +1079,7 @@ itself.
 | `vllm-bench-serve` | pack `local-inference` | [vllm-project/vllm-skills](https://github.com/vllm-project/vllm-skills/tree/c99623410c1531148ff9b39fe1dcb27efbf4bf23/plugins/vllm-skills/skills/vllm-bench-serve) | Apache-2.0 |  |
 | `wait-what` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/productivity/wait-what) | MIT | runs only as `/wait-what` |
 | `wayfinder` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/wayfinder) | MIT | runs only as `/wayfinder` |
-| `web-interface-guidelines` | pack `react` | this repository | MIT | derived from [vercel-labs/web-interface-guidelines](https://github.com/vercel-labs/web-interface-guidelines/tree/434b7f91364665f2f733b310ec54809bf8f37937/command.md) |
+| `web-interface-guidelines` | pack `react`, pack `ux` | this repository | MIT | derived from [vercel-labs/web-interface-guidelines](https://github.com/vercel-labs/web-interface-guidelines/tree/434b7f91364665f2f733b310ec54809bf8f37937/command.md) |
 | `wizard` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/wizard) | MIT |  |
 | `writing-beats` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/writing-beats) | MIT | runs only as `/writing-beats` |
 | `writing-for-agents` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/writing-for-agents) | MIT |  |

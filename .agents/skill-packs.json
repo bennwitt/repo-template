@@ -398,6 +398,15 @@
       "typescript-pro"
     ]
   },
+  "ux": {
+    "description": "Framework-neutral UX and interface design: task flows, hierarchy, accessibility, visual direction, searchable patterns and rendered review.",
+    "skills": [
+      "frontend-design",
+      "ui-ux-pro-max",
+      "impeccable",
+      "web-interface-guidelines"
+    ]
+  },
   "vision": {
     "description": "Computer vision in Python: OpenCV, and Meta SAM 3 segmentation.",
     "skills": [

@@ -38,6 +38,8 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Add the optional framework-neutral `ux` pack with pinned UI UX Pro Max and Impeccable skills, existing frontend design and web interface review guidance, source licenses and reviewed scanner allowances.
+
 - Add six packs and extend two, for search and retrieval, local models, chat front ends,
   prompts and agents:
   - `retrieval`: BM25 tuning, hybrid search with rank fusion, reranking, ANN index selection
@@ -252,10 +254,10 @@ Document the end-to-end update process for keeping the standards machine checkou
 - MCP servers re-pinned to their newest release at least 7 days old: `shadcn`.
 - Skills added from upstream: `agent-architecture`, `ann-algorithms`, `bm25-tuning`,
   `complexity-analyzer`, `data-structure-selector`, `dspy-evaluation-harness`, `dspy-fundamentals`,
-  `dspy-gepa-optimizer`, `evaluate-rag`, `gepa-optimize-anything`, `hybrid-search`, `librechat`,
-  `librechat-docs`, `llama-cpp`, `mongodb-query-optimizer`, `mongodb-schema-design`,
+  `dspy-gepa-optimizer`, `evaluate-rag`, `gepa-optimize-anything`, `hybrid-search`, `impeccable`,
+  `librechat`, `librechat-docs`, `llama-cpp`, `mongodb-query-optimizer`, `mongodb-schema-design`,
   `mongodb-search-and-ai`, `pgvector-semantic-search`, `postgres-hybrid-text-search`,
-  `promptfoo-evals`, `rag-evaluation`, `reranking`, `vector-quantization`.
+  `promptfoo-evals`, `rag-evaluation`, `reranking`, `ui-ux-pro-max`, `vector-quantization`.
 
 ## 0.5.4 - 2026-10-14
 

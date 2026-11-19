@@ -1302,6 +1302,24 @@
       "skillFolderHash": "9e4960f80921e3445e8576b55bd2164bf0ef4370",
       "installedAt": "2026-11-18T19:08:12.031Z",
       "updatedAt": "2026-11-18T19:08:12.031Z"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "skillFolderHash": "2c985726a95617e914ec694aebf9e1e07eb9bca1",
+      "installedAt": "2026-11-19T13:50:34.256Z",
+      "updatedAt": "2026-11-19T13:50:34.256Z"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/pbakaus/impeccable.git",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "skillFolderHash": "c4298d9d001a41c9c2a3797fddee509bc4dd7ba0",
+      "installedAt": "2026-11-19T13:51:32.514Z",
+      "updatedAt": "2026-11-19T13:51:32.514Z"
     }
   },
   "dismissed": {
