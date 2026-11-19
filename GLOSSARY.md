@@ -99,6 +99,13 @@ no repository may have both, through the packs or an individual skill from eithe
 `playwright` and `stagehand` are exclusive, so a repository has one browser stack.
 _Avoid_: conflicting packs
 
+**72% plan**:
+The one-page plan the `pragmatic-design` pack's `seventy-two-percent-plan` skill writes: the
+one-way doors settled with boring choices, the two-way doors left to the build, data declared
+disposable, a fixed appetite, a deliberately-skipped list and a hardening path. Enough for one
+use case to be solid; neither day-0 enterprise architecture nor a throwaway.
+_Avoid_: MVP, prototype (the `prototype` skill is throwaway code), full design
+
 **Individual selection**:
 A repository skill chosen with `--skill`, recorded in the manifest's `individual_skills`.
 It supplies that skill and its supporting files, without sibling skills or pack MCP servers.
