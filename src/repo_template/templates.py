@@ -92,6 +92,7 @@ Format only project-owned files, never recursively through installed skill symli
 | Work | Preferred skills | Availability |
 | --- | --- | --- |
 | Clarify requirements | grilling, to-spec | global |
+| Decide how much to design | seventy-two-percent-plan | pragmatic-design pack |
 | Break an agreed spec into tasks | to-tickets | global |
 | Implement an agreed scope | implement; implement-spec for a task graph | global |
 | Test behavior or diagnose a failure | tdd, diagnosing-bugs | global |

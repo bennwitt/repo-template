@@ -38,6 +38,14 @@ Document the end-to-end update process for keeping the standards machine checkou
 
 ## Unreleased
 
+- Add the `pragmatic-design` pack: this repository's `seventy-two-percent-plan` (a one-page
+  plan for a solution that is solid for one use case and no more: fixed appetite, one-way
+  doors settled with boring choices, two-way doors left to the build, data declared
+  disposable with its reload command, a stated downtime tolerance, a walking skeleton, a
+  deliberately-skipped list with add-when triggers, and the hardening path a larger team would
+  take; with a cited principles reference) and `the-fool` for the pre-mortem. The engineering
+  workflow table routes "how much to design" to it.
+
 - Add the optional framework-neutral `ux` pack with pinned UI UX Pro Max and Impeccable skills, existing frontend design and web interface review guidance, source licenses and reviewed scanner allowances.
 
 - Add six packs and extend two, for search and retrieval, local models, chat front ends,

@@ -311,6 +311,13 @@
       "playwright-unsafe"
     ]
   },
+  "pragmatic-design": {
+    "description": "Right-sized design for one use case: the 72% plan (appetite, one-way doors, boring technology, disposable data, a deliberately-skipped list and a hardening path), with a pre-mortem to stress-test it.",
+    "skills": [
+      "seventy-two-percent-plan",
+      "the-fool"
+    ]
+  },
   "prompt-optimization": {
     "description": "Prompt evaluation and optimization: promptfoo evals, DSPy programs, metrics and GEPA, GEPA for any text artifact, and prompting reasoning versus instant models.",
     "skills": [

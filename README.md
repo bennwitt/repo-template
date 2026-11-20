@@ -680,6 +680,11 @@ evals in CI, the DSPy skills and `gepa-optimize-anything` for metric-driven opti
 `algorithms` holds Big-O analysis and data-structure choice; `librechat` is the LibreChat
 counterpart of `openwebui`, with LibreChat's own docs skill, an operator skill and
 `librechat-agents` for its SDK and tool registries.
+`pragmatic-design` is for deciding how much to design: `seventy-two-percent-plan` writes a
+one-page plan that settles the one-way doors (runtime, store kind, hosting shape, contract,
+identifiers) with boring choices, declares the data disposable and the downtime tolerance,
+lists what is deliberately skipped with the trigger to add it, and sketches the hardening path
+a larger team would take; `the-fool` runs the pre-mortem on it.
 
 ### MCP servers: global and per pack
 
@@ -880,6 +885,7 @@ itself.
 | `openwebui` | Open WebUI as the chat front end for your own agents: connections, Pipes, Tools, Filters, tool servers and deployment. | `frontend-design`, `openwebui` |
 | `performance` | Measured browser, service, database and memory performance: matched baselines, profiling, experiment records and honest source-only audits. Uses available tools; ships no MCP server. | `performance-optimization` |
 | `playwright` | Playwright, complete: drive a real browser through the Playwright MCP server (every optional capability) or the playwright-cli skill, and write, debug and read traces of end-to-end tests. | `playwright-best-practices`, `playwright-cli`, `playwright-expert`, `playwright-trace` |
+| `pragmatic-design` | Right-sized design for one use case: the 72% plan (appetite, one-way doors, boring technology, disposable data, a deliberately-skipped list and a hardening path), with a pre-mortem to stress-test it. | `seventy-two-percent-plan`, `the-fool` |
 | `prompt-optimization` | Prompt evaluation and optimization: promptfoo evals, DSPy programs, metrics and GEPA, GEPA for any text artifact, and prompting reasoning versus instant models. | `dspy-evaluation-harness`, `dspy-fundamentals`, `dspy-gepa-optimizer`, `gepa-optimize-anything`, `prompt-engineer`, `promptfoo-evals`, `reasoning-model-prompting` |
 | `react` | React and shadcn/ui front ends; with the langchain pack, LangGraph useStream chat UIs. | `frontend-design`, `react-expert`, `react-native-expert`, `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-interface-guidelines` |
 | `retrieval` | Search and retrieval: BM25 and lexical tuning, semantic and hybrid search with rank fusion, reranking, ANN index selection and quantization, pgvector, and retrieval evaluation. | `ann-algorithms`, `bm25-tuning`, `evaluate-rag`, `hybrid-search`, `pgvector-semantic-search`, `postgres-hybrid-text-search`, `rag-architect`, `rag-evaluation`, `reranking`, `vector-quantization` |
@@ -1050,6 +1056,7 @@ itself.
 | `security-reviewer` | pack `security` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/security-reviewer) | MIT |  |
 | `setup-matt-pocock-skills` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/59db609eb1e18aaf59b63284d0e52255aff0c63c/skills/engineering/setup-matt-pocock-skills); runs only as `/setup-matt-pocock-skills` |
 | `setup-ts-deep-modules` | pack `typescript` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/in-progress/setup-ts-deep-modules) | MIT | runs only as `/setup-ts-deep-modules` |
+| `seventy-two-percent-plan` | pack `pragmatic-design` | this repository | MIT |  |
 | `shadcn` | pack `react` | this repository | MIT | derived from [shadcn-ui/ui](https://github.com/shadcn-ui/ui/tree/d51870f66fd13cc975d82ecbb9eace3cff066878/skills/shadcn) |
 | `shipping-and-launch` | pack `delivery` | this repository | MIT | derived from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/aeac41d4d005999432bb7312f7ff06383a91d59d/skills/shipping-and-launch); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/verification-before-completion) |
 | `skill-evaluation` | pack `agent-evals` | this repository | MIT | derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/writing-skills) |
@@ -1065,7 +1072,7 @@ itself.
 | `tdd` | global | this repository | MIT | derived from [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/tdd); derived from [obra/superpowers](https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7/skills/test-driven-development) |
 | `teach` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/teach) | MIT | runs only as `/teach` |
 | `test-master` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/test-master) | MIT |  |
-| `the-fool` | pack `dev-workflows` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/the-fool) | MIT |  |
+| `the-fool` | pack `dev-workflows`, pack `pragmatic-design` | [jeffallan/claude-skills](https://github.com/jeffallan/claude-skills/tree/36f3fe8052da7c57083783268c6ea3265d075265/skills/the-fool) | MIT |  |
 | `to-questionnaire` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/321658273cb1d20b76026717d027d505790106d4/skills/productivity/to-questionnaire) | MIT | runs only as `/to-questionnaire` |
 | `to-spec` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/5c89081d4bbeb3d039a42093653f90bb698d780e/skills/engineering/to-spec) | MIT | runs only as `/to-spec` |
 | `to-tickets` | global | [mattpocock/skills](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/to-tickets) | MIT | runs only as `/to-tickets` |

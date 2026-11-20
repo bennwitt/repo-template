@@ -222,6 +222,10 @@ measuring or optimizing prompts (promptfoo, DSPy, GEPA) and choosing instant ver
 reasoning models; `agent-patterns` for designing or auditing an agent's architecture;
 `algorithms` for complexity analysis and data-structure choice. `local-inference` now covers
 llama.cpp operation and the Llama desktop app.
+`pragmatic-design` is for the start of a project or feature that should be solid for one use
+case without day-0 enterprise architecture: `seventy-two-percent-plan` writes the one-page plan
+(appetite, one-way doors, boring technology, disposable data, deliberately skipped, hardening
+path) and `the-fool` stress-tests it.
 
 ## New repositories
 
